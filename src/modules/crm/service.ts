@@ -129,3 +129,19 @@ export async function deleteStage(
 
   await repo.deleteStage(accountId, stageId);
 }
+
+export async function reopenDeal(
+  repo: CrmRepository,
+  accountId: string,
+  contactId: string,
+): Promise<Deal> {
+  const openDeal = await repo.getOpenDealForContact(accountId, contactId);
+  if (openDeal) throw new Error("Contact already has an open deal");
+
+  const stages = await repo.getStages(accountId);
+  const firstStage = stages[0];
+  const deal = await repo.insertDeal(accountId, contactId, firstStage.id);
+  await repo.insertDealHistory(deal.id, null, firstStage.id);
+
+  return deal;
+}

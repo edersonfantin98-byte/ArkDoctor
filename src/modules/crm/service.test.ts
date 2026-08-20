@@ -8,6 +8,7 @@ import {
   moveDeal,
   renameStage,
   reorderStages,
+  reopenDeal,
   searchContacts,
   updateContact,
 } from "./service";
@@ -199,5 +200,31 @@ describe("deleteStage", () => {
     await moveDeal(repo, "acc-1", deal.id, stages[1].id);
 
     await expect(deleteStage(repo, "acc-1", stages[0].id)).resolves.toBeUndefined();
+  });
+});
+
+describe("reopenDeal", () => {
+  it("creates a new deal for a contact with no open deal", async () => {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+    const stages = await repo.getStages("acc-1");
+    const dealsByStage = await repo.getDealsWithContactsByStage("acc-1");
+    const firstDeal = (dealsByStage.get(stages[0].id) ?? [])[0];
+    await moveDeal(repo, "acc-1", firstDeal.id, stages.find((s) => s.kind === "lost")!.id);
+
+    const newDeal = await reopenDeal(repo, "acc-1", contact.id);
+
+    expect(newDeal.id).not.toBe(firstDeal.id);
+    expect(newDeal.stageId).toBe(stages[0].id);
+
+    const allDeals = await repo.getDealsForContact("acc-1", contact.id);
+    expect(allDeals).toHaveLength(2);
+  });
+
+  it("rejects reopening when a deal is already open", async () => {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    await expect(reopenDeal(repo, "acc-1", contact.id)).rejects.toThrow();
   });
 });
