@@ -199,3 +199,20 @@ export async function cancelAppointment(
 ): Promise<Appointment> {
   return updateAppointmentStatus(repo, accountId, appointmentId, "cancelado");
 }
+
+import type { AppointmentWithDetails } from "./types";
+
+export async function listAppointments(
+  repo: SchedulingRepository,
+  accountId: string,
+  range: { from: string; to: string },
+): Promise<AppointmentWithDetails[]> {
+  return repo.listAppointmentsInRange(accountId, range.from, range.to);
+}
+
+export async function listPendingStatusAppointments(
+  repo: SchedulingRepository,
+  accountId: string,
+): Promise<AppointmentWithDetails[]> {
+  return repo.listPendingStatusAppointments(accountId, new Date().toISOString());
+}

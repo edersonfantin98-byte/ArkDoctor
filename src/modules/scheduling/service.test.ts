@@ -383,3 +383,55 @@ describe("updateAppointmentStatus, updateAppointmentNotes, cancelAppointment", (
     expect(cancelled.status).toBe("cancelado");
   });
 });
+
+import { listAppointments, listPendingStatusAppointments } from "./service";
+
+describe("listAppointments", () => {
+  it("returns appointments overlapping the given range", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    await createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+      contactId: contact.id,
+      procedureId: procedure.id,
+      startsAt: "2026-09-01T10:00:00.000Z",
+    });
+    await createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+      contactId: contact.id,
+      procedureId: procedure.id,
+      startsAt: "2026-09-05T10:00:00.000Z",
+    });
+
+    const inRange = await listAppointments(schedulingRepo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+    expect(inRange).toHaveLength(1);
+  });
+});
+
+describe("listPendingStatusAppointments", () => {
+  it("returns only 'agendado' appointments whose end time is in the past", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    const past = await createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+      contactId: contact.id,
+      procedureId: procedure.id,
+      startsAt: "2020-01-01T10:00:00.000Z",
+    });
+    const future = await createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+      contactId: contact.id,
+      procedureId: procedure.id,
+      startsAt: "2099-01-01T10:00:00.000Z",
+    });
+    const pastConfirmed = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      { contactId: contact.id, procedureId: procedure.id, startsAt: "2020-06-01T10:00:00.000Z" },
+    );
+    await updateAppointmentStatus(schedulingRepo, "acc-1", pastConfirmed.id, "concluido");
+
+    const pending = await listPendingStatusAppointments(schedulingRepo, "acc-1");
+
+    expect(pending.map((a) => a.id)).toEqual([past.id]);
+    expect(pending.map((a) => a.id)).not.toContain(future.id);
+    expect(pending.map((a) => a.id)).not.toContain(pastConfirmed.id);
+  });
+});
