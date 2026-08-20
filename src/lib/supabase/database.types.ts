@@ -194,6 +194,63 @@ export type Database = {
           },
         ]
       }
+      financial_entries: {
+        Row: {
+          account_id: string
+          amount: string
+          appointment_id: string | null
+          category: string | null
+          created_at: string
+          default_amount: string | null
+          description: string | null
+          id: string
+          occurred_at: string
+          procedure_id: string | null
+          type: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          appointment_id?: string | null
+          category?: string | null
+          created_at?: string
+          default_amount?: number | null
+          description?: string | null
+          id?: string
+          occurred_at: string
+          procedure_id?: string | null
+          type: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          appointment_id?: string | null
+          category?: string | null
+          created_at?: string
+          default_amount?: number | null
+          description?: string | null
+          id?: string
+          occurred_at?: string
+          procedure_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entries_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_stages: {
         Row: {
           account_id: string
@@ -219,6 +276,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pipeline_stages_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      procedures: {
+        Row: {
+          account_id: string
+          active: boolean
+          category: string | null
+          created_at: string
+          default_price: string
+          id: string
+          name: string
+        }
+        Insert: {
+          account_id: string
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          default_price: number
+          id?: string
+          name: string
+        }
+        Update: {
+          account_id?: string
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          default_price?: number
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedures_account_id_fkey"
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
