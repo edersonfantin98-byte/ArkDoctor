@@ -460,11 +460,30 @@ Expected: all four table names returned.
 Run: `npx supabase gen types typescript --linked > src/lib/supabase/database.types.ts`
 Expected: file is rewritten with real `Database` types (no longer the Task 4 placeholder); `npm run build` still exits 0.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Write the manual account-provisioning script**
+
+The architecture spec's auth flow has the developer create each Supabase Auth user manually, then create the matching `Account` + `account_users` row + seed the account's default pipeline stages. Create `supabase/seed_account.sql` as a copy-paste template for that one-off, per-account setup:
+
+```sql
+-- Run manually once per new account, after creating the user in the Supabase Auth dashboard.
+-- Replace the two placeholders below, then run this whole file in the Supabase SQL editor.
+
+with new_account as (
+  insert into accounts (name) values ('<nome da clínica/profissional>') returning id
+)
+insert into account_users (account_id, user_id, role)
+select id, '<auth-user-uuid-do-painel-supabase>', 'owner' from new_account;
+
+select seed_default_pipeline_stages(
+  (select account_id from account_users order by account_id desc limit 1)
+);
+```
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add -A
-git commit -m "feat(db): add CRM tables (contacts, pipeline_stages, deals, deal_stage_history) with RLS"
+git commit -m "feat(db): add CRM tables with RLS and manual account-provisioning seed script"
 ```
 
 ---
