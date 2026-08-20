@@ -1,0 +1,156 @@
+"use client";
+
+import { useState } from "react";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { getDashboardMetricsAction } from "@/app/(app)/financeiro/actions";
+import type { DashboardMetrics } from "@/modules/finance/types";
+
+type Preset = "week" | "month" | "custom";
+
+function rangeForPreset(preset: Preset): { from: string; to: string } {
+  const now = new Date();
+  if (preset === "week") {
+    const day = now.getUTCDay();
+    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day));
+    const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day + 6));
+    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
+  }
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
+}
+
+function formatCurrency(value: number): string {
+  return `R$ ${value.toFixed(2)}`;
+}
+
+export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: DashboardMetrics }) {
+  const [metrics, setMetrics] = useState(initialMetrics);
+  const [preset, setPreset] = useState<Preset>("month");
+
+  async function applyPreset(next: Preset) {
+    setPreset(next);
+    const range = rangeForPreset(next);
+    setMetrics(await getDashboardMetricsAction(range));
+  }
+
+  async function applyCustomRange(from: string, to: string) {
+    setPreset("custom");
+    setMetrics(await getDashboardMetricsAction({ from, to }));
+  }
+
+  const chartData = [
+    { name: "Receita", value: metrics.revenueTotal },
+    { name: "Despesa", value: metrics.expenseTotal },
+  ];
+
+  return (
+    <div className="space-y-4 px-6 pb-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant={preset === "week" ? "default" : "outline"} size="sm" onClick={() => applyPreset("week")}>
+          Semana
+        </Button>
+        <Button variant={preset === "month" ? "default" : "outline"} size="sm" onClick={() => applyPreset("month")}>
+          Mês
+        </Button>
+        <input
+          type="date"
+          className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+          defaultValue={metrics.period.from}
+          onChange={(e) => applyCustomRange(e.target.value, metrics.period.to)}
+        />
+        <span className="text-sm text-muted-foreground">até</span>
+        <input
+          type="date"
+          className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+          defaultValue={metrics.period.to}
+          onChange={(e) => applyCustomRange(metrics.period.from, e.target.value)}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Receita</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatCurrency(metrics.revenueTotal)}</p>
+            <p className="text-sm text-muted-foreground">
+              {metrics.revenueChangePct === null
+                ? "Sem dados do período anterior"
+                : `${metrics.revenueChangePct >= 0 ? "+" : ""}${metrics.revenueChangePct.toFixed(1)}% vs. período anterior`}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Despesa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatCurrency(metrics.expenseTotal)}</p>
+            <p className="text-sm text-muted-foreground">Saldo: {formatCurrency(metrics.balance)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Ticket médio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {metrics.averageTicket === null ? "—" : formatCurrency(metrics.averageTicket)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Taxa de cancelamento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-muted-foreground">—</p>
+            <p className="text-sm text-muted-foreground">Disponível quando a Agenda estiver conectada</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Receita x Despesa</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Bar dataKey="value" fill="#FF7900" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Procedimentos mais vendidos</CardTitle>
+        </CardHeader>
+        <CardContent className="divide-y divide-border p-0">
+          {metrics.topProcedures.length === 0 && (
+            <p className="p-6 text-sm text-muted-foreground">Nenhuma receita vinculada a procedimento neste período.</p>
+          )}
+          {metrics.topProcedures.map((row) => (
+            <div key={row.procedureId} className="flex items-center justify-between p-4">
+              <div>
+                <p className="font-medium">{row.procedureName}</p>
+                <p className="text-sm text-muted-foreground">{row.count} atendimento(s)</p>
+              </div>
+              <p className="font-semibold">{formatCurrency(row.totalAmount)}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
