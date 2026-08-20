@@ -20,9 +20,12 @@ export function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`w-64 shrink-0 rounded p-2 ${isOver ? "bg-accent" : ""}`}
+      className={`w-64 shrink-0 rounded-lg p-2 transition-colors ${isOver ? "bg-primary/10" : ""}`}
     >
-      <h2 className="mb-2 font-semibold">{stage.name}</h2>
+      <div className="mb-2 flex items-center gap-2 px-1">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">{stage.name}</h2>
+        <span className="text-xs text-muted-foreground">{deals.length}</span>
+      </div>
       <div className="space-y-2">
         {deals.map((deal) => (
           <DealCard key={deal.id} deal={deal} stages={allStages} onClick={onDealClick} />

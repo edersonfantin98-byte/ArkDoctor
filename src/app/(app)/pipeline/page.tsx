@@ -1,13 +1,18 @@
 import { listPipelineAction } from "./actions";
 import { PipelineClient } from "@/components/pipeline/pipeline-client";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function PipelinePage() {
   const columns = await listPipelineAction();
 
   return (
-    <main>
-      <h1 className="p-4 text-2xl font-bold">Pipeline</h1>
+    <div>
+      <PageHeader
+        eyebrow="CRM"
+        title="Pipeline"
+        description="Acompanhe seus contatos do primeiro contato ao pós-atendimento."
+      />
       <PipelineClient initialColumns={columns} />
-    </main>
+    </div>
   );
 }

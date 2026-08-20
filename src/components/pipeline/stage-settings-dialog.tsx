@@ -15,7 +15,7 @@ import {
   deleteStageAction,
   renameStageAction,
   reorderStagesAction,
-} from "@/app/pipeline/actions";
+} from "@/app/(app)/pipeline/actions";
 import type { PipelineStage } from "@/modules/crm/types";
 
 export function StageSettingsDialog({

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createContactAction } from "@/app/pipeline/actions";
+import { createContactAction } from "@/app/(app)/pipeline/actions";
 
 export function NewContactDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);

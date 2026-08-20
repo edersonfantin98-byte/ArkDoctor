@@ -3,8 +3,25 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { MoveDealMenu } from "./move-deal-menu";
-import type { DealWithContact, PipelineStage } from "@/modules/crm/types";
+import type { DealWithContact, PipelineStage, StageKind } from "@/modules/crm/types";
+
+const stageKindBadge: Partial<Record<StageKind, { label: string; className: string }>> = {
+  follow_up: { label: "Follow-up", className: "bg-amber-100 text-amber-700" },
+  lost: { label: "Perdido", className: "bg-muted text-muted-foreground" },
+};
+
+function initials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
 
 export function DealCard({
   deal,
@@ -19,6 +36,9 @@ export function DealCard({
     id: deal.id,
   });
 
+  const stage = stages.find((s) => s.id === deal.stageId);
+  const kindBadge = stage ? stageKindBadge[stage.kind] : undefined;
+
   return (
     <div
       ref={setNodeRef}
@@ -26,17 +46,27 @@ export function DealCard({
       {...attributes}
     >
       <Card>
-        <CardContent className="p-3">
-          <div {...listeners} className="cursor-grab">
-            <p className="font-medium">{deal.contact.name}</p>
-            <p className="text-sm text-muted-foreground">{deal.contact.phone}</p>
+        <CardContent className="space-y-2 p-3">
+          <div {...listeners} className="flex cursor-grab items-center gap-3">
+            <Avatar size="sm">
+              <AvatarFallback>{initials(deal.contact.name)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="truncate font-medium">{deal.contact.name}</p>
+              <p className="truncate text-sm text-muted-foreground">{deal.contact.phone}</p>
+            </div>
           </div>
+          {kindBadge && (
+            <Badge variant="outline" className={kindBadge.className}>
+              {kindBadge.label}
+            </Badge>
+          )}
           <MoveDealMenu dealId={deal.id} currentStageId={deal.stageId} stages={stages} />
           {onClick && (
             <button
               type="button"
               onClick={() => onClick(deal)}
-              className="mt-2 text-sm text-primary underline"
+              className="text-sm text-primary underline"
             >
               Ver detalhes
             </button>

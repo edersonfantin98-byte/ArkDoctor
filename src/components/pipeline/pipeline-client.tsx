@@ -28,7 +28,7 @@ export function PipelineClient({ initialColumns }: { initialColumns: PipelineCol
 
   return (
     <div>
-      <div className="flex items-center justify-between px-4">
+      <div className="flex items-center justify-between px-6 pb-4">
         <ContactSearch onResults={handleResults} />
         <div className="flex gap-2">
           <StageSettingsDialog

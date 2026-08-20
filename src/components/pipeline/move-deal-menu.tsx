@@ -1,6 +1,6 @@
 "use client";
 
-import { moveDealAction } from "@/app/pipeline/actions";
+import { moveDealAction } from "@/app/(app)/pipeline/actions";
 import type { PipelineStage } from "@/modules/crm/types";
 
 export function MoveDealMenu({

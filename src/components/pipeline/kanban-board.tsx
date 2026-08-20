@@ -2,7 +2,7 @@
 
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { KanbanColumn } from "./kanban-column";
-import { moveDealAction } from "@/app/pipeline/actions";
+import { moveDealAction } from "@/app/(app)/pipeline/actions";
 import type { PipelineStage, DealWithContact } from "@/modules/crm/types";
 
 export interface PipelineColumn {
@@ -28,7 +28,7 @@ export function KanbanBoard({
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto p-4">
+      <div className="flex gap-4 overflow-x-auto px-6 pb-6">
         {columns.map(({ stage, deals }) => (
           <KanbanColumn
             key={stage.id}

@@ -13,7 +13,7 @@ import {
   getContactDetailAction,
   reopenDealAction,
   updateContactAction,
-} from "@/app/pipeline/actions";
+} from "@/app/(app)/pipeline/actions";
 import type { Deal, DealStageHistoryEntry, DealWithContact } from "@/modules/crm/types";
 
 export function ContactDetailDialog({
