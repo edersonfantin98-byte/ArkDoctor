@@ -8,6 +8,7 @@ import {
   getProcedureDefaults,
   createFinancialEntry,
   listFinancialEntries,
+  getDashboardMetrics,
 } from "./service";
 
 describe("createProcedure", () => {
@@ -175,5 +176,130 @@ describe("listFinancialEntries", () => {
 
     const entries = await listFinancialEntries(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
     expect(entries).toHaveLength(1);
+  });
+});
+
+describe("getDashboardMetrics", () => {
+  async function seedAugust(repo: ReturnType<typeof createInMemoryFinanceRepository>) {
+    const consulta = await createProcedure(repo, "acc-1", {
+      name: "Consulta",
+      defaultPrice: 150,
+      category: "Atendimento",
+    });
+    const curativo = await createProcedure(repo, "acc-1", {
+      name: "Curativo",
+      defaultPrice: 50,
+      category: "Atendimento",
+    });
+
+    await createFinancialEntry(repo, "acc-1", {
+      type: "revenue",
+      amount: 150,
+      procedureId: consulta.id,
+      occurredAt: "2026-08-05",
+    });
+    await createFinancialEntry(repo, "acc-1", {
+      type: "revenue",
+      amount: 150,
+      procedureId: consulta.id,
+      occurredAt: "2026-08-10",
+    });
+    await createFinancialEntry(repo, "acc-1", {
+      type: "revenue",
+      amount: 50,
+      procedureId: curativo.id,
+      occurredAt: "2026-08-12",
+    });
+    await createFinancialEntry(repo, "acc-1", {
+      type: "expense",
+      amount: 100,
+      category: "Material",
+      occurredAt: "2026-08-20",
+    });
+
+    return { consulta, curativo };
+  }
+
+  it("sums revenue, expense, and balance for the period", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await seedAugust(repo);
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    expect(metrics.revenueTotal).toBe(350);
+    expect(metrics.expenseTotal).toBe(100);
+    expect(metrics.balance).toBe(250);
+  });
+
+  it("computes revenueChangePct against the equivalent-length prior period", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await createFinancialEntry(repo, "acc-1", {
+      type: "revenue",
+      amount: 100,
+      category: "Avulso",
+      occurredAt: "2026-07-15",
+    });
+    await createFinancialEntry(repo, "acc-1", {
+      type: "revenue",
+      amount: 150,
+      category: "Avulso",
+      occurredAt: "2026-08-15",
+    });
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    expect(metrics.revenueChangePct).toBe(50);
+  });
+
+  it("returns null revenueChangePct when the prior period had no revenue", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await createFinancialEntry(repo, "acc-1", {
+      type: "revenue",
+      amount: 150,
+      category: "Avulso",
+      occurredAt: "2026-08-15",
+    });
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    expect(metrics.revenueChangePct).toBeNull();
+  });
+
+  it("computes averageTicket over revenue entries only", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await seedAugust(repo);
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    // (150 + 150 + 50) / 3 revenue entries
+    expect(metrics.averageTicket).toBeCloseTo(116.666, 2);
+  });
+
+  it("returns null averageTicket when there is no revenue in the period", async () => {
+    const repo = createInMemoryFinanceRepository();
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    expect(metrics.averageTicket).toBeNull();
+  });
+
+  it("ranks topProcedures by total revenue descending, with names resolved", async () => {
+    const repo = createInMemoryFinanceRepository();
+    const { consulta, curativo } = await seedAugust(repo);
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    expect(metrics.topProcedures).toEqual([
+      { procedureId: consulta.id, procedureName: "Consulta", totalAmount: 300, count: 2 },
+      { procedureId: curativo.id, procedureName: "Curativo", totalAmount: 50, count: 1 },
+    ]);
+  });
+
+  it("reports cancellationRate as unavailable (no Appointment data in this phase)", async () => {
+    const repo = createInMemoryFinanceRepository();
+
+    const metrics = await getDashboardMetrics(repo, "acc-1", { from: "2026-08-01", to: "2026-08-31" });
+
+    expect(metrics.cancellationRate).toEqual({ available: false });
   });
 });
