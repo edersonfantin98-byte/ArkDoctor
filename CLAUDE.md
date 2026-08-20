@@ -67,3 +67,4 @@ Não necessário em toda sessão; abrir apenas quando a tarefa exigir.
 
 - `docs/prd/arkdoctor-prd.md` — PRD completo: problema, solução, user stories, decisões de implementação/teste, fora de escopo.
 - `docs/superpowers/specs/2026-08-20-arkdoctor-design.md` — design doc técnico: stack, modelo de dados, módulos, casos de borda.
+- `docs/superpowers/specs/2026-08-20-arkdoctor-visual-design.md` — design system: cores, tipografia, bordas, componentes. Atualizar conforme o visual evoluir.
