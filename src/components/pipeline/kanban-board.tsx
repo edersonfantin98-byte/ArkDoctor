@@ -1,4 +1,8 @@
-import { DealCard } from "./deal-card";
+"use client";
+
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import { KanbanColumn } from "./kanban-column";
+import { moveDealAction } from "@/app/pipeline/actions";
 import type { PipelineStage, DealWithContact } from "@/modules/crm/types";
 
 export interface PipelineColumn {
@@ -7,18 +11,22 @@ export interface PipelineColumn {
 }
 
 export function KanbanBoard({ columns }: { columns: PipelineColumn[] }) {
+  const allStages = columns.map((c) => c.stage);
+
+  function handleDragEnd(event: DragEndEvent) {
+    const dealId = event.active.id as string;
+    const toStageId = event.over?.id as string | undefined;
+    if (!toStageId) return;
+    moveDealAction(dealId, toStageId);
+  }
+
   return (
-    <div className="flex gap-4 overflow-x-auto p-4">
-      {columns.map(({ stage, deals }) => (
-        <div key={stage.id} className="w-64 shrink-0">
-          <h2 className="mb-2 font-semibold">{stage.name}</h2>
-          <div className="space-y-2">
-            {deals.map((deal) => (
-              <DealCard key={deal.id} deal={deal} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className="flex gap-4 overflow-x-auto p-4">
+        {columns.map(({ stage, deals }) => (
+          <KanbanColumn key={stage.id} stage={stage} deals={deals} allStages={allStages} />
+        ))}
+      </div>
+    </DndContext>
   );
 }
