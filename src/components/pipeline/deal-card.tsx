@@ -9,9 +9,11 @@ import type { DealWithContact, PipelineStage } from "@/modules/crm/types";
 export function DealCard({
   deal,
   stages,
+  onClick,
 }: {
   deal: DealWithContact;
   stages: PipelineStage[];
+  onClick?: (deal: DealWithContact) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: deal.id,
@@ -30,6 +32,15 @@ export function DealCard({
             <p className="text-sm text-muted-foreground">{deal.contact.phone}</p>
           </div>
           <MoveDealMenu dealId={deal.id} currentStageId={deal.stageId} stages={stages} />
+          {onClick && (
+            <button
+              type="button"
+              onClick={() => onClick(deal)}
+              className="mt-2 text-sm text-primary underline"
+            >
+              Ver detalhes
+            </button>
+          )}
         </CardContent>
       </Card>
     </div>

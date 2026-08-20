@@ -10,7 +10,13 @@ export interface PipelineColumn {
   deals: DealWithContact[];
 }
 
-export function KanbanBoard({ columns }: { columns: PipelineColumn[] }) {
+export function KanbanBoard({
+  columns,
+  onDealClick,
+}: {
+  columns: PipelineColumn[];
+  onDealClick?: (deal: DealWithContact) => void;
+}) {
   const allStages = columns.map((c) => c.stage);
 
   function handleDragEnd(event: DragEndEvent) {
@@ -24,7 +30,13 @@ export function KanbanBoard({ columns }: { columns: PipelineColumn[] }) {
     <DndContext onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto p-4">
         {columns.map(({ stage, deals }) => (
-          <KanbanColumn key={stage.id} stage={stage} deals={deals} allStages={allStages} />
+          <KanbanColumn
+            key={stage.id}
+            stage={stage}
+            deals={deals}
+            allStages={allStages}
+            onDealClick={onDealClick}
+          />
         ))}
       </div>
     </DndContext>

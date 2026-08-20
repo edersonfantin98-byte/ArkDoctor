@@ -76,3 +76,15 @@ export async function reopenDealAction(contactId: string) {
   revalidatePath("/pipeline");
   return deal;
 }
+
+export async function getContactDetailAction(contactId: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  const deals = await repo.getDealsForContact(accountId, contactId);
+  const dealsWithHistory = await Promise.all(
+    deals.map(async (deal) => ({
+      ...deal,
+      history: await repo.getDealHistory(deal.id),
+    })),
+  );
+  return { deals: dealsWithHistory };
+}

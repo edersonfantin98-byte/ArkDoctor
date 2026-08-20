@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { KanbanBoard, type PipelineColumn } from "./kanban-board";
 import { ContactSearch } from "./contact-search";
 import { NewContactDialog } from "./new-contact-dialog";
-import type { Contact } from "@/modules/crm/types";
+import { ContactDetailDialog } from "./contact-detail-dialog";
+import type { Contact, DealWithContact } from "@/modules/crm/types";
 
 export function PipelineClient({ initialColumns }: { initialColumns: PipelineColumn[] }) {
   const router = useRouter();
   const [matchingContactIds, setMatchingContactIds] = useState<Set<string> | null>(null);
+  const [selectedDeal, setSelectedDeal] = useState<DealWithContact | null>(null);
 
   function handleResults(contacts: Contact[] | null) {
     setMatchingContactIds(contacts ? new Set(contacts.map((c) => c.id)) : null);
@@ -29,7 +31,15 @@ export function PipelineClient({ initialColumns }: { initialColumns: PipelineCol
         <ContactSearch onResults={handleResults} />
         <NewContactDialog onCreated={() => router.refresh()} />
       </div>
-      <KanbanBoard columns={filteredColumns} />
+      <KanbanBoard columns={filteredColumns} onDealClick={setSelectedDeal} />
+      <ContactDetailDialog
+        deal={selectedDeal}
+        open={selectedDeal !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDeal(null);
+        }}
+        onChanged={() => router.refresh()}
+      />
     </div>
   );
 }
