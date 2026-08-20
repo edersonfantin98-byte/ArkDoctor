@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -20,9 +21,11 @@ import {
 import {
   createAppointmentAction,
   updateAppointmentTimeAction,
+  updateAppointmentNotesAction,
   listProceduresAction,
 } from "@/app/(app)/agenda/actions";
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
+import { AppointmentStatusMenu } from "./appointment-status-menu";
 import type { AppointmentWithDetails } from "@/modules/scheduling/types";
 import type { Contact } from "@/modules/crm/types";
 import type { Procedure } from "@/modules/scheduling/types";
@@ -51,6 +54,7 @@ export function AppointmentDialog({
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [procedureId, setProcedureId] = useState<string>("");
   const [startsAt, setStartsAt] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,6 +66,7 @@ export function AppointmentDialog({
       setContactQuery(editingAppointment.contact.name);
       setProcedureId(editingAppointment.procedureId);
       setStartsAt(toLocalInputValue(new Date(editingAppointment.startsAt)));
+      setNotes(editingAppointment.notes ?? "");
     } else if (slot) {
       setSelectedContactId(null);
       setContactQuery("");
@@ -177,6 +182,35 @@ export function AppointmentDialog({
               onChange={(e) => setStartsAt(e.target.value)}
             />
           </div>
+
+          {editingAppointment && (
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="status">Status</Label>
+                <AppointmentStatusMenu
+                  appointmentId={editingAppointment.id}
+                  currentStatus={editingAppointment.status}
+                  onChanged={onSaved}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    await updateAppointmentNotesAction(editingAppointment.id, notes);
+                    onSaved();
+                  }}
+                >
+                  Salvar notas
+                </Button>
+              </div>
+            </>
+          )}
 
           <Button
             type="button"
