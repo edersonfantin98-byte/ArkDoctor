@@ -1,5 +1,5 @@
 import type { CrmRepository } from "./repository";
-import { createContactInputSchema } from "./schemas";
+import { createContactInputSchema, updateContactInputSchema } from "./schemas";
 import type { Contact } from "./types";
 
 export async function createContact(
@@ -16,4 +16,22 @@ export async function createContact(
   await repo.insertDealHistory(deal.id, null, firstStage.id);
 
   return contact;
+}
+
+export async function searchContacts(
+  repo: CrmRepository,
+  accountId: string,
+  query: string,
+): Promise<Contact[]> {
+  return repo.searchContacts(accountId, query);
+}
+
+export async function updateContact(
+  repo: CrmRepository,
+  accountId: string,
+  contactId: string,
+  rawInput: unknown,
+): Promise<Contact> {
+  const input = updateContactInputSchema.parse(rawInput);
+  return repo.updateContact(accountId, contactId, input);
 }
