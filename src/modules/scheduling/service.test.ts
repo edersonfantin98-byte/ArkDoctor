@@ -135,3 +135,80 @@ describe("checkConflict", () => {
     expect(result.reason).toBeNull();
   });
 });
+
+import {
+  createProcedure,
+  deleteProcedure,
+  listProcedures,
+  updateProcedure,
+} from "./service";
+
+describe("createProcedure", () => {
+  it("creates a procedure with the given fields", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const procedure = await createProcedure(repo, "acc-1", {
+      name: "Limpeza de pele",
+      defaultPrice: 150,
+      defaultDurationMinutes: 40,
+    });
+    expect(procedure.name).toBe("Limpeza de pele");
+    expect(procedure.defaultDurationMinutes).toBe(40);
+  });
+
+  it("rejects a procedure with an empty name", async () => {
+    const repo = createInMemorySchedulingRepository();
+    await expect(
+      createProcedure(repo, "acc-1", { name: "", defaultPrice: 100, defaultDurationMinutes: 30 }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("updateProcedure and listProcedures", () => {
+  it("updates the provided fields and lists all procedures for the account", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const procedure = await createProcedure(repo, "acc-1", {
+      name: "Consulta",
+      defaultPrice: 100,
+      defaultDurationMinutes: 30,
+    });
+
+    const updated = await updateProcedure(repo, "acc-1", procedure.id, { defaultPrice: 120 });
+    expect(updated.defaultPrice).toBe(120);
+    expect(updated.name).toBe("Consulta");
+
+    const all = await listProcedures(repo, "acc-1");
+    expect(all).toHaveLength(1);
+  });
+});
+
+describe("deleteProcedure", () => {
+  it("blocks deletion when an appointment references the procedure", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const procedure = await createProcedure(repo, "acc-1", {
+      name: "Consulta",
+      defaultPrice: 100,
+      defaultDurationMinutes: 30,
+    });
+    await repo.insertAppointment("acc-1", {
+      contactId: "contact-1",
+      procedureId: procedure.id,
+      dealId: null,
+      startsAt: "2026-09-01T10:00:00.000Z",
+      endsAt: "2026-09-01T10:30:00.000Z",
+      notes: null,
+    });
+
+    await expect(deleteProcedure(repo, "acc-1", procedure.id)).rejects.toThrow();
+  });
+
+  it("allows deletion when no appointment references the procedure", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const procedure = await createProcedure(repo, "acc-1", {
+      name: "Consulta",
+      defaultPrice: 100,
+      defaultDurationMinutes: 30,
+    });
+
+    await expect(deleteProcedure(repo, "acc-1", procedure.id)).resolves.toBeUndefined();
+  });
+});

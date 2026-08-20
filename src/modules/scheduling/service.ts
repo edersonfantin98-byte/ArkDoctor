@@ -60,3 +60,44 @@ export async function checkConflict(
 
   return { hasConflict: false, reason: null };
 }
+
+import { createProcedureInputSchema, updateProcedureInputSchema } from "./schemas";
+import type { Procedure } from "./types";
+
+export async function createProcedure(
+  repo: SchedulingRepository,
+  accountId: string,
+  rawInput: unknown,
+): Promise<Procedure> {
+  const input = createProcedureInputSchema.parse(rawInput);
+  return repo.insertProcedure(accountId, input);
+}
+
+export async function updateProcedure(
+  repo: SchedulingRepository,
+  accountId: string,
+  procedureId: string,
+  rawInput: unknown,
+): Promise<Procedure> {
+  const input = updateProcedureInputSchema.parse(rawInput);
+  return repo.updateProcedure(accountId, procedureId, input);
+}
+
+export async function listProcedures(
+  repo: SchedulingRepository,
+  accountId: string,
+): Promise<Procedure[]> {
+  return repo.listProcedures(accountId);
+}
+
+export async function deleteProcedure(
+  repo: SchedulingRepository,
+  accountId: string,
+  procedureId: string,
+): Promise<void> {
+  const count = await repo.countAppointmentsForProcedure(accountId, procedureId);
+  if (count > 0) {
+    throw new Error("Não é possível remover um procedimento com agendamentos vinculados");
+  }
+  await repo.deleteProcedure(accountId, procedureId);
+}
