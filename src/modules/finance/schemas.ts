@@ -27,8 +27,13 @@ export const createFinancialEntryInputSchema = z.object({
 });
 export type CreateFinancialEntryInput = z.infer<typeof createFinancialEntryInputSchema>;
 
-export const dashboardPeriodSchema = z.object({
-  from: isoDate,
-  to: isoDate,
-});
+export const dashboardPeriodSchema = z
+  .object({
+    from: isoDate,
+    to: isoDate,
+  })
+  .refine((period) => period.from <= period.to, {
+    message: "A data inicial deve ser anterior ou igual à data final",
+    path: ["to"],
+  });
 export type DashboardPeriod = z.infer<typeof dashboardPeriodSchema>;

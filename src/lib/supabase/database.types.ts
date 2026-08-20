@@ -243,7 +243,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "financial_entries_procedure_id_fkey"
+            foreignKeyName: "financial_entries_procedure_same_account"
             columns: ["procedure_id"]
             isOneToOne: false
             referencedRelation: "procedures"

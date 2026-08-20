@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CalendarX, Receipt, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getDashboardMetricsAction } from "@/app/(app)/financeiro/actions";
@@ -33,17 +34,25 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
   async function applyPreset(next: Preset) {
     setPreset(next);
     const range = rangeForPreset(next);
-    setMetrics(await getDashboardMetricsAction(range));
+    try {
+      setMetrics(await getDashboardMetricsAction(range));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Erro ao carregar o dashboard");
+    }
   }
 
   async function applyCustomRange(from: string, to: string) {
     setPreset("custom");
-    setMetrics(await getDashboardMetricsAction({ from, to }));
+    try {
+      setMetrics(await getDashboardMetricsAction({ from, to }));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Erro ao carregar o dashboard");
+    }
   }
 
   const chartData = [
-    { name: "Receita", value: metrics.revenueTotal },
-    { name: "Despesa", value: metrics.expenseTotal },
+    { name: "Receita", value: metrics.revenueTotal, fill: "#16a34a" },
+    { name: "Despesa", value: metrics.expenseTotal, fill: "#dc2626" },
   ];
 
   return (
@@ -58,14 +67,14 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         <input
           type="date"
           className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
-          defaultValue={metrics.period.from}
+          value={metrics.period.from}
           onChange={(e) => applyCustomRange(e.target.value, metrics.period.to)}
         />
         <span className="text-sm text-muted-foreground">até</span>
         <input
           type="date"
           className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
-          defaultValue={metrics.period.to}
+          value={metrics.period.to}
           onChange={(e) => applyCustomRange(metrics.period.from, e.target.value)}
         />
       </div>
@@ -73,6 +82,9 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-green-100 text-green-700">
+              <TrendingUp className="h-4 w-4" />
+            </div>
             <CardTitle className="text-sm text-muted-foreground">Receita</CardTitle>
           </CardHeader>
           <CardContent>
@@ -86,6 +98,9 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </Card>
         <Card>
           <CardHeader>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-red-100 text-red-700">
+              <TrendingDown className="h-4 w-4" />
+            </div>
             <CardTitle className="text-sm text-muted-foreground">Despesa</CardTitle>
           </CardHeader>
           <CardContent>
@@ -95,6 +110,9 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </Card>
         <Card>
           <CardHeader>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <Receipt className="h-4 w-4" />
+            </div>
             <CardTitle className="text-sm text-muted-foreground">Ticket médio</CardTitle>
           </CardHeader>
           <CardContent>
@@ -105,6 +123,9 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </Card>
         <Card>
           <CardHeader>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <CalendarX className="h-4 w-4" />
+            </div>
             <CardTitle className="text-sm text-muted-foreground">Taxa de cancelamento</CardTitle>
           </CardHeader>
           <CardContent>
@@ -125,7 +146,11 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Bar dataKey="value" fill="#FF7900" />
+                <Bar dataKey="value">
+                  {chartData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.fill} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

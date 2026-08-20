@@ -20,7 +20,11 @@ export function EntriesClient({
   const [entries, setEntries] = useState(initialEntries);
 
   async function refresh() {
-    setEntries(await listFinancialEntriesAction(range));
+    try {
+      setEntries(await listFinancialEntriesAction(range));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Erro ao carregar lançamentos");
+    }
   }
 
   return (
@@ -46,7 +50,11 @@ export function EntriesClient({
               </div>
               <Badge
                 variant={entry.type === "revenue" ? "outline" : "destructive"}
-                className={entry.type === "revenue" ? "border-green-600 text-green-700" : ""}
+                className={
+                  entry.type === "revenue"
+                    ? "border-transparent bg-green-100 text-green-700"
+                    : ""
+                }
               >
                 {entry.type === "revenue" ? "+" : "-"} R$ {entry.amount.toFixed(2)}
               </Badge>

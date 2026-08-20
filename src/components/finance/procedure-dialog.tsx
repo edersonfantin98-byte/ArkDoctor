@@ -31,7 +31,7 @@ export function ProcedureDialog({
       const input = {
         name: String(formData.get("name") ?? ""),
         defaultPrice: Number(formData.get("defaultPrice")),
-        category: String(formData.get("category") ?? "") || undefined,
+        category: String(formData.get("category") ?? "") || (isEditing ? null : undefined),
       };
       if (isEditing && procedure) {
         await updateProcedureAction(procedure.id, input);

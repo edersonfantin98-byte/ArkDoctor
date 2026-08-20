@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/pipeline")) {
+  if (!user && (request.nextUrl.pathname.startsWith("/pipeline") || request.nextUrl.pathname.startsWith("/financeiro"))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -35,5 +35,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/pipeline/:path*"],
+  matcher: ["/pipeline/:path*", "/financeiro/:path*"],
 };

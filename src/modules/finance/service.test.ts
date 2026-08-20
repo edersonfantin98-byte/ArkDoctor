@@ -302,4 +302,12 @@ describe("getDashboardMetrics", () => {
 
     expect(metrics.cancellationRate).toEqual({ available: false });
   });
+
+  it("rejects an inverted period (from after to)", async () => {
+    const repo = createInMemoryFinanceRepository();
+
+    await expect(
+      getDashboardMetrics(repo, "acc-1", { from: "2026-08-31", to: "2026-08-01" }),
+    ).rejects.toThrow();
+  });
 });

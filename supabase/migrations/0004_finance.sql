@@ -5,7 +5,8 @@ create table procedures (
   default_price numeric(10,2) not null check (default_price > 0),
   category text,
   active boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (id, account_id)
 );
 
 create table financial_entries (
@@ -15,7 +16,7 @@ create table financial_entries (
   amount numeric(10,2) not null check (amount > 0),
   default_amount numeric(10,2),
   category text,
-  procedure_id uuid references procedures(id),
+  procedure_id uuid,
   -- No FK yet: the `appointments` table does not exist in this branch.
   -- Reserved for the future Appointment -> FinancialEntry integration.
   appointment_id uuid,
@@ -24,6 +25,9 @@ create table financial_entries (
   created_at timestamptz not null default now(),
   constraint financial_entries_expense_no_procedure
     check (type <> 'expense' or procedure_id is null)
+  ,
+  constraint financial_entries_procedure_same_account
+    foreign key (procedure_id, account_id) references procedures(id, account_id)
 );
 
 alter table procedures enable row level security;

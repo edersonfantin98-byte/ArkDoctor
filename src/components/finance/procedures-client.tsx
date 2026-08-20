@@ -15,12 +15,20 @@ export function ProceduresClient({ initialProcedures }: { initialProcedures: Pro
   const [procedures, setProcedures] = useState(initialProcedures);
 
   async function refresh() {
-    setProcedures(await listProceduresAction());
+    try {
+      setProcedures(await listProceduresAction());
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Erro ao carregar procedimentos");
+    }
   }
 
   async function handleDeactivate(id: string) {
-    await deactivateProcedureAction(id);
-    await refresh();
+    try {
+      await deactivateProcedureAction(id);
+      await refresh();
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Erro ao desativar procedimento");
+    }
   }
 
   return (
