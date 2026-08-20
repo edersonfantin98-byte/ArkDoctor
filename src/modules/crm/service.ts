@@ -1,6 +1,6 @@
 import type { CrmRepository } from "./repository";
 import { createContactInputSchema, updateContactInputSchema } from "./schemas";
-import type { Contact } from "./types";
+import type { Contact, DealWithContact, PipelineStage } from "./types";
 
 export async function createContact(
   repo: CrmRepository,
@@ -34,4 +34,17 @@ export async function updateContact(
 ): Promise<Contact> {
   const input = updateContactInputSchema.parse(rawInput);
   return repo.updateContact(accountId, contactId, input);
+}
+
+export async function listPipeline(
+  repo: CrmRepository,
+  accountId: string,
+): Promise<{ stage: PipelineStage; deals: DealWithContact[] }[]> {
+  const stages = await repo.getStages(accountId);
+  const dealsByStage = await repo.getDealsWithContactsByStage(accountId);
+
+  return stages.map((stage) => ({
+    stage,
+    deals: dealsByStage.get(stage.id) ?? [],
+  }));
 }

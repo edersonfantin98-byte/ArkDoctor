@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createInMemoryCrmRepository } from "./repository.memory";
-import { createContact, searchContacts, updateContact } from "./service";
+import { createContact, listPipeline, searchContacts, updateContact } from "./service";
 
 describe("createContact", () => {
   it("creates a contact and an initial deal in the first stage", async () => {
@@ -51,5 +51,19 @@ describe("updateContact", () => {
 
     expect(updated.name).toBe("Ana");
     expect(updated.notes).toBe("Prefere manhã");
+  });
+});
+
+describe("listPipeline", () => {
+  it("returns every stage in position order, each with its deals", async () => {
+    const repo = createInMemoryCrmRepository();
+    await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    const pipeline = await listPipeline(repo, "acc-1");
+
+    expect(pipeline).toHaveLength(6);
+    expect(pipeline[0].stage.name).toBe("Novo Lead");
+    expect(pipeline[0].deals).toHaveLength(1);
+    expect(pipeline[1].deals).toHaveLength(0);
   });
 });
