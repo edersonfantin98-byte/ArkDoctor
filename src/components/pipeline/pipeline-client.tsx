@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { KanbanBoard, type PipelineColumn } from "./kanban-board";
 import { ContactSearch } from "./contact-search";
+import { NewContactDialog } from "./new-contact-dialog";
 import type { Contact } from "@/modules/crm/types";
 
 export function PipelineClient({ initialColumns }: { initialColumns: PipelineColumn[] }) {
+  const router = useRouter();
   const [matchingContactIds, setMatchingContactIds] = useState<Set<string> | null>(null);
 
   function handleResults(contacts: Contact[] | null) {
@@ -22,8 +25,9 @@ export function PipelineClient({ initialColumns }: { initialColumns: PipelineCol
 
   return (
     <div>
-      <div className="px-4">
+      <div className="flex items-center justify-between px-4">
         <ContactSearch onResults={handleResults} />
+        <NewContactDialog onCreated={() => router.refresh()} />
       </div>
       <KanbanBoard columns={filteredColumns} />
     </div>
