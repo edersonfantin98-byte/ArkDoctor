@@ -101,3 +101,56 @@ export async function deleteProcedure(
   }
   await repo.deleteProcedure(accountId, procedureId);
 }
+
+import type { CrmRepository } from "@/modules/crm/repository";
+import { getOpenDealForContact, getStages, moveDeal } from "@/modules/crm/service";
+import { createAppointmentInputSchema } from "./schemas";
+import type { Appointment } from "./types";
+
+function addMinutes(iso: string, minutes: number): string {
+  return new Date(new Date(iso).getTime() + minutes * 60_000).toISOString();
+}
+
+async function resolveDealForAppointment(
+  crmRepo: CrmRepository,
+  accountId: string,
+  contactId: string,
+): Promise<string | null> {
+  const openDeal = await getOpenDealForContact(crmRepo, accountId, contactId);
+  if (!openDeal) return null;
+
+  const stages = await getStages(crmRepo, accountId);
+  const targetStage = stages.find((s) => s.name === "Agendado");
+  if (!targetStage) return null;
+
+  await moveDeal(crmRepo, accountId, openDeal.id, targetStage.id);
+  return openDeal.id;
+}
+
+export async function createAppointment(
+  repos: { scheduling: SchedulingRepository; crm: CrmRepository },
+  accountId: string,
+  rawInput: unknown,
+): Promise<Appointment> {
+  const input = createAppointmentInputSchema.parse(rawInput);
+
+  const procedure = await repos.scheduling.getProcedure(accountId, input.procedureId);
+  if (!procedure) throw new Error("Procedimento não encontrado");
+
+  const startsAt = input.startsAt;
+  const endsAt = input.endsAt ?? addMinutes(startsAt, procedure.defaultDurationMinutes);
+
+  const conflict = await checkConflict(repos.scheduling, accountId, { startsAt, endsAt });
+  if (conflict.hasConflict) throw new Error(conflict.reason ?? "Conflito de horário");
+
+  const dealId = await resolveDealForAppointment(repos.crm, accountId, input.contactId);
+
+  return repos.scheduling.insertAppointment(accountId, {
+    contactId: input.contactId,
+    procedureId: input.procedureId,
+    dealId,
+    startsAt,
+    endsAt,
+    notes: input.notes ?? null,
+  });
+}

@@ -212,3 +212,102 @@ describe("deleteProcedure", () => {
     await expect(deleteProcedure(repo, "acc-1", procedure.id)).resolves.toBeUndefined();
   });
 });
+
+import { createInMemoryCrmRepository } from "@/modules/crm/repository.memory";
+import { createContact } from "@/modules/crm/service";
+import { createAppointment } from "./service";
+
+async function setup() {
+  const schedulingRepo = createInMemorySchedulingRepository();
+  const crmRepo = createInMemoryCrmRepository();
+  const procedure = await schedulingRepo.insertProcedure("acc-1", {
+    name: "Consulta",
+    defaultPrice: 100,
+    defaultDurationMinutes: 30,
+  });
+  const contact = await createContact(crmRepo, "acc-1", {
+    name: "Ana",
+    phone: "11999990000",
+  });
+  return { schedulingRepo, crmRepo, procedure, contact };
+}
+
+describe("createAppointment", () => {
+  it("uses the procedure's default duration when endsAt is not given", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+
+    const appointment = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      {
+        contactId: contact.id,
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:00:00.000Z",
+      },
+    );
+
+    expect(appointment.startsAt).toBe("2026-09-01T10:00:00.000Z");
+    expect(appointment.endsAt).toBe("2026-09-01T10:30:00.000Z");
+  });
+
+  it("rejects when the requested time conflicts with an existing appointment", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    await schedulingRepo.insertAppointment("acc-1", {
+      contactId: contact.id,
+      procedureId: procedure.id,
+      dealId: null,
+      startsAt: "2026-09-01T10:00:00.000Z",
+      endsAt: "2026-09-01T10:30:00.000Z",
+      notes: null,
+    });
+
+    await expect(
+      createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+        contactId: contact.id,
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:15:00.000Z",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("moves the contact's open deal to the 'Agendado' stage when it exists", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    const stages = await crmRepo.getStages("acc-1");
+    const agendadoStage = stages.find((s) => s.name === "Agendado")!;
+
+    const appointment = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      {
+        contactId: contact.id,
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:00:00.000Z",
+      },
+    );
+
+    expect(appointment.dealId).not.toBeNull();
+    const deal = await crmRepo.getDeal("acc-1", appointment.dealId!);
+    expect(deal?.stageId).toBe(agendadoStage.id);
+  });
+
+  it("does not move any deal or fail when there is no 'Agendado' stage", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    const stages = await crmRepo.getStages("acc-1");
+    const agendadoStage = stages.find((s) => s.name === "Agendado")!;
+    await crmRepo.renameStage("acc-1", agendadoStage.id, "Marcado");
+
+    const appointment = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      {
+        contactId: contact.id,
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:00:00.000Z",
+      },
+    );
+
+    expect(appointment.dealId).toBeNull();
+    const openDeal = await crmRepo.getOpenDealForContact("acc-1", contact.id);
+    expect(openDeal?.stageId).not.toBe(agendadoStage.id);
+  });
+});
