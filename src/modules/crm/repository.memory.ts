@@ -39,7 +39,7 @@ export function createInMemoryCrmRepository(): CrmRepository {
     ensureSeeded(accountId);
     return [...stages.values()]
       .filter((s) => s.accountId === accountId)
-      .sort((a, b) => a.position - b.position || KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+      .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || a.position - b.position);
   }
 
   return {

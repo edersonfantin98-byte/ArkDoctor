@@ -141,6 +141,21 @@ describe("createStage", () => {
 
     expect(newStageIndex).toBeLessThan(followUpIndex);
   });
+
+  it("keeps two consecutively created stages before Follow-up regardless of position collisions", async () => {
+    const repo = createInMemoryCrmRepository();
+
+    const stage1 = await createStage(repo, "acc-1", "Retorno de Orçamento");
+    const stage2 = await createStage(repo, "acc-1", "Reagendamento");
+
+    const stages = await repo.getStages("acc-1");
+    const followUpIndex = stages.findIndex((s) => s.kind === "follow_up");
+    const stage1Index = stages.findIndex((s) => s.id === stage1.id);
+    const stage2Index = stages.findIndex((s) => s.id === stage2.id);
+
+    expect(stage1Index).toBeLessThan(followUpIndex);
+    expect(stage2Index).toBeLessThan(followUpIndex);
+  });
 });
 
 describe("renameStage", () => {
