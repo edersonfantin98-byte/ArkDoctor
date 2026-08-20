@@ -19,7 +19,7 @@ const modules = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: false },
   { label: "Pipeline", href: "/pipeline", icon: KanbanSquare, enabled: true },
   { label: "Agenda", href: "/agenda", icon: CalendarDays, enabled: false },
-  { label: "Financeiro", href: "/financeiro", icon: Wallet, enabled: false },
+  { label: "Financeiro", href: "/financeiro", icon: Wallet, enabled: true },
   { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle, enabled: false },
   { label: "Configurações", href: "/configuracoes", icon: Settings, enabled: false },
 ];
