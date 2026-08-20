@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { createInMemoryCrmRepository } from "./repository.memory";
-import { createContact, listPipeline, moveDeal, searchContacts, updateContact } from "./service";
+import {
+  createContact,
+  createStage,
+  deleteStage,
+  listPipeline,
+  moveDeal,
+  renameStage,
+  reorderStages,
+  searchContacts,
+  updateContact,
+} from "./service";
 
 describe("createContact", () => {
   it("creates a contact and an initial deal in the first stage", async () => {
@@ -116,5 +126,63 @@ describe("moveDeal", () => {
     const reopened = await moveDeal(repo, "acc-1", deal.id, stages[0].id);
 
     expect(reopened.closedAt).toBeNull();
+  });
+});
+
+describe("createStage", () => {
+  it("appends a new normal stage after the last normal stage, before Follow-up", async () => {
+    const repo = createInMemoryCrmRepository();
+
+    const stage = await createStage(repo, "acc-1", "Retorno de Orçamento");
+
+    const stages = await repo.getStages("acc-1");
+    const followUpIndex = stages.findIndex((s) => s.kind === "follow_up");
+    const newStageIndex = stages.findIndex((s) => s.id === stage.id);
+
+    expect(newStageIndex).toBeLessThan(followUpIndex);
+  });
+});
+
+describe("renameStage", () => {
+  it("renames any stage, including special kinds", async () => {
+    const repo = createInMemoryCrmRepository();
+    const stages = await repo.getStages("acc-1");
+    const lostStage = stages.find((s) => s.kind === "lost")!;
+
+    const renamed = await renameStage(repo, "acc-1", lostStage.id, "Sem Interesse");
+
+    expect(renamed.name).toBe("Sem Interesse");
+    expect(renamed.kind).toBe("lost");
+  });
+});
+
+describe("reorderStages", () => {
+  it("rejects a special-kind stage id in the reorder list", async () => {
+    const repo = createInMemoryCrmRepository();
+    const stages = await repo.getStages("acc-1");
+    const lostStage = stages.find((s) => s.kind === "lost")!;
+
+    await expect(reorderStages(repo, "acc-1", [lostStage.id])).rejects.toThrow();
+  });
+});
+
+describe("deleteStage", () => {
+  it("blocks deletion when the stage has an open deal", async () => {
+    const repo = createInMemoryCrmRepository();
+    await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+    const stages = await repo.getStages("acc-1");
+
+    await expect(deleteStage(repo, "acc-1", stages[0].id)).rejects.toThrow();
+  });
+
+  it("allows deletion when the stage has no open deals", async () => {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+    const stages = await repo.getStages("acc-1");
+    const dealsByStage = await repo.getDealsWithContactsByStage("acc-1");
+    const deal = (dealsByStage.get(stages[0].id) ?? [])[0];
+    await moveDeal(repo, "acc-1", deal.id, stages[1].id);
+
+    await expect(deleteStage(repo, "acc-1", stages[0].id)).resolves.toBeUndefined();
   });
 });

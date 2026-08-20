@@ -33,11 +33,13 @@ export function createInMemoryCrmRepository(): CrmRepository {
     });
   }
 
+  const KIND_ORDER: Record<StageKind, number> = { normal: 0, follow_up: 1, lost: 2 };
+
   function stagesForAccount(accountId: string): PipelineStage[] {
     ensureSeeded(accountId);
     return [...stages.values()]
       .filter((s) => s.accountId === accountId)
-      .sort((a, b) => a.position - b.position);
+      .sort((a, b) => a.position - b.position || KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
   }
 
   return {

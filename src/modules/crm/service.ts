@@ -71,3 +71,61 @@ export async function moveDeal(
 
   return updated;
 }
+
+export async function createStage(
+  repo: CrmRepository,
+  accountId: string,
+  name: string,
+): Promise<PipelineStage> {
+  const stages = await repo.getStages(accountId);
+  const normalStages = stages.filter((s) => s.kind === "normal");
+
+  const stage = await repo.insertStage(accountId, name, normalStages.length);
+  await repo.reorderNormalStages(accountId, [...normalStages.map((s) => s.id), stage.id]);
+
+  return stage;
+}
+
+export async function renameStage(
+  repo: CrmRepository,
+  accountId: string,
+  stageId: string,
+  name: string,
+): Promise<PipelineStage> {
+  return repo.renameStage(accountId, stageId, name);
+}
+
+export async function reorderStages(
+  repo: CrmRepository,
+  accountId: string,
+  orderedIds: string[],
+): Promise<void> {
+  const stages = await repo.getStages(accountId);
+  const byId = new Map(stages.map((s) => [s.id, s]));
+
+  for (const id of orderedIds) {
+    const stage = byId.get(id);
+    if (!stage || stage.kind !== "normal") {
+      throw new Error("reorderStages only accepts normal stages");
+    }
+  }
+
+  await repo.reorderNormalStages(accountId, orderedIds);
+}
+
+export async function deleteStage(
+  repo: CrmRepository,
+  accountId: string,
+  stageId: string,
+): Promise<void> {
+  const stage = await repo.getStage(accountId, stageId);
+  if (!stage) throw new Error("Stage not found");
+  if (stage.kind !== "normal") throw new Error("Only normal stages can be deleted");
+
+  const openCount = await repo.countOpenDealsInStage(accountId, stageId);
+  if (openCount > 0) {
+    throw new Error("Cannot delete a stage with open deals");
+  }
+
+  await repo.deleteStage(accountId, stageId);
+}
