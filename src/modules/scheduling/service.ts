@@ -216,3 +216,66 @@ export async function listPendingStatusAppointments(
 ): Promise<AppointmentWithDetails[]> {
   return repo.listPendingStatusAppointments(accountId, new Date().toISOString());
 }
+
+import {
+  createAvailabilityBlockInputSchema,
+  createAvailabilityRuleInputSchema,
+} from "./schemas";
+import type { AvailabilityBlock, AvailabilityRule } from "./types";
+
+export async function createAvailabilityBlock(
+  repo: SchedulingRepository,
+  accountId: string,
+  rawInput: unknown,
+): Promise<AvailabilityBlock> {
+  const input = createAvailabilityBlockInputSchema.parse(rawInput);
+  return repo.insertAvailabilityBlock(accountId, {
+    startsAt: input.startsAt,
+    endsAt: input.endsAt,
+    reason: input.reason ?? null,
+  });
+}
+
+export async function deleteAvailabilityBlock(
+  repo: SchedulingRepository,
+  accountId: string,
+  blockId: string,
+): Promise<void> {
+  await repo.deleteAvailabilityBlock(accountId, blockId);
+}
+
+export async function listAvailabilityBlocks(
+  repo: SchedulingRepository,
+  accountId: string,
+): Promise<AvailabilityBlock[]> {
+  return repo.listAvailabilityBlocks(accountId);
+}
+
+export async function createAvailabilityRule(
+  repo: SchedulingRepository,
+  accountId: string,
+  rawInput: unknown,
+): Promise<AvailabilityRule> {
+  const input = createAvailabilityRuleInputSchema.parse(rawInput);
+  return repo.insertAvailabilityRule(accountId, {
+    dayOfWeek: input.dayOfWeek,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    reason: input.reason ?? null,
+  });
+}
+
+export async function deleteAvailabilityRule(
+  repo: SchedulingRepository,
+  accountId: string,
+  ruleId: string,
+): Promise<void> {
+  await repo.deleteAvailabilityRule(accountId, ruleId);
+}
+
+export async function listAvailabilityRules(
+  repo: SchedulingRepository,
+  accountId: string,
+): Promise<AvailabilityRule[]> {
+  return repo.listAvailabilityRules(accountId);
+}

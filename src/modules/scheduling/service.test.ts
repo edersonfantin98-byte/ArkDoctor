@@ -435,3 +435,56 @@ describe("listPendingStatusAppointments", () => {
     expect(pending.map((a) => a.id)).not.toContain(pastConfirmed.id);
   });
 });
+
+import {
+  createAvailabilityBlock,
+  createAvailabilityRule,
+  deleteAvailabilityBlock,
+  deleteAvailabilityRule,
+  listAvailabilityBlocks,
+  listAvailabilityRules,
+} from "./service";
+
+describe("availability blocks", () => {
+  it("creates, lists, and deletes a one-off block", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const block = await createAvailabilityBlock(repo, "acc-1", {
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-01T13:00:00.000Z",
+      reason: "Almoço",
+    });
+
+    expect(await listAvailabilityBlocks(repo, "acc-1")).toHaveLength(1);
+
+    await deleteAvailabilityBlock(repo, "acc-1", block.id);
+    expect(await listAvailabilityBlocks(repo, "acc-1")).toHaveLength(0);
+  });
+});
+
+describe("availability rules", () => {
+  it("creates, lists, and deletes a recurring rule", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const rule = await createAvailabilityRule(repo, "acc-1", {
+      dayOfWeek: 1,
+      startTime: "12:00",
+      endTime: "13:00",
+      reason: "Almoço",
+    });
+
+    expect(await listAvailabilityRules(repo, "acc-1")).toHaveLength(1);
+
+    await deleteAvailabilityRule(repo, "acc-1", rule.id);
+    expect(await listAvailabilityRules(repo, "acc-1")).toHaveLength(0);
+  });
+
+  it("rejects an invalid time string", async () => {
+    const repo = createInMemorySchedulingRepository();
+    await expect(
+      createAvailabilityRule(repo, "acc-1", {
+        dayOfWeek: 1,
+        startTime: "25:00",
+        endTime: "13:00",
+      }),
+    ).rejects.toThrow();
+  });
+});
