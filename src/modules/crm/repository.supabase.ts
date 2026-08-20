@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { CrmRepository } from "./repository";
 import type {
@@ -8,6 +8,14 @@ import type {
   DealWithContact,
   PipelineStage,
 } from "./types";
+
+// Never surface raw Postgres/PostgREST error details (column names, constraint
+// names, query internals) to the client — log them server-side and throw a
+// generic message instead.
+function throwDbError(error: PostgrestError): never {
+  console.error("[crm/repository.supabase]", error);
+  throw new Error("Erro ao acessar o banco de dados. Tente novamente.");
+}
 
 function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contact {
   return {
@@ -71,7 +79,7 @@ export function createSupabaseCrmRepository(
         .eq("account_id", accountId)
         .order("kind", { ascending: true })
         .order("position", { ascending: true });
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data.map(toStage);
     },
 
@@ -82,7 +90,7 @@ export function createSupabaseCrmRepository(
         .eq("account_id", accountId)
         .eq("id", stageId)
         .maybeSingle();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data ? toStage(data) : null;
     },
 
@@ -92,7 +100,7 @@ export function createSupabaseCrmRepository(
         .insert({ account_id: accountId, name, kind: "normal", position })
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toStage(data);
     },
 
@@ -104,7 +112,7 @@ export function createSupabaseCrmRepository(
         .eq("id", stageId)
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toStage(data);
     },
 
@@ -116,7 +124,7 @@ export function createSupabaseCrmRepository(
           .eq("account_id", accountId)
           .eq("id", id)
           .eq("kind", "normal");
-        if (error) throw error;
+        if (error) throwDbError(error);
       }
     },
 
@@ -126,7 +134,7 @@ export function createSupabaseCrmRepository(
         .delete()
         .eq("account_id", accountId)
         .eq("id", stageId);
-      if (error) throw error;
+      if (error) throwDbError(error);
     },
 
     async countOpenDealsInStage(accountId, stageId) {
@@ -136,7 +144,7 @@ export function createSupabaseCrmRepository(
         .eq("account_id", accountId)
         .eq("stage_id", stageId)
         .is("closed_at", null);
-      if (error) throw error;
+      if (error) throwDbError(error);
       return count ?? 0;
     },
 
@@ -152,7 +160,7 @@ export function createSupabaseCrmRepository(
         })
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toContact(data);
     },
 
@@ -170,7 +178,7 @@ export function createSupabaseCrmRepository(
         .eq("id", contactId)
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toContact(data);
     },
 
@@ -180,7 +188,7 @@ export function createSupabaseCrmRepository(
         .select("*")
         .eq("account_id", accountId)
         .or(`name.ilike.%${query}%,phone.ilike.%${query}%`);
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data.map(toContact);
     },
 
@@ -190,7 +198,7 @@ export function createSupabaseCrmRepository(
         .insert({ account_id: accountId, contact_id: contactId, stage_id: stageId })
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toDeal(data);
     },
 
@@ -201,7 +209,7 @@ export function createSupabaseCrmRepository(
         .eq("account_id", accountId)
         .eq("id", dealId)
         .maybeSingle();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data ? toDeal(data) : null;
     },
 
@@ -213,7 +221,7 @@ export function createSupabaseCrmRepository(
         .eq("contact_id", contactId)
         .is("closed_at", null)
         .maybeSingle();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data ? toDeal(data) : null;
     },
 
@@ -223,7 +231,7 @@ export function createSupabaseCrmRepository(
         .select("*")
         .eq("account_id", accountId)
         .eq("contact_id", contactId);
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data.map(toDeal);
     },
 
@@ -235,7 +243,7 @@ export function createSupabaseCrmRepository(
         .eq("id", dealId)
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toDeal(data);
     },
 
@@ -244,7 +252,7 @@ export function createSupabaseCrmRepository(
         .from("deals")
         .select("*, contact:contacts(*)")
         .eq("account_id", accountId);
-      if (error) throw error;
+      if (error) throwDbError(error);
 
       const result = new Map<string, DealWithContact[]>();
       for (const row of data) {
@@ -263,7 +271,7 @@ export function createSupabaseCrmRepository(
         .insert({ deal_id: dealId, from_stage_id: fromStageId, to_stage_id: toStageId })
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throwDbError(error);
       return toHistory(data);
     },
 
@@ -273,7 +281,7 @@ export function createSupabaseCrmRepository(
         .select("*")
         .eq("deal_id", dealId)
         .order("moved_at", { ascending: true });
-      if (error) throw error;
+      if (error) throwDbError(error);
       return data.map(toHistory);
     },
   };
