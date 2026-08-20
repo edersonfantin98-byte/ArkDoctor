@@ -145,3 +145,18 @@ export async function reopenDeal(
 
   return deal;
 }
+
+export async function getStages(
+  repo: CrmRepository,
+  accountId: string,
+): Promise<PipelineStage[]> {
+  return repo.getStages(accountId);
+}
+
+export async function getOpenDealForContact(
+  repo: CrmRepository,
+  accountId: string,
+  contactId: string,
+): Promise<Deal | null> {
+  return repo.getOpenDealForContact(accountId, contactId);
+}
