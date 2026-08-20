@@ -58,6 +58,144 @@ export type Database = {
         }
         Relationships: []
       }
+      appointments: {
+        Row: {
+          account_id: string
+          contact_id: string
+          created_at: string
+          deal_id: string | null
+          ends_at: string
+          id: string
+          notes: string | null
+          procedure_id: string
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          contact_id: string
+          created_at?: string
+          deal_id?: string | null
+          ends_at: string
+          id?: string
+          notes?: string | null
+          procedure_id: string
+          starts_at: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          contact_id?: string
+          created_at?: string
+          deal_id?: string | null
+          ends_at?: string
+          id?: string
+          notes?: string | null
+          procedure_id?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      availability_blocks: {
+        Row: {
+          account_id: string
+          ends_at: string
+          id: string
+          reason: string | null
+          starts_at: string
+        }
+        Insert: {
+          account_id: string
+          ends_at: string
+          id?: string
+          reason?: string | null
+          starts_at: string
+        }
+        Update: {
+          account_id?: string
+          ends_at?: string
+          id?: string
+          reason?: string | null
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_blocks_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      availability_rules: {
+        Row: {
+          account_id: string
+          day_of_week: number
+          end_time: string
+          id: string
+          reason: string | null
+          start_time: string
+        }
+        Insert: {
+          account_id: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          reason?: string | null
+          start_time: string
+        }
+        Update: {
+          account_id?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          reason?: string | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_rules_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           account_id: string
@@ -226,6 +364,41 @@ export type Database = {
           },
         ]
       }
+      procedures: {
+        Row: {
+          account_id: string
+          created_at: string
+          default_duration_minutes: number
+          default_price: number
+          id: string
+          name: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          default_duration_minutes: number
+          default_price: number
+          id?: string
+          name: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          default_duration_minutes?: number
+          default_price?: number
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procedures_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -237,6 +410,12 @@ export type Database = {
       }
     }
     Enums: {
+      appointment_status:
+        | "agendado"
+        | "confirmado"
+        | "concluido"
+        | "nao_compareceu"
+        | "cancelado"
       pipeline_stage_kind: "normal" | "follow_up" | "lost"
     }
     CompositeTypes: {
@@ -365,6 +544,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      appointment_status: [
+        "agendado",
+        "confirmado",
+        "concluido",
+        "nao_compareceu",
+        "cancelado",
+      ],
       pipeline_stage_kind: ["normal", "follow_up", "lost"],
     },
   },
