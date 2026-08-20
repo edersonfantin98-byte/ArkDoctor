@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { View } from "react-big-calendar";
 import { CalendarView } from "./calendar-view";
 import { AppointmentDialog } from "./appointment-dialog";
+import { AvailabilityDialog } from "./availability-dialog";
 import type { AppointmentWithDetails } from "@/modules/scheduling/types";
 
 export function AgendaClient({ initialAppointments }: { initialAppointments: AppointmentWithDetails[] }) {
@@ -29,6 +30,9 @@ export function AgendaClient({ initialAppointments }: { initialAppointments: App
 
   return (
     <>
+      <div className="flex justify-end px-6 pb-2">
+        <AvailabilityDialog onChanged={() => router.refresh()} />
+      </div>
       <CalendarView
         appointments={initialAppointments}
         view={view}
