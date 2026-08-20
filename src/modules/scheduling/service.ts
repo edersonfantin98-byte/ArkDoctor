@@ -154,3 +154,48 @@ export async function createAppointment(
     notes: input.notes ?? null,
   });
 }
+
+import type { AppointmentStatus } from "./types";
+
+export async function updateAppointmentTime(
+  repo: SchedulingRepository,
+  accountId: string,
+  appointmentId: string,
+  startsAt: string,
+  endsAt: string,
+): Promise<Appointment> {
+  const conflict = await checkConflict(repo, accountId, {
+    startsAt,
+    endsAt,
+    excludeAppointmentId: appointmentId,
+  });
+  if (conflict.hasConflict) throw new Error(conflict.reason ?? "Conflito de horário");
+
+  return repo.updateAppointmentTime(accountId, appointmentId, startsAt, endsAt);
+}
+
+export async function updateAppointmentStatus(
+  repo: SchedulingRepository,
+  accountId: string,
+  appointmentId: string,
+  status: AppointmentStatus,
+): Promise<Appointment> {
+  return repo.updateAppointmentStatus(accountId, appointmentId, status);
+}
+
+export async function updateAppointmentNotes(
+  repo: SchedulingRepository,
+  accountId: string,
+  appointmentId: string,
+  notes: string | null,
+): Promise<Appointment> {
+  return repo.updateAppointmentNotes(accountId, appointmentId, notes);
+}
+
+export async function cancelAppointment(
+  repo: SchedulingRepository,
+  accountId: string,
+  appointmentId: string,
+): Promise<Appointment> {
+  return updateAppointmentStatus(repo, accountId, appointmentId, "cancelado");
+}

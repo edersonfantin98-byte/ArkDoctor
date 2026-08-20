@@ -311,3 +311,75 @@ describe("createAppointment", () => {
     expect(openDeal?.stageId).not.toBe(agendadoStage.id);
   });
 });
+
+import {
+  cancelAppointment,
+  updateAppointmentNotes,
+  updateAppointmentStatus,
+  updateAppointmentTime,
+} from "./service";
+
+describe("updateAppointmentTime", () => {
+  it("revalidates conflict, excluding the appointment being edited", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    const appointment = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      { contactId: contact.id, procedureId: procedure.id, startsAt: "2026-09-01T10:00:00.000Z" },
+    );
+
+    const moved = await updateAppointmentTime(
+      schedulingRepo,
+      "acc-1",
+      appointment.id,
+      "2026-09-01T11:00:00.000Z",
+      "2026-09-01T11:30:00.000Z",
+    );
+    expect(moved.startsAt).toBe("2026-09-01T11:00:00.000Z");
+  });
+
+  it("rejects a move into a slot occupied by another appointment", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    const first = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      { contactId: contact.id, procedureId: procedure.id, startsAt: "2026-09-01T10:00:00.000Z" },
+    );
+    await createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+      contactId: contact.id,
+      procedureId: procedure.id,
+      startsAt: "2026-09-01T14:00:00.000Z",
+    });
+
+    await expect(
+      updateAppointmentTime(
+        schedulingRepo,
+        "acc-1",
+        first.id,
+        "2026-09-01T14:10:00.000Z",
+        "2026-09-01T14:40:00.000Z",
+      ),
+    ).rejects.toThrow();
+  });
+});
+
+describe("updateAppointmentStatus, updateAppointmentNotes, cancelAppointment", () => {
+  it("updates status and notes independently, and cancelAppointment sets status to cancelado", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+    const appointment = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      { contactId: contact.id, procedureId: procedure.id, startsAt: "2026-09-01T10:00:00.000Z" },
+    );
+
+    const confirmed = await updateAppointmentStatus(schedulingRepo, "acc-1", appointment.id, "confirmado");
+    expect(confirmed.status).toBe("confirmado");
+
+    const withNotes = await updateAppointmentNotes(schedulingRepo, "acc-1", appointment.id, "Trouxe exame");
+    expect(withNotes.notes).toBe("Trouxe exame");
+    expect(withNotes.status).toBe("confirmado");
+
+    const cancelled = await cancelAppointment(schedulingRepo, "acc-1", appointment.id);
+    expect(cancelled.status).toBe("cancelado");
+  });
+});
