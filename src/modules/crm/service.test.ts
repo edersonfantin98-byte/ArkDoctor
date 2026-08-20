@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createInMemoryCrmRepository } from "./repository.memory";
-import { createContact, listPipeline, searchContacts, updateContact } from "./service";
+import { createContact, listPipeline, moveDeal, searchContacts, updateContact } from "./service";
 
 describe("createContact", () => {
   it("creates a contact and an initial deal in the first stage", async () => {
@@ -65,5 +65,56 @@ describe("listPipeline", () => {
     expect(pipeline[0].stage.name).toBe("Novo Lead");
     expect(pipeline[0].deals).toHaveLength(1);
     expect(pipeline[1].deals).toHaveLength(0);
+  });
+});
+
+describe("moveDeal", () => {
+  async function setup() {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+    const stages = await repo.getStages("acc-1");
+    const dealsByStage = await repo.getDealsWithContactsByStage("acc-1");
+    const deal = (dealsByStage.get(stages[0].id) ?? [])[0];
+    return { repo, contact, stages, deal };
+  }
+
+  it("moves a deal to a new stage and records history", async () => {
+    const { repo, stages, deal } = await setup();
+
+    const moved = await moveDeal(repo, "acc-1", deal.id, stages[1].id);
+
+    expect(moved.stageId).toBe(stages[1].id);
+    const history = await repo.getDealHistory(deal.id);
+    expect(history).toHaveLength(2); // initial creation + this move
+    expect(history[1].fromStageId).toBe(stages[0].id);
+    expect(history[1].toStageId).toBe(stages[1].id);
+  });
+
+  it("is a no-op when moving to the same stage", async () => {
+    const { repo, stages, deal } = await setup();
+
+    await moveDeal(repo, "acc-1", deal.id, stages[0].id);
+
+    const history = await repo.getDealHistory(deal.id);
+    expect(history).toHaveLength(1); // only the initial creation entry
+  });
+
+  it("sets closedAt when the deal enters the lost stage", async () => {
+    const { repo, stages, deal } = await setup();
+    const lostStage = stages.find((s) => s.kind === "lost")!;
+
+    const moved = await moveDeal(repo, "acc-1", deal.id, lostStage.id);
+
+    expect(moved.closedAt).not.toBeNull();
+  });
+
+  it("clears closedAt when the deal leaves the lost stage", async () => {
+    const { repo, stages, deal } = await setup();
+    const lostStage = stages.find((s) => s.kind === "lost")!;
+
+    await moveDeal(repo, "acc-1", deal.id, lostStage.id);
+    const reopened = await moveDeal(repo, "acc-1", deal.id, stages[0].id);
+
+    expect(reopened.closedAt).toBeNull();
   });
 });

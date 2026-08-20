@@ -1,6 +1,6 @@
 import type { CrmRepository } from "./repository";
 import { createContactInputSchema, updateContactInputSchema } from "./schemas";
-import type { Contact, DealWithContact, PipelineStage } from "./types";
+import type { Contact, Deal, DealWithContact, PipelineStage } from "./types";
 
 export async function createContact(
   repo: CrmRepository,
@@ -47,4 +47,27 @@ export async function listPipeline(
     stage,
     deals: dealsByStage.get(stage.id) ?? [],
   }));
+}
+
+export async function moveDeal(
+  repo: CrmRepository,
+  accountId: string,
+  dealId: string,
+  toStageId: string,
+): Promise<Deal> {
+  const deal = await repo.getDeal(accountId, dealId);
+  if (!deal) throw new Error("Deal not found");
+
+  if (deal.stageId === toStageId) {
+    return deal;
+  }
+
+  const toStage = await repo.getStage(accountId, toStageId);
+  if (!toStage) throw new Error("Stage not found");
+
+  const closedAt = toStage.kind === "lost" ? new Date().toISOString() : null;
+  const updated = await repo.updateDealStage(accountId, dealId, toStageId, closedAt);
+  await repo.insertDealHistory(dealId, deal.stageId, toStageId);
+
+  return updated;
 }
