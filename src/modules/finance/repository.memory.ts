@@ -15,7 +15,7 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
         defaultAmount: input.defaultAmount,
         category: input.category,
         procedureId: input.procedureId,
-        appointmentId: null,
+        appointmentId: input.appointmentId,
         description: input.description,
         occurredAt: input.occurredAt,
         createdAt: new Date().toISOString(),
@@ -30,6 +30,14 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
           (e) => e.accountId === accountId && e.occurredAt >= range.from && e.occurredAt <= range.to,
         )
         .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+    },
+
+    async getFinancialEntryByAppointmentId(accountId, appointmentId) {
+      return (
+        [...entries.values()].find(
+          (e) => e.accountId === accountId && e.appointmentId === appointmentId,
+        ) ?? null
+      );
     },
   };
 }

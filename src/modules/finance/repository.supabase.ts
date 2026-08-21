@@ -40,6 +40,7 @@ export function createSupabaseFinanceRepository(
           default_amount: input.defaultAmount,
           category: input.category,
           procedure_id: input.procedureId,
+          appointment_id: input.appointmentId,
           description: input.description,
           occurred_at: input.occurredAt,
         })
@@ -59,6 +60,17 @@ export function createSupabaseFinanceRepository(
         .order("occurred_at", { ascending: true });
       if (error) throwDbError(error);
       return data.map(toFinancialEntry);
+    },
+
+    async getFinancialEntryByAppointmentId(accountId, appointmentId) {
+      const { data, error } = await supabase
+        .from("financial_entries")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("appointment_id", appointmentId)
+        .maybeSingle();
+      if (error) throwDbError(error);
+      return data ? toFinancialEntry(data) : null;
     },
   };
 }

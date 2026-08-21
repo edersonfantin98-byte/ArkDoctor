@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { createInMemoryFinanceRepository } from "./repository.memory";
-import { createFinancialEntry, listFinancialEntries, getDashboardMetrics } from "./service";
+import {
+  createFinancialEntry,
+  listFinancialEntries,
+  getDashboardMetrics,
+  getFinancialEntryByAppointmentId,
+} from "./service";
 
 describe("createFinancialEntry", () => {
   it("creates a manual expense with no procedure", async () => {
@@ -105,6 +110,64 @@ describe("createFinancialEntry", () => {
 
     expect(entry.procedureId).toBeNull();
     expect(entry.defaultAmount).toBeNull();
+  });
+
+  it("links the entry to an appointment when appointmentId is given", async () => {
+    const repo = createInMemoryFinanceRepository();
+
+    const entry = await createFinancialEntry(
+      repo,
+      "acc-1",
+      {
+        type: "revenue",
+        amount: 120,
+        procedureId: "11111111-1111-4111-8111-111111111111",
+        appointmentId: "44444444-4444-4444-8444-444444444444",
+        category: "Atendimento",
+        occurredAt: "2026-08-15",
+      },
+      { defaultPrice: 150 },
+    );
+
+    expect(entry.appointmentId).toBe("44444444-4444-4444-8444-444444444444");
+  });
+});
+
+describe("getFinancialEntryByAppointmentId", () => {
+  it("returns the entry linked to the given appointment", async () => {
+    const repo = createInMemoryFinanceRepository();
+    const created = await createFinancialEntry(
+      repo,
+      "acc-1",
+      {
+        type: "revenue",
+        amount: 120,
+        appointmentId: "44444444-4444-4444-8444-444444444444",
+        category: "Atendimento",
+        occurredAt: "2026-08-15",
+      },
+      null,
+    );
+
+    const found = await getFinancialEntryByAppointmentId(
+      repo,
+      "acc-1",
+      "44444444-4444-4444-8444-444444444444",
+    );
+
+    expect(found?.id).toBe(created.id);
+  });
+
+  it("returns null when no entry is linked to the appointment", async () => {
+    const repo = createInMemoryFinanceRepository();
+
+    const found = await getFinancialEntryByAppointmentId(
+      repo,
+      "acc-1",
+      "55555555-5555-4555-8555-555555555555",
+    );
+
+    expect(found).toBeNull();
   });
 });
 
@@ -339,6 +402,7 @@ describe("getDashboardMetrics", () => {
       defaultAmount: null,
       category: null,
       procedureId: null,
+      appointmentId: null,
       description: null,
       occurredAt: "2026-08-05",
     });

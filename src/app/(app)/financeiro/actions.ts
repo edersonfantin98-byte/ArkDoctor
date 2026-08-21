@@ -36,6 +36,11 @@ export async function createFinancialEntryAction(input: unknown) {
   return entry;
 }
 
+export async function getFinancialEntryByAppointmentAction(appointmentId: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  return finance.getFinancialEntryByAppointmentId(repo, accountId, appointmentId);
+}
+
 export async function listFinancialEntriesAction(range: { from: string; to: string }) {
   const { repo, accountId } = await getRepoAndAccount();
   return finance.listFinancialEntries(repo, accountId, range);

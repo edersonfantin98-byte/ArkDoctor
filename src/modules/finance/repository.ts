@@ -9,6 +9,7 @@ export interface FinanceRepository {
       defaultAmount: number | null;
       category: string | null;
       procedureId: string | null;
+      appointmentId: string | null;
       description: string | null;
       occurredAt: string;
     },
@@ -17,4 +18,8 @@ export interface FinanceRepository {
     accountId: string,
     range: { from: string; to: string },
   ): Promise<FinancialEntry[]>;
+  getFinancialEntryByAppointmentId(
+    accountId: string,
+    appointmentId: string,
+  ): Promise<FinancialEntry | null>;
 }

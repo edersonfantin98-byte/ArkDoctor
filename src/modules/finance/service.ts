@@ -81,9 +81,18 @@ export async function createFinancialEntry(
       input.type === "revenue" && input.procedureId ? linkedProcedure!.defaultPrice : null,
     category,
     procedureId: input.procedureId ?? null,
+    appointmentId: input.appointmentId ?? null,
     description: input.description ?? null,
     occurredAt: input.occurredAt,
   });
+}
+
+export async function getFinancialEntryByAppointmentId(
+  repo: FinanceRepository,
+  accountId: string,
+  appointmentId: string,
+): Promise<FinancialEntry | null> {
+  return repo.getFinancialEntryByAppointmentId(accountId, appointmentId);
 }
 
 export async function listFinancialEntries(

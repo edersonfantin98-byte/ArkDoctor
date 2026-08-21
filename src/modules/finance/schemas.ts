@@ -7,6 +7,7 @@ export const createFinancialEntryInputSchema = z.object({
   amount: z.number().positive("Valor deve ser maior que zero"),
   category: z.string().trim().min(1).max(200).optional(),
   procedureId: z.string().uuid().optional(),
+  appointmentId: z.string().uuid().optional(),
   description: z.string().trim().max(2000).optional(),
   occurredAt: isoDate,
 });

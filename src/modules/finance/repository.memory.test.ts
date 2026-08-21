@@ -10,6 +10,7 @@ describe("createInMemoryFinanceRepository", () => {
       defaultAmount: null,
       category: "Consulta",
       procedureId: null,
+      appointmentId: null,
       description: null,
       occurredAt: "2026-08-01",
     });
@@ -19,6 +20,7 @@ describe("createInMemoryFinanceRepository", () => {
       defaultAmount: null,
       category: "Consulta",
       procedureId: null,
+      appointmentId: null,
       description: null,
       occurredAt: "2026-08-31",
     });
@@ -28,6 +30,7 @@ describe("createInMemoryFinanceRepository", () => {
       defaultAmount: null,
       category: "Fora do range",
       procedureId: null,
+      appointmentId: null,
       description: null,
       occurredAt: "2026-09-01",
     });

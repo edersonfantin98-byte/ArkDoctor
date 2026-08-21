@@ -25,8 +25,10 @@ import {
   listProceduresAction,
 } from "@/app/(app)/agenda/actions";
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
+import { getFinancialEntryByAppointmentAction } from "@/app/(app)/financeiro/actions";
 import { AppointmentStatusMenu } from "./appointment-status-menu";
-import type { AppointmentWithDetails } from "@/modules/scheduling/types";
+import { RevenueSuggestionDialog } from "./revenue-suggestion-dialog";
+import type { AppointmentWithDetails, AppointmentStatus } from "@/modules/scheduling/types";
 import type { Contact } from "@/modules/crm/types";
 import type { Procedure } from "@/modules/scheduling/types";
 
@@ -56,6 +58,13 @@ export function AppointmentDialog({
   const [startsAt, setStartsAt] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [revenueSuggestionOpen, setRevenueSuggestionOpen] = useState(false);
+
+  async function handleStatusChange(status: AppointmentStatus) {
+    if (status !== "concluido" || !editingAppointment) return;
+    const existing = await getFinancialEntryByAppointmentAction(editingAppointment.id);
+    if (!existing) setRevenueSuggestionOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -116,6 +125,7 @@ export function AppointmentDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
@@ -191,6 +201,7 @@ export function AppointmentDialog({
                   appointmentId={editingAppointment.id}
                   currentStatus={editingAppointment.status}
                   onChanged={onSaved}
+                  onStatusChange={handleStatusChange}
                 />
               </div>
 
@@ -223,5 +234,15 @@ export function AppointmentDialog({
         </div>
       </DialogContent>
     </Dialog>
+    {editingAppointment && (
+      <RevenueSuggestionDialog
+        key={editingAppointment.id}
+        open={revenueSuggestionOpen}
+        onOpenChange={setRevenueSuggestionOpen}
+        appointment={editingAppointment}
+        onCreated={onSaved}
+      />
+    )}
+    </>
   );
 }

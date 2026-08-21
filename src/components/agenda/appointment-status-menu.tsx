@@ -15,18 +15,22 @@ export function AppointmentStatusMenu({
   appointmentId,
   currentStatus,
   onChanged,
+  onStatusChange,
 }: {
   appointmentId: string;
   currentStatus: AppointmentStatus;
   onChanged: () => void;
+  onStatusChange?: (status: AppointmentStatus) => void;
 }) {
   return (
     <select
       className="w-full rounded border p-1 text-sm"
       value={currentStatus}
       onChange={async (e) => {
-        await updateAppointmentStatusAction(appointmentId, e.target.value as AppointmentStatus);
+        const status = e.target.value as AppointmentStatus;
+        await updateAppointmentStatusAction(appointmentId, status);
         onChanged();
+        onStatusChange?.(status);
       }}
     >
       {Object.entries(statusLabels).map(([value, label]) => (
