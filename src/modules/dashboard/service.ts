@@ -54,7 +54,7 @@ async function revenueHistory(
   const entries = await deps.finance.listEntries(accountId, { from, to });
 
   const buckets = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(Date.UTC(year, month - 6 + 1 + i, 1));
+    const d = new Date(Date.UTC(year, month - 6 + i, 1));
     return {
       key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
       month: MONTH_LABELS[d.getUTCMonth()],
