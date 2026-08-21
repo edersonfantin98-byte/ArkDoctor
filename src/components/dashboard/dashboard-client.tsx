@@ -39,6 +39,36 @@ function ChangeIndicator({ pct, previousLabel }: { pct: number | null; previousL
   );
 }
 
+function ChangePointIndicator({ pp, previousLabel }: { pp: number | null; previousLabel: string }) {
+  if (pp === null) {
+    return <p className="text-sm text-muted-foreground">Sem dados do período anterior</p>;
+  }
+  const isUp = pp >= 0;
+  const Icon = isUp ? TrendingUp : TrendingDown;
+  return (
+    <p className={`flex items-center gap-1 text-sm font-medium ${isUp ? "text-green-600" : "text-red-600"}`}>
+      <Icon className="size-3.5" />
+      {isUp ? "+" : ""}
+      {pp.toFixed(1)}pp {previousLabel}
+    </p>
+  );
+}
+
+function ChangeCountIndicator({ count, previousLabel }: { count: number | null; previousLabel: string }) {
+  if (count === null) {
+    return <p className="text-sm text-muted-foreground">Sem dados do período anterior</p>;
+  }
+  const isUp = count >= 0;
+  const Icon = isUp ? TrendingUp : TrendingDown;
+  return (
+    <p className={`flex items-center gap-1 text-sm font-medium ${isUp ? "text-green-600" : "text-red-600"}`}>
+      <Icon className="size-3.5" />
+      {isUp ? "+" : ""}
+      {count} {previousLabel}
+    </p>
+  );
+}
+
 export function DashboardClient({ overview }: { overview: DashboardOverview }) {
   const maxStageCount = Math.max(1, ...overview.pipelineByStage.map((s) => s.count));
 
@@ -61,7 +91,7 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Consultas concluídas hoje</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Consultas concluídas</CardTitle>
             <CardAction>
               <div className="flex size-8 items-center justify-center rounded-md bg-blue-100 text-blue-700">
                 <CheckCircle2 className="size-4" />
@@ -70,11 +100,12 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{overview.appointmentsCompletedCount}</p>
+            <ChangeIndicator pct={overview.appointmentsCompletedChangePct} previousLabel="vs. mês anterior" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Não comparecimento hoje</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Não comparecimento</CardTitle>
             <CardAction>
               <div className="flex size-8 items-center justify-center rounded-md bg-red-100 text-red-700">
                 <UserX className="size-4" />
@@ -85,11 +116,12 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
             <p className="text-3xl font-bold">
               {overview.noShowRatePct === null ? "—" : `${overview.noShowRatePct.toFixed(1)}%`}
             </p>
+            <ChangePointIndicator pp={overview.noShowRateChangePp} previousLabel="vs. mês anterior" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Novos contatos no mês</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Novos contatos</CardTitle>
             <CardAction>
               <div className="flex size-8 items-center justify-center rounded-md bg-amber-100 text-amber-700">
                 <UserPlus className="size-4" />
@@ -98,6 +130,7 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{overview.newContactsCount}</p>
+            <ChangeCountIndicator count={overview.newContactsChangeCount} previousLabel="vs. mês anterior" />
           </CardContent>
         </Card>
       </div>

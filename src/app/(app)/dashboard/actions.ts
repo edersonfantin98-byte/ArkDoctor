@@ -21,7 +21,8 @@ export async function getDashboardOverviewAction(todayIso: string) {
     {
       crm: {
         listPipeline: (accId) => crm.listPipeline(crmRepo, accId),
-        countNewContacts: (accId, sinceIso) => crm.countNewContacts(crmRepo, accId, sinceIso),
+        countNewContacts: (accId, sinceIso, untilIso) =>
+          crm.countNewContacts(crmRepo, accId, sinceIso, untilIso),
       },
       scheduling: {
         listAppointments: (accId, range) => scheduling.listAppointments(schedulingRepo, accId, range),

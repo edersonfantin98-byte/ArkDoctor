@@ -7,7 +7,7 @@ interface DashboardDeps {
     ) => Promise<
       { stage: { id: string; name: string; kind: string }; deals: { id: string }[] }[]
     >;
-    countNewContacts: (accountId: string, sinceIso: string) => Promise<number>;
+    countNewContacts: (accountId: string, sinceIso: string, untilIso?: string) => Promise<number>;
   };
   scheduling: {
     listAppointments: (
@@ -55,7 +55,11 @@ async function revenueHistory(
 
   const buckets = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(Date.UTC(year, month - 6 + 1 + i, 1));
-    return { key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`, month: MONTH_LABELS[d.getUTCMonth()], total: 0 };
+    return {
+      key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+      month: MONTH_LABELS[d.getUTCMonth()],
+      total: 0,
+    };
   });
   const byKey = new Map(buckets.map((b) => [b.key, b]));
 
@@ -77,25 +81,56 @@ function monthRange(todayIso: string): { from: string; to: string } {
   return { from, to };
 }
 
+function previousMonthRange(todayIso: string): { from: string; to: string } {
+  const [year, month] = todayIso.split("-").map(Number);
+  const prevMonthDate = new Date(Date.UTC(year, month - 2, 1));
+  return monthRange(
+    `${prevMonthDate.getUTCFullYear()}-${String(prevMonthDate.getUTCMonth() + 1).padStart(2, "0")}-01`,
+  );
+}
+
+function completedAndNoShow(appointments: { status: string }[]): {
+  completed: number;
+  noShowRate: number | null;
+} {
+  const completed = appointments.filter((a) => a.status === "concluido").length;
+  const noShow = appointments.filter((a) => a.status === "nao_compareceu").length;
+  return {
+    completed,
+    noShowRate: appointments.length === 0 ? null : (noShow / appointments.length) * 100,
+  };
+}
+
 export async function getDashboardOverview(
   deps: DashboardDeps,
   accountId: string,
   todayIso: string,
 ): Promise<DashboardOverview> {
   const range = monthRange(todayIso);
+  const prevRange = previousMonthRange(todayIso);
 
-  const [pipeline, procedures, todaysAppointments, history] = await Promise.all([
-    deps.crm.listPipeline(accountId),
-    deps.scheduling.listProcedures(accountId),
-    deps.scheduling.listAppointments(accountId, {
-      from: `${todayIso}T00:00:00.000Z`,
-      to: `${todayIso}T23:59:59.999Z`,
-    }),
-    revenueHistory(deps, accountId, todayIso),
-  ]);
+  const [pipeline, procedures, todaysAppointments, monthAppointments, prevMonthAppointments, history] =
+    await Promise.all([
+      deps.crm.listPipeline(accountId),
+      deps.scheduling.listProcedures(accountId),
+      deps.scheduling.listAppointments(accountId, {
+        from: `${todayIso}T00:00:00.000Z`,
+        to: `${todayIso}T23:59:59.999Z`,
+      }),
+      deps.scheduling.listAppointments(accountId, {
+        from: `${range.from}T00:00:00.000Z`,
+        to: `${range.to}T23:59:59.999Z`,
+      }),
+      deps.scheduling.listAppointments(accountId, {
+        from: `${prevRange.from}T00:00:00.000Z`,
+        to: `${prevRange.to}T23:59:59.999Z`,
+      }),
+      revenueHistory(deps, accountId, todayIso),
+    ]);
 
   const financeMetrics = await deps.finance.getDashboardMetrics(accountId, range, procedures);
   const newContactsCount = await deps.crm.countNewContacts(accountId, range.from);
+  const prevNewContactsCount = await deps.crm.countNewContacts(accountId, prevRange.from, range.from);
 
   const pipelineByStage = pipeline.map(({ stage, deals }) => ({
     stageId: stage.id,
@@ -104,17 +139,28 @@ export async function getDashboardOverview(
     count: deals.length,
   }));
 
-  const completed = todaysAppointments.filter((a) => a.status === "concluido");
-  const noShow = todaysAppointments.filter((a) => a.status === "nao_compareceu");
+  const current = completedAndNoShow(monthAppointments);
+  const previous = completedAndNoShow(prevMonthAppointments);
+
+  const appointmentsCompletedChangePct =
+    previous.completed === 0
+      ? null
+      : ((current.completed - previous.completed) / previous.completed) * 100;
+
+  const noShowRateChangePp =
+    current.noShowRate === null || previous.noShowRate === null
+      ? null
+      : current.noShowRate - previous.noShowRate;
 
   return {
     revenueTotal: financeMetrics.revenueTotal,
     revenueChangePct: financeMetrics.revenueChangePct,
-    appointmentsCompletedCount: completed.length,
-    appointmentsCompletedChangePct: null,
-    noShowRatePct:
-      todaysAppointments.length === 0 ? null : (noShow.length / todaysAppointments.length) * 100,
+    appointmentsCompletedCount: current.completed,
+    appointmentsCompletedChangePct,
+    noShowRatePct: current.noShowRate,
+    noShowRateChangePp,
     newContactsCount,
+    newContactsChangeCount: newContactsCount - prevNewContactsCount,
     pipelineByStage,
     revenueHistory: history,
     todaysAppointments: todaysAppointments.map((a) => ({
