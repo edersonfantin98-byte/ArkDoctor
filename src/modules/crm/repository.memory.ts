@@ -131,9 +131,12 @@ export function createInMemoryCrmRepository(): CrmRepository {
       );
     },
 
-    async countNewContacts(accountId, sinceIso) {
+    async countNewContacts(accountId, sinceIso, untilIso) {
       return [...contacts.values()].filter(
-        (c) => c.accountId === accountId && c.createdAt >= sinceIso,
+        (c) =>
+          c.accountId === accountId &&
+          c.createdAt >= sinceIso &&
+          (untilIso === undefined || c.createdAt < untilIso),
       ).length;
     },
 

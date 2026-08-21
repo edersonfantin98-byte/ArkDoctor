@@ -255,6 +255,20 @@ describe("countNewContacts", () => {
     expect(await countNewContacts(repo, "acc-1", "2000-01-01T00:00:00.000Z")).toBe(1);
     expect(await countNewContacts(repo, "acc-1", "2999-01-01T00:00:00.000Z")).toBe(0);
   });
+
+  it("respects an optional upper bound", async () => {
+    const repo = createInMemoryCrmRepository();
+    await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    expect(
+      await countNewContacts(
+        repo,
+        "acc-1",
+        "2000-01-01T00:00:00.000Z",
+        "2000-01-02T00:00:00.000Z",
+      ),
+    ).toBe(0);
+  });
 });
 
 describe("getOpenDealForContact", () => {

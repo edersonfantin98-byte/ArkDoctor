@@ -192,12 +192,16 @@ export function createSupabaseCrmRepository(
       return data.map(toContact);
     },
 
-    async countNewContacts(accountId, sinceIso) {
-      const { count, error } = await supabase
+    async countNewContacts(accountId, sinceIso, untilIso) {
+      let query = supabase
         .from("contacts")
         .select("id", { count: "exact", head: true })
         .eq("account_id", accountId)
         .gte("created_at", sinceIso);
+      if (untilIso !== undefined) {
+        query = query.lt("created_at", untilIso);
+      }
+      const { count, error } = await query;
       if (error) throwDbError(error);
       return count ?? 0;
     },

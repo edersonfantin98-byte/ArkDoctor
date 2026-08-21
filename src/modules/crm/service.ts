@@ -157,8 +157,9 @@ export async function countNewContacts(
   repo: CrmRepository,
   accountId: string,
   sinceIso: string,
+  untilIso?: string,
 ): Promise<number> {
-  return repo.countNewContacts(accountId, sinceIso);
+  return repo.countNewContacts(accountId, sinceIso, untilIso);
 }
 
 export async function getOpenDealForContact(

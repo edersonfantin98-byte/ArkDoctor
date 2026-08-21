@@ -50,4 +50,27 @@ describe("createInMemoryCrmRepository", () => {
     const pastCount = await repo.countNewContacts("acc-1", "2000-01-01T00:00:00.000Z");
     expect(pastCount).toBe(2);
   });
+
+  it("counts contacts within a bounded [sinceIso, untilIso) window when untilIso is given", async () => {
+    const repo = createInMemoryCrmRepository();
+    await repo.insertContact("acc-1", { name: "Ana", phone: "11999990000" });
+    await repo.insertContact("acc-1", { name: "Beatriz", phone: "11988887777" });
+
+    const all = await repo.countNewContacts("acc-1", "2000-01-01T00:00:00.000Z");
+    expect(all).toBe(2);
+
+    const noneInPast = await repo.countNewContacts(
+      "acc-1",
+      "2000-01-01T00:00:00.000Z",
+      "2000-01-02T00:00:00.000Z",
+    );
+    expect(noneInPast).toBe(0);
+
+    const bothInWideWindow = await repo.countNewContacts(
+      "acc-1",
+      "2000-01-01T00:00:00.000Z",
+      "2999-01-01T00:00:00.000Z",
+    );
+    expect(bothInWideWindow).toBe(2);
+  });
 });
