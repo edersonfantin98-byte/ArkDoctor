@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { MoveDealMenu } from "./move-deal-menu";
 import type { DealWithContact, PipelineStage, StageKind } from "@/modules/crm/types";
 
-const stageKindBadge: Partial<Record<StageKind, { label: string; className: string }>> = {
+const stageKindBadge: Record<StageKind, { label: string; className: string }> = {
+  normal: { label: "Em andamento", className: "bg-primary/10 text-primary" },
   follow_up: { label: "Follow-up", className: "bg-amber-100 text-amber-700" },
   lost: { label: "Perdido", className: "bg-muted text-muted-foreground" },
 };
@@ -37,7 +38,6 @@ export function DealCard({
   });
 
   const stage = stages.find((s) => s.id === deal.stageId);
-  const kindBadge = stage ? stageKindBadge[stage.kind] : undefined;
 
   return (
     <div
@@ -56,9 +56,9 @@ export function DealCard({
               <p className="truncate text-sm text-muted-foreground">{deal.contact.phone}</p>
             </div>
           </div>
-          {kindBadge && (
-            <Badge variant="outline" className={kindBadge.className}>
-              {kindBadge.label}
+          {stage && (
+            <Badge variant="outline" className={stageKindBadge[stage.kind].className}>
+              {stageKindBadge[stage.kind].label}
             </Badge>
           )}
           <MoveDealMenu dealId={deal.id} currentStageId={deal.stageId} stages={stages} />
