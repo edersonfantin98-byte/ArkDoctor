@@ -9,6 +9,37 @@
 .rbc-event.rbc-event-cancelado { background-color: #fee2e2; border-color: #dc2626; color: #991b1b; }
 .rbc-event.rbc-event-blocked { background-color: #e5e7eb; border-color: #9ca3af; color: #374151; }
 
+.rbc-month-view {
+  border-color: var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.rbc-month-row + .rbc-month-row {
+  border-color: var(--border);
+}
+.rbc-day-bg + .rbc-day-bg {
+  border-color: var(--border);
+}
+.rbc-header {
+  border-color: var(--border);
+  padding: 8px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+.rbc-off-range-bg {
+  background: var(--muted);
+}
+.rbc-today {
+  background-color: color-mix(in oklch, var(--primary) 8%, transparent);
+}
+.rbc-date-cell {
+  padding: 6px 8px;
+  font-size: 0.8125rem;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
