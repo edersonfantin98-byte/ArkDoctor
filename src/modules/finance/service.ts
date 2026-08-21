@@ -2,6 +2,57 @@ import type { FinanceRepository } from "./repository";
 import { createFinancialEntryInputSchema, dashboardPeriodSchema } from "./schemas";
 import type { DashboardMetrics, FinancialEntry, FinancialEntryType, ProcedureSalesSummary } from "./types";
 
+const MONTH_LABELS = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+];
+
+function groupExpensesByCategory(entries: FinancialEntry[]): { category: string; total: number }[] {
+  const byCategory = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.type !== "expense") continue;
+    const category = entry.category ?? "Sem categoria";
+    byCategory.set(category, (byCategory.get(category) ?? 0) + entry.amount);
+  }
+  return [...byCategory.entries()]
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+async function buildRevenueExpenseHistory(
+  repo: FinanceRepository,
+  accountId: string,
+  anchorIso: string,
+): Promise<{ month: string; revenue: number; expense: number }[]> {
+  const [year, month] = anchorIso.split("-").map(Number);
+  const firstMonth = new Date(Date.UTC(year, month - 6, 1));
+  const from = firstMonth.toISOString().slice(0, 10);
+  const lastDayOfAnchorMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const to = `${year}-${String(month).padStart(2, "0")}-${String(lastDayOfAnchorMonth).padStart(2, "0")}`;
+
+  const entries = await repo.listFinancialEntries(accountId, { from, to });
+
+  const buckets = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(Date.UTC(year, month - 6 + i, 1));
+    return {
+      key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+      month: MONTH_LABELS[d.getUTCMonth()],
+      revenue: 0,
+      expense: 0,
+    };
+  });
+  const byKey = new Map(buckets.map((b) => [b.key, b]));
+
+  for (const entry of entries) {
+    const key = entry.occurredAt.slice(0, 7);
+    const bucket = byKey.get(key);
+    if (!bucket) continue;
+    if (entry.type === "revenue") bucket.revenue += entry.amount;
+    else bucket.expense += entry.amount;
+  }
+
+  return buckets.map(({ month, revenue, expense }) => ({ month, revenue, expense }));
+}
+
 export async function createFinancialEntry(
   repo: FinanceRepository,
   accountId: string,
@@ -60,6 +111,9 @@ export async function getDashboardMetrics(
 
   const revenueEntries = entries.filter((e) => e.type === "revenue");
 
+  const expenseByCategory = groupExpensesByCategory(entries);
+  const revenueExpenseHistory = await buildRevenueExpenseHistory(repo, accountId, period.to);
+
   return {
     period,
     revenueTotal,
@@ -69,6 +123,8 @@ export async function getDashboardMetrics(
       prevRevenueTotal === 0 ? null : ((revenueTotal - prevRevenueTotal) / prevRevenueTotal) * 100,
     averageTicket: revenueEntries.length === 0 ? null : revenueTotal / revenueEntries.length,
     topProcedures: summarizeByProcedure(revenueEntries, procedureNames),
+    expenseByCategory,
+    revenueExpenseHistory,
     cancellationRate: { available: false },
   };
 }

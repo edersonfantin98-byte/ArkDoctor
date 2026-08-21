@@ -31,5 +31,7 @@ export interface DashboardMetrics {
   revenueChangePct: number | null;
   averageTicket: number | null;
   topProcedures: ProcedureSalesSummary[];
+  expenseByCategory: { category: string; total: number }[];
+  revenueExpenseHistory: { month: string; revenue: number; expense: number }[];
   cancellationRate: CancellationRateMetric;
 }

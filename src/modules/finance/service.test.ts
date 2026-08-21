@@ -289,4 +289,105 @@ describe("getDashboardMetrics", () => {
       getDashboardMetrics(repo, "acc-1", { from: "2026-08-31", to: "2026-08-01" }, []),
     ).rejects.toThrow();
   });
+
+  it("groups expenses by category, sorted by total descending", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "expense", amount: 100, category: "Material", occurredAt: "2026-08-05" },
+      null,
+    );
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "expense", amount: 300, category: "Aluguel", occurredAt: "2026-08-10" },
+      null,
+    );
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "expense", amount: 50, category: "Material", occurredAt: "2026-08-15" },
+      null,
+    );
+    // revenue entries must not appear in the expense breakdown
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "revenue", amount: 999, category: "Atendimento", occurredAt: "2026-08-16" },
+      null,
+    );
+
+    const metrics = await getDashboardMetrics(
+      repo,
+      "acc-1",
+      { from: "2026-08-01", to: "2026-08-31" },
+      [],
+    );
+
+    expect(metrics.expenseByCategory).toEqual([
+      { category: "Aluguel", total: 300 },
+      { category: "Material", total: 150 },
+    ]);
+  });
+
+  it("labels uncategorized expenses as Sem categoria", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await repo.insertFinancialEntry("acc-1", {
+      type: "expense",
+      amount: 40,
+      defaultAmount: null,
+      category: null,
+      procedureId: null,
+      description: null,
+      occurredAt: "2026-08-05",
+    });
+
+    const metrics = await getDashboardMetrics(
+      repo,
+      "acc-1",
+      { from: "2026-08-01", to: "2026-08-31" },
+      [],
+    );
+
+    expect(metrics.expenseByCategory).toEqual([{ category: "Sem categoria", total: 40 }]);
+  });
+
+  it("builds a 6-month revenue/expense history ending in the period's month", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "revenue", amount: 100, category: "Avulso", occurredAt: "2026-06-10" },
+      null,
+    );
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "expense", amount: 30, category: "Material", occurredAt: "2026-06-12" },
+      null,
+    );
+    await createFinancialEntry(
+      repo,
+      "acc-1",
+      { type: "revenue", amount: 200, category: "Avulso", occurredAt: "2026-08-10" },
+      null,
+    );
+
+    const metrics = await getDashboardMetrics(
+      repo,
+      "acc-1",
+      { from: "2026-08-01", to: "2026-08-31" },
+      [],
+    );
+
+    expect(metrics.revenueExpenseHistory).toHaveLength(6);
+    expect(metrics.revenueExpenseHistory[metrics.revenueExpenseHistory.length - 1]).toEqual({
+      month: "Ago",
+      revenue: 200,
+      expense: 0,
+    });
+    const june = metrics.revenueExpenseHistory.find((m) => m.month === "Jun");
+    expect(june).toEqual({ month: "Jun", revenue: 100, expense: 30 });
+  });
 });
