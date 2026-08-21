@@ -70,7 +70,8 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
   const [conflictReason, setConflictReason] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [conflictCheckError, setConflictCheckError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const selectedProcedure = procedures.find((p) => p.id === procedureId) ?? null;
 
@@ -95,7 +96,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
 
     let cancelled = false;
     setCheckingConflict(true);
-    setError(null);
+    setConflictCheckError(null);
     checkConflictAction(start, end)
       .then((result) => {
         if (cancelled) return;
@@ -104,7 +105,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
       .catch((err) => {
         if (cancelled) return;
         setConflictReason(null);
-        setError(
+        setConflictCheckError(
           err instanceof Error ? err.message : "Erro ao verificar disponibilidade",
         );
       })
@@ -129,10 +130,10 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
   }
 
   async function handleConfirm() {
-    setError(null);
+    setSubmitError(null);
     const start = startsAtIso();
     if (!selectedContactId || !procedureId || !start) {
-      setError("Preencha todos os campos antes de confirmar");
+      setSubmitError("Preencha todos os campos antes de confirmar");
       return;
     }
 
@@ -145,7 +146,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
       });
       router.push("/agenda");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao criar agendamento");
+      setSubmitError(err instanceof Error ? err.message : "Erro ao criar agendamento");
     } finally {
       setSubmitting(false);
     }
@@ -283,7 +284,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
 
       {step === "confirm" && (
         <div className="space-y-4">
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
 
           <div className="space-y-1 rounded border p-3 text-sm">
             <p>
@@ -305,6 +306,9 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
           {!checkingConflict && conflictReason && (
             <p className="text-sm text-red-600">{conflictReason}</p>
           )}
+          {!checkingConflict && conflictCheckError && (
+            <p className="text-sm text-red-600">{conflictCheckError}</p>
+          )}
 
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep("datetime")}>
@@ -312,7 +316,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
             </Button>
             <Button
               type="button"
-              disabled={submitting || checkingConflict || !!conflictReason || !!error}
+              disabled={submitting || checkingConflict || !!conflictReason || !!conflictCheckError}
               onClick={handleConfirm}
             >
               Confirmar
