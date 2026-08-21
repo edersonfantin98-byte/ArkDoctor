@@ -46,6 +46,51 @@ function todayInputValue(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+const WEEKDAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+
+function generateDayStrip(days: number): { value: string; weekday: string; day: number }[] {
+  const today = new Date();
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return {
+      value: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      weekday: WEEKDAY_LABELS[d.getDay()],
+      day: d.getDate(),
+    };
+  });
+}
+
+function DayStrip({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (value: string) => void;
+}) {
+  const days = generateDayStrip(14);
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1">
+      {days.map((d) => (
+        <button
+          key={d.value}
+          type="button"
+          onClick={() => onSelect(d.value)}
+          className={cn(
+            "flex w-14 shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-2 text-center transition-colors",
+            selected === d.value
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border hover:bg-muted",
+          )}
+        >
+          <span className="text-[10px] font-bold tracking-wide uppercase opacity-70">{d.weekday}</span>
+          <span className="text-sm font-semibold">{d.day}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
   const router = useRouter();
 
@@ -253,13 +298,11 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="date">Data</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => {
-                    setDate(e.target.value);
+                <Label>Escolha o dia</Label>
+                <DayStrip
+                  selected={date}
+                  onSelect={(value) => {
+                    setDate(value);
                     setSlot(null);
                   }}
                 />
