@@ -21,6 +21,13 @@ export interface CalendarEvent {
   appointment: AppointmentWithDetails;
 }
 
+export interface BackgroundEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+}
+
 const statusClassName: Record<AppointmentWithDetails["status"], string> = {
   agendado: "rbc-event-agendado",
   confirmado: "rbc-event-confirmado",
@@ -31,6 +38,7 @@ const statusClassName: Record<AppointmentWithDetails["status"], string> = {
 
 export function CalendarView({
   appointments,
+  backgroundEvents = [],
   view,
   onViewChange,
   date,
@@ -39,6 +47,7 @@ export function CalendarView({
   onSelectEvent,
 }: {
   appointments: AppointmentWithDetails[];
+  backgroundEvents?: BackgroundEvent[];
   view: View;
   onViewChange: (view: View) => void;
   date: Date;
@@ -60,6 +69,7 @@ export function CalendarView({
         localizer={localizer}
         culture="pt-BR"
         events={events}
+        backgroundEvents={backgroundEvents}
         startAccessor="start"
         endAccessor="end"
         view={view}
@@ -68,9 +78,12 @@ export function CalendarView({
         onNavigate={onNavigate}
         selectable
         onSelectSlot={onSelectSlot}
-        onSelectEvent={(event) => onSelectEvent(event.appointment)}
-        eventPropGetter={(event) => ({
-          className: statusClassName[event.appointment.status],
+        onSelectEvent={(event: CalendarEvent | BackgroundEvent) => {
+          if ("appointment" in event) onSelectEvent(event.appointment);
+        }}
+        eventPropGetter={(event: CalendarEvent | BackgroundEvent) => ({
+          className:
+            "appointment" in event ? statusClassName[event.appointment.status] : "rbc-event-blocked",
         })}
       />
     </div>
