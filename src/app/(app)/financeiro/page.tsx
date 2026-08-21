@@ -15,7 +15,6 @@ export default async function FinancePage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Financeiro"
         title="Dashboard"
         description="Receita, despesa e desempenho por procedimento."
       />

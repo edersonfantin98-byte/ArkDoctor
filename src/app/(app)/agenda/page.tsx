@@ -15,7 +15,6 @@ export default async function AgendaPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Agenda"
         title="Agenda"
         description="Visualize e organize seus agendamentos."
       />

@@ -8,7 +8,6 @@ export default async function PipelinePage() {
   return (
     <div>
       <PageHeader
-        eyebrow="CRM"
         title="Pipeline"
         description="Acompanhe seus contatos do primeiro contato ao pós-atendimento."
       />

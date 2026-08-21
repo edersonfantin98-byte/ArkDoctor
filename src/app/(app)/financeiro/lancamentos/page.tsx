@@ -20,7 +20,6 @@ export default async function EntriesPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Financeiro"
         title="Lançamentos"
         description="Receitas e despesas do mês atual."
       />
