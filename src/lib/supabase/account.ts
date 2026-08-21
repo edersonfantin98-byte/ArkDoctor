@@ -18,3 +18,17 @@ export async function getCurrentAccountId(
 
   return data.account_id;
 }
+
+export async function getCurrentAccountName(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("name")
+    .eq("id", accountId)
+    .single();
+  if (error) throw error;
+
+  return data.name;
+}

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentAccountId, getCurrentAccountName } from "@/lib/supabase/account";
 import { Sidebar } from "@/components/layout/sidebar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -7,9 +8,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
+  const accountId = await getCurrentAccountId(supabase);
+  const accountName = await getCurrentAccountName(supabase, accountId);
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar userEmail={user?.email ?? ""} />
+      <Sidebar userEmail={user?.email ?? ""} accountName={accountName} />
       <main className="min-w-0 flex-1 bg-background">{children}</main>
     </div>
   );

@@ -84,9 +84,14 @@ function NavGroup({
   );
 }
 
-export function Sidebar({ userEmail }: { userEmail: string }) {
+export function Sidebar({ userEmail, accountName }: { userEmail: string; accountName: string }) {
   const pathname = usePathname();
-  const initials = userEmail.slice(0, 2).toUpperCase();
+  const initials = accountName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 
   return (
     <aside className="flex w-[232px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
@@ -108,7 +113,10 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
         <Avatar size="sm">
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-        <span className="flex-1 truncate text-xs text-sidebar-foreground/70">{userEmail}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-xs font-medium text-sidebar-foreground">{accountName}</span>
+          <span className="block truncate text-xs text-sidebar-foreground/60">{userEmail}</span>
+        </span>
         <button
           type="submit"
           aria-label="Sair"
