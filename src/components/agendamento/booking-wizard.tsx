@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   checkConflictAction,
   createAppointmentAction,
@@ -49,6 +43,10 @@ function todayInputValue(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+function formatCurrency(value: number): string {
+  return `R$ ${value.toFixed(2)}`;
 }
 
 export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
@@ -152,177 +150,225 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
     }
   }
 
+  const showSummary = step !== "procedure";
+
   return (
-    <div className="max-w-xl">
-      <div className="mb-6 flex items-center gap-2">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={cn(
-                "flex size-6 items-center justify-center rounded-full border text-xs font-bold",
-                step === s
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : stepIndex(step) > i
-                    ? "border-green-600 bg-green-600 text-white"
-                    : "border-border text-muted-foreground",
-              )}
-            >
-              {stepIndex(step) > i ? "✓" : i + 1}
+    <div className={cn("grid gap-4", showSummary && "lg:grid-cols-[1fr_360px]")}>
+      <div>
+        <div className="mb-6 flex items-center gap-2">
+          {STEPS.map((s, i) => (
+            <div key={s} className="flex items-center gap-2">
+              <div
+                className={cn(
+                  "flex size-6 items-center justify-center rounded-full border text-xs font-bold",
+                  step === s
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : stepIndex(step) > i
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-border text-muted-foreground",
+                )}
+              >
+                {stepIndex(step) > i ? "✓" : i + 1}
+              </div>
+              <span className={cn("text-sm font-medium", step === s ? "text-foreground" : "text-muted-foreground")}>
+                {["Procedimento", "Data e horário", "Confirmação"][i]}
+              </span>
+              {i < 2 && <div className="h-px w-6 bg-border" />}
             </div>
-            <span className={cn("text-sm font-medium", step === s ? "text-foreground" : "text-muted-foreground")}>
-              {["Procedimento", "Data e horário", "Confirmação"][i]}
-            </span>
-            {i < 2 && <div className="h-px w-6 bg-border" />}
-          </div>
-        ))}
-      </div>
-
-      {step === "procedure" && (
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="procedure">Procedimento</Label>
-            <Select value={procedureId} onValueChange={(value) => setProcedureId(value ?? "")}>
-              <SelectTrigger id="procedure">
-                <SelectValue placeholder="Selecione um procedimento" />
-              </SelectTrigger>
-              <SelectContent>
-                {procedures.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name} ({p.defaultDurationMinutes}min)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button type="button" disabled={!procedureId} onClick={() => setStep("datetime")}>
-            Próximo
-          </Button>
+          ))}
         </div>
-      )}
 
-      {step === "datetime" && (
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="contact">Contato</Label>
-            <Input
-              id="contact"
-              value={contactQuery}
-              onChange={(e) => handleContactSearch(e.target.value)}
-              placeholder="Buscar por nome ou telefone"
-            />
-            {contactResults.length > 0 && !selectedContactId && (
-              <ul className="rounded border">
-                {contactResults.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      className="w-full px-2 py-1 text-left text-sm hover:bg-muted"
-                      onClick={() => {
-                        setSelectedContactId(c.id);
-                        setContactQuery(c.name);
-                        setSelectedContactName(c.name);
-                        setContactResults([]);
-                      }}
-                    >
-                      {c.name} — {c.phone}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="date">Data</Label>
-            <Input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                setSlot(null);
-              }}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Horário</Label>
-            <div className="flex flex-wrap gap-2">
-              {SLOTS.map((s) => (
+        {step === "procedure" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Procedimento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {procedures.map((p) => (
                 <button
-                  key={s}
+                  key={p.id}
                   type="button"
+                  onClick={() => setProcedureId(p.id)}
                   className={cn(
-                    "rounded border px-2 py-1 text-sm",
-                    slot === s
-                      ? "border-primary bg-primary text-primary-foreground"
+                    "flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors",
+                    procedureId === p.id
+                      ? "border-primary bg-primary/10"
                       : "border-border hover:bg-muted",
                   )}
-                  onClick={() => setSlot(s)}
                 >
-                  {s}
+                  <div>
+                    <p className="font-medium">{p.name}</p>
+                    <p className="text-sm text-muted-foreground">{p.defaultDurationMinutes} min</p>
+                  </div>
+                  <p className="font-semibold">{formatCurrency(p.defaultPrice)}</p>
                 </button>
               ))}
+              {procedures.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum procedimento cadastrado.</p>
+              )}
+
+              <Button
+                type="button"
+                className="mt-2"
+                disabled={!procedureId}
+                onClick={() => setStep("datetime")}
+              >
+                Próximo
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "datetime" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Data e horário</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="contact">Contato</Label>
+                <Input
+                  id="contact"
+                  value={contactQuery}
+                  onChange={(e) => handleContactSearch(e.target.value)}
+                  placeholder="Buscar por nome ou telefone"
+                />
+                {contactResults.length > 0 && !selectedContactId && (
+                  <ul className="rounded border">
+                    {contactResults.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          className="w-full px-2 py-1 text-left text-sm hover:bg-muted"
+                          onClick={() => {
+                            setSelectedContactId(c.id);
+                            setContactQuery(c.name);
+                            setSelectedContactName(c.name);
+                            setContactResults([]);
+                          }}
+                        >
+                          {c.name} — {c.phone}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="date">Data</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => {
+                    setDate(e.target.value);
+                    setSlot(null);
+                  }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label>Horário</Label>
+                <div className="flex flex-wrap gap-2">
+                  {SLOTS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={cn(
+                        "rounded border px-2 py-1 text-sm",
+                        slot === s
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border hover:bg-muted",
+                      )}
+                      onClick={() => setSlot(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setStep("procedure")}>
+                  Voltar
+                </Button>
+                <Button
+                  type="button"
+                  disabled={!selectedContactId || !slot}
+                  onClick={() => setStep("confirm")}
+                >
+                  Próximo
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "confirm" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Confirmação</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {checkingConflict && <p className="text-sm text-muted-foreground">Verificando disponibilidade...</p>}
+              {!checkingConflict && conflictReason && (
+                <p className="text-sm text-red-600">{conflictReason}</p>
+              )}
+              {!checkingConflict && conflictCheckError && (
+                <p className="text-sm text-red-600">{conflictCheckError}</p>
+              )}
+              <Button type="button" variant="outline" onClick={() => setStep("datetime")}>
+                Voltar
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {showSummary && (
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Resumo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {selectedContactName && (
+              <p className="font-medium">{selectedContactName}</p>
+            )}
+            <div className="flex justify-between border-b border-border pb-2">
+              <span className="text-muted-foreground">Procedimento</span>
+              <span className="font-medium">{selectedProcedure?.name ?? "-"}</span>
             </div>
-          </div>
+            <div className="flex justify-between border-b border-border pb-2">
+              <span className="text-muted-foreground">Data</span>
+              <span className="font-medium">{date}</span>
+            </div>
+            <div className="flex justify-between border-b border-border pb-2">
+              <span className="text-muted-foreground">Horário</span>
+              <span className="font-medium">{slot ?? "-"}</span>
+            </div>
+            <div className="flex justify-between pt-1 text-base">
+              <span className="font-semibold">Total</span>
+              <span className="font-bold">
+                {selectedProcedure ? formatCurrency(selectedProcedure.defaultPrice) : "-"}
+              </span>
+            </div>
 
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => setStep("procedure")}>
-              Voltar
-            </Button>
-            <Button
-              type="button"
-              disabled={!selectedContactId || !slot}
-              onClick={() => setStep("confirm")}
-            >
-              Próximo
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {step === "confirm" && (
-        <div className="space-y-4">
-          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
-
-          <div className="space-y-1 rounded border p-3 text-sm">
-            <p>
-              <span className="font-medium">Procedimento:</span>{" "}
-              {selectedProcedure ? `${selectedProcedure.name} (${selectedProcedure.defaultDurationMinutes}min)` : "-"}
-            </p>
-            <p>
-              <span className="font-medium">Contato:</span> {selectedContactName || contactQuery}
-            </p>
-            <p>
-              <span className="font-medium">Data:</span> {date}
-            </p>
-            <p>
-              <span className="font-medium">Horário:</span> {slot ?? "-"}
-            </p>
-          </div>
-
-          {checkingConflict && <p className="text-sm text-muted-foreground">Verificando disponibilidade...</p>}
-          {!checkingConflict && conflictReason && (
-            <p className="text-sm text-red-600">{conflictReason}</p>
-          )}
-          {!checkingConflict && conflictCheckError && (
-            <p className="text-sm text-red-600">{conflictCheckError}</p>
-          )}
-
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => setStep("datetime")}>
-              Voltar
-            </Button>
-            <Button
-              type="button"
-              disabled={submitting || checkingConflict || !!conflictReason || !!conflictCheckError}
-              onClick={handleConfirm}
-            >
-              Confirmar
-            </Button>
-          </div>
-        </div>
+            {step === "confirm" && (
+              <>
+                {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={submitting || checkingConflict || !!conflictReason || !!conflictCheckError}
+                  onClick={handleConfirm}
+                >
+                  Confirmar agendamento
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

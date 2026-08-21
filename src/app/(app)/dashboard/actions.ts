@@ -30,6 +30,7 @@ export async function getDashboardOverviewAction(todayIso: string) {
       finance: {
         getDashboardMetrics: (accId, rawPeriod, procedures) =>
           finance.getDashboardMetrics(financeRepo, accId, rawPeriod, procedures),
+        listEntries: (accId, range) => finance.listFinancialEntries(financeRepo, accId, range),
       },
     },
     accountId,

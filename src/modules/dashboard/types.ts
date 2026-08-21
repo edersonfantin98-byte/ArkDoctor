@@ -5,7 +5,8 @@ export interface DashboardOverview {
   appointmentsCompletedChangePct: number | null;
   noShowRatePct: number | null;
   newContactsCount: number;
-  pipelineByStage: { stageId: string; stageName: string; count: number }[];
+  pipelineByStage: { stageId: string; stageName: string; stageKind: string; count: number }[];
+  revenueHistory: { month: string; total: number }[];
   todaysAppointments: {
     id: string;
     contactName: string;

@@ -8,7 +8,9 @@ export default async function AgendamentoPage() {
   return (
     <div>
       <PageHeader title="Marcar consulta" description="Escolha o procedimento, o dia e o horário." />
-      <BookingWizard procedures={procedures} />
+      <div className="px-6 pb-6">
+        <BookingWizard procedures={procedures} />
+      </div>
     </div>
   );
 }

@@ -4,7 +4,9 @@ interface DashboardDeps {
   crm: {
     listPipeline: (
       accountId: string,
-    ) => Promise<{ stage: { id: string; name: string }; deals: { id: string }[] }[]>;
+    ) => Promise<
+      { stage: { id: string; name: string; kind: string }; deals: { id: string }[] }[]
+    >;
     countNewContacts: (accountId: string, sinceIso: string) => Promise<number>;
   };
   scheduling: {
@@ -28,7 +30,43 @@ interface DashboardDeps {
       rawPeriod: unknown,
       procedures: { id: string; name: string }[],
     ) => Promise<{ revenueTotal: number; revenueChangePct: number | null }>;
+    listEntries: (
+      accountId: string,
+      range: { from: string; to: string },
+    ) => Promise<{ type: string; amount: number; occurredAt: string }[]>;
   };
+}
+
+const MONTH_LABELS = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+];
+
+async function revenueHistory(
+  deps: DashboardDeps,
+  accountId: string,
+  todayIso: string,
+): Promise<{ month: string; total: number }[]> {
+  const [year, month] = todayIso.split("-").map(Number);
+  const firstMonth = new Date(Date.UTC(year, month - 6, 1));
+  const from = firstMonth.toISOString().slice(0, 10);
+  const to = monthRange(todayIso).to;
+
+  const entries = await deps.finance.listEntries(accountId, { from, to });
+
+  const buckets = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(Date.UTC(year, month - 6 + 1 + i, 1));
+    return { key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`, month: MONTH_LABELS[d.getUTCMonth()], total: 0 };
+  });
+  const byKey = new Map(buckets.map((b) => [b.key, b]));
+
+  for (const entry of entries) {
+    if (entry.type !== "revenue") continue;
+    const key = entry.occurredAt.slice(0, 7);
+    const bucket = byKey.get(key);
+    if (bucket) bucket.total += entry.amount;
+  }
+
+  return buckets.map(({ month, total }) => ({ month, total }));
 }
 
 function monthRange(todayIso: string): { from: string; to: string } {
@@ -46,13 +84,14 @@ export async function getDashboardOverview(
 ): Promise<DashboardOverview> {
   const range = monthRange(todayIso);
 
-  const [pipeline, procedures, todaysAppointments] = await Promise.all([
+  const [pipeline, procedures, todaysAppointments, history] = await Promise.all([
     deps.crm.listPipeline(accountId),
     deps.scheduling.listProcedures(accountId),
     deps.scheduling.listAppointments(accountId, {
       from: `${todayIso}T00:00:00.000Z`,
       to: `${todayIso}T23:59:59.999Z`,
     }),
+    revenueHistory(deps, accountId, todayIso),
   ]);
 
   const financeMetrics = await deps.finance.getDashboardMetrics(accountId, range, procedures);
@@ -61,6 +100,7 @@ export async function getDashboardOverview(
   const pipelineByStage = pipeline.map(({ stage, deals }) => ({
     stageId: stage.id,
     stageName: stage.name,
+    stageKind: stage.kind,
     count: deals.length,
   }));
 
@@ -76,6 +116,7 @@ export async function getDashboardOverview(
       todaysAppointments.length === 0 ? null : (noShow.length / todaysAppointments.length) * 100,
     newContactsCount,
     pipelineByStage,
+    revenueHistory: history,
     todaysAppointments: todaysAppointments.map((a) => ({
       id: a.id,
       contactName: a.contact.name,

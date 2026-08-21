@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { CalendarX, Receipt, TrendingDown, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getDashboardMetricsAction } from "@/app/(app)/financeiro/actions";
 import type { DashboardMetrics } from "@/modules/finance/types";
@@ -82,26 +82,42 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-green-100 text-green-700">
-              <TrendingUp className="h-4 w-4" />
-            </div>
             <CardTitle className="text-sm text-muted-foreground">Receita</CardTitle>
+            <CardAction>
+              <div className="flex size-8 items-center justify-center rounded-md bg-green-100 text-green-700">
+                <TrendingUp className="size-4" />
+              </div>
+            </CardAction>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{formatCurrency(metrics.revenueTotal)}</p>
-            <p className="text-sm text-muted-foreground">
-              {metrics.revenueChangePct === null
-                ? "Sem dados do período anterior"
-                : `${metrics.revenueChangePct >= 0 ? "+" : ""}${metrics.revenueChangePct.toFixed(1)}% vs. período anterior`}
-            </p>
+            {metrics.revenueChangePct === null ? (
+              <p className="text-sm text-muted-foreground">Sem dados do período anterior</p>
+            ) : (
+              <p
+                className={`flex items-center gap-1 text-sm font-medium ${
+                  metrics.revenueChangePct >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {metrics.revenueChangePct >= 0 ? (
+                  <TrendingUp className="size-3.5" />
+                ) : (
+                  <TrendingDown className="size-3.5" />
+                )}
+                {metrics.revenueChangePct >= 0 ? "+" : ""}
+                {metrics.revenueChangePct.toFixed(1)}% vs. período anterior
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-red-100 text-red-700">
-              <TrendingDown className="h-4 w-4" />
-            </div>
             <CardTitle className="text-sm text-muted-foreground">Despesa</CardTitle>
+            <CardAction>
+              <div className="flex size-8 items-center justify-center rounded-md bg-red-100 text-red-700">
+                <TrendingDown className="size-4" />
+              </div>
+            </CardAction>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{formatCurrency(metrics.expenseTotal)}</p>
@@ -110,10 +126,12 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </Card>
         <Card>
           <CardHeader>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <Receipt className="h-4 w-4" />
-            </div>
             <CardTitle className="text-sm text-muted-foreground">Ticket médio</CardTitle>
+            <CardAction>
+              <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Receipt className="size-4" />
+              </div>
+            </CardAction>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
@@ -123,10 +141,12 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </Card>
         <Card>
           <CardHeader>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <CalendarX className="h-4 w-4" />
-            </div>
             <CardTitle className="text-sm text-muted-foreground">Taxa de cancelamento</CardTitle>
+            <CardAction>
+              <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <CalendarX className="size-4" />
+              </div>
+            </CardAction>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-muted-foreground">—</p>

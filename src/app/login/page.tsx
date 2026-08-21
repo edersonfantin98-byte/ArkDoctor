@@ -5,10 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const benefits = [
-  { icon: KanbanSquare, text: "Pipeline de clientes, do primeiro contato ao pós-atendimento" },
-  { icon: CalendarDays, text: "Agenda sem conflitos de horário" },
-  { icon: Wallet, text: "Financeiro vinculado aos seus atendimentos" },
-  { icon: MessageCircle, text: "WhatsApp centralizado com o histórico do cliente" },
+  {
+    icon: KanbanSquare,
+    title: "Pipeline de pacientes",
+    text: "Acompanhe cada contato do primeiro atendimento à conclusão.",
+  },
+  {
+    icon: CalendarDays,
+    title: "Agenda sem conflitos",
+    text: "Disponibilidade, bloqueios e confirmações em um calendário só.",
+  },
+  {
+    icon: Wallet,
+    title: "Financeiro vinculado",
+    text: "Receita e despesa conectadas aos seus atendimentos.",
+  },
+  {
+    icon: MessageCircle,
+    title: "WhatsApp centralizado",
+    text: "Converse com pacientes sem sair do sistema.",
+  },
 ];
 
 export default async function LoginPage({
@@ -24,16 +40,19 @@ export default async function LoginPage({
         <div className="hidden flex-col justify-center gap-10 bg-primary px-16 py-14 text-primary-foreground md:flex">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-balance">
-              Seja bem-vindo ao ArkDoctor
+              Sua clínica organizada, do primeiro contato ao pós-consulta.
             </h1>
           </div>
           <ul className="space-y-4">
-            {benefits.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-3">
+            {benefits.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="flex items-start gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/15">
                   <Icon className="size-4.5" />
                 </span>
-                <span className="text-sm">{text}</span>
+                <span>
+                  <span className="block text-sm font-semibold">{title}</span>
+                  <span className="block text-sm text-primary-foreground/80">{text}</span>
+                </span>
               </li>
             ))}
           </ul>

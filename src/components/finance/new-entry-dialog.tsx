@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -68,7 +69,14 @@ export function NewEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button>Novo lançamento</Button>} />
+      <DialogTrigger
+        render={
+          <Button>
+            <Plus className="size-4" />
+            Novo lançamento
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Novo lançamento</DialogTitle>

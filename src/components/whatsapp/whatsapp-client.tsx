@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -69,7 +70,14 @@ function NewConversationDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline">Nova conversa</Button>} />
+      <DialogTrigger
+        render={
+          <Button>
+            <Plus className="size-4" />
+            Nova conversa
+          </Button>
+        }
+      />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova conversa</DialogTitle>

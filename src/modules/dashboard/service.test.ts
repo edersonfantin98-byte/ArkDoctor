@@ -6,8 +6,11 @@ describe("getDashboardOverview", () => {
     const deps = {
       crm: {
         listPipeline: vi.fn().mockResolvedValue([
-          { stage: { id: "stage-1", name: "Novo" }, deals: [] },
-          { stage: { id: "stage-2", name: "Agendado" }, deals: [{ id: "d1" }, { id: "d2" }] },
+          { stage: { id: "stage-1", name: "Novo", kind: "normal" }, deals: [] },
+          {
+            stage: { id: "stage-2", name: "Agendado", kind: "normal" },
+            deals: [{ id: "d1" }, { id: "d2" }],
+          },
         ]),
         countNewContacts: vi.fn().mockResolvedValue(3),
       },
@@ -42,6 +45,7 @@ describe("getDashboardOverview", () => {
           revenueTotal: 38240,
           revenueChangePct: 12,
         }),
+        listEntries: vi.fn().mockResolvedValue([]),
       },
     };
 
@@ -50,9 +54,10 @@ describe("getDashboardOverview", () => {
     expect(overview.revenueTotal).toBe(38240);
     expect(overview.revenueChangePct).toBe(12);
     expect(overview.pipelineByStage).toEqual([
-      { stageId: "stage-1", stageName: "Novo", count: 0 },
-      { stageId: "stage-2", stageName: "Agendado", count: 2 },
+      { stageId: "stage-1", stageName: "Novo", stageKind: "normal", count: 0 },
+      { stageId: "stage-2", stageName: "Agendado", stageKind: "normal", count: 2 },
     ]);
+    expect(overview.revenueHistory).toHaveLength(6);
     expect(overview.todaysAppointments).toHaveLength(3);
     expect(overview.todaysAppointments[0].contactName).toBe("Carla Souza");
     expect(overview.appointmentsCompletedCount).toBe(1);
@@ -83,6 +88,7 @@ describe("getDashboardOverview", () => {
       },
       finance: {
         getDashboardMetrics: vi.fn().mockResolvedValue({ revenueTotal: 0, revenueChangePct: null }),
+        listEntries: vi.fn().mockResolvedValue([]),
       },
     };
 

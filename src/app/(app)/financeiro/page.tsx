@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { getDashboardMetricsAction } from "./actions";
 import { FinanceDashboardClient } from "@/components/finance/finance-dashboard-client";
 import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 
 function currentMonthRange() {
   const now = new Date();
@@ -15,8 +18,14 @@ export default async function FinancePage() {
   return (
     <div>
       <PageHeader
-        title="Dashboard"
+        title="Fluxo de caixa"
         description="Receita, despesa e desempenho por procedimento."
+        action={
+          <Button render={<Link href="/financeiro/lancamentos" />}>
+            <Plus className="size-4" />
+            Novo lançamento
+          </Button>
+        }
       />
       <FinanceDashboardClient initialMetrics={metrics} />
     </div>

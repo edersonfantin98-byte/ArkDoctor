@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KanbanBoard, type PipelineColumn } from "./kanban-board";
 import { ContactSearch } from "./contact-search";
-import { NewContactDialog } from "./new-contact-dialog";
 import { ContactDetailDialog } from "./contact-detail-dialog";
 import { StageSettingsDialog } from "./stage-settings-dialog";
 import type { Contact, DealWithContact } from "@/modules/crm/types";
@@ -30,13 +29,10 @@ export function PipelineClient({ initialColumns }: { initialColumns: PipelineCol
     <div>
       <div className="flex items-center justify-between px-6 pb-4">
         <ContactSearch onResults={handleResults} />
-        <div className="flex gap-2">
-          <StageSettingsDialog
-            stages={initialColumns.map((c) => c.stage)}
-            onChanged={() => router.refresh()}
-          />
-          <NewContactDialog onCreated={() => router.refresh()} />
-        </div>
+        <StageSettingsDialog
+          stages={initialColumns.map((c) => c.stage)}
+          onChanged={() => router.refresh()}
+        />
       </div>
       <KanbanBoard columns={filteredColumns} onDealClick={setSelectedDeal} />
       <ContactDetailDialog
