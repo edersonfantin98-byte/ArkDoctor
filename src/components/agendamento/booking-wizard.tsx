@@ -14,6 +14,7 @@ import { searchContactsAction } from "@/app/(app)/pipeline/actions";
 import { cn } from "@/lib/utils";
 import type { Contact } from "@/modules/crm/types";
 import type { Procedure } from "@/modules/scheduling/types";
+import { formatCurrency } from "@/lib/format";
 
 type Step = "procedure" | "datetime" | "confirm";
 
@@ -43,10 +44,6 @@ function todayInputValue(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-function formatCurrency(value: number): string {
-  return `R$ ${value.toFixed(2)}`;
 }
 
 export function BookingWizard({ procedures }: { procedures: Procedure[] }) {

@@ -5,10 +5,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, CheckCircle2, UserX, UserPlus } from "lucide-react";
 import type { DashboardOverview } from "@/modules/dashboard/types";
-
-function formatCurrency(value: number): string {
-  return `R$ ${value.toFixed(2)}`;
-}
+import { formatCurrency } from "@/lib/format";
 
 const statusBadge: Record<string, { label: string; className: string }> = {
   agendado: { label: "Agendado", className: "bg-blue-100 text-blue-700" },

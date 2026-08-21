@@ -7,6 +7,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { getDashboardMetricsAction } from "@/app/(app)/financeiro/actions";
 import type { DashboardMetrics } from "@/modules/finance/types";
+import { formatCurrency } from "@/lib/format";
 
 type Preset = "week" | "month" | "custom";
 
@@ -21,10 +22,6 @@ function rangeForPreset(preset: Preset): { from: string; to: string } {
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
-}
-
-function formatCurrency(value: number): string {
-  return `R$ ${value.toFixed(2)}`;
 }
 
 export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: DashboardMetrics }) {

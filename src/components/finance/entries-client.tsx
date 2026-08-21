@@ -7,6 +7,7 @@ import { NewEntryDialog } from "@/components/finance/new-entry-dialog";
 import { listFinancialEntriesAction } from "@/app/(app)/financeiro/actions";
 import type { FinancialEntry } from "@/modules/finance/types";
 import type { Procedure } from "@/modules/scheduling/types";
+import { formatCurrency } from "@/lib/format";
 
 export function EntriesClient({
   initialEntries,
@@ -56,7 +57,7 @@ export function EntriesClient({
                     : ""
                 }
               >
-                {entry.type === "revenue" ? "+" : "-"} R$ {entry.amount.toFixed(2)}
+                {entry.type === "revenue" ? "+" : "-"} {formatCurrency(entry.amount)}
               </Badge>
             </div>
           ))}
