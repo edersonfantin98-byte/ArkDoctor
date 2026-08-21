@@ -9,7 +9,13 @@ import { AvailabilityDialog } from "./availability-dialog";
 import { ProcedureDialog } from "./procedure-dialog";
 import type { AppointmentWithDetails } from "@/modules/scheduling/types";
 
-export function AgendaClient({ initialAppointments }: { initialAppointments: AppointmentWithDetails[] }) {
+export function AgendaClient({
+  initialAppointments,
+  pendingStatusCount,
+}: {
+  initialAppointments: AppointmentWithDetails[];
+  pendingStatusCount: number;
+}) {
   const router = useRouter();
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(new Date());
@@ -31,9 +37,16 @@ export function AgendaClient({ initialAppointments }: { initialAppointments: App
 
   return (
     <>
-      <div className="flex justify-end gap-2 px-6 pb-2">
-        <ProcedureDialog onChanged={() => router.refresh()} />
-        <AvailabilityDialog onChanged={() => router.refresh()} />
+      <div className="flex items-center justify-between gap-2 pb-2">
+        {pendingStatusCount > 0 && (
+          <p className="px-6 text-sm text-amber-700">
+            {pendingStatusCount} agendamento(s) sem status definido após o horário previsto
+          </p>
+        )}
+        <div className="flex justify-end gap-2 px-6">
+          <ProcedureDialog onChanged={() => router.refresh()} />
+          <AvailabilityDialog onChanged={() => router.refresh()} />
+        </div>
       </div>
       <CalendarView
         appointments={initialAppointments}
