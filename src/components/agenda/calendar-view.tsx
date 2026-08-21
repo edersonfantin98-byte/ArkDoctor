@@ -55,13 +55,16 @@ export function CalendarView({
   onSelectSlot: (slot: { start: Date; end: Date }) => void;
   onSelectEvent: (appointment: AppointmentWithDetails) => void;
 }) {
-  const events: CalendarEvent[] = appointments.map((appointment) => ({
-    id: appointment.id,
-    title: `${appointment.contact.name} — ${appointment.procedure.name}`,
-    start: new Date(appointment.startsAt),
-    end: new Date(appointment.endsAt),
-    appointment,
-  }));
+  const events: (CalendarEvent | BackgroundEvent)[] = [
+    ...appointments.map((appointment) => ({
+      id: appointment.id,
+      title: `${appointment.contact.name} — ${appointment.procedure.name}`,
+      start: new Date(appointment.startsAt),
+      end: new Date(appointment.endsAt),
+      appointment,
+    })),
+    ...backgroundEvents,
+  ];
 
   return (
     <div className="h-[calc(100vh-140px)] px-6 pb-6">
@@ -69,7 +72,6 @@ export function CalendarView({
         localizer={localizer}
         culture="pt-BR"
         events={events}
-        backgroundEvents={backgroundEvents}
         startAccessor="start"
         endAccessor="end"
         view={view}
