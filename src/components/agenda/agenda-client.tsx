@@ -1,13 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { View } from "react-big-calendar";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import { CalendarView } from "./calendar-view";
 import { AppointmentDialog } from "./appointment-dialog";
 import { AvailabilityDialog } from "./availability-dialog";
 import { ProcedureDialog } from "./procedure-dialog";
+import { listAppointmentsAction } from "@/app/(app)/agenda/actions";
 import type { AppointmentWithDetails } from "@/modules/scheduling/types";
+
+function visibleRange(date: Date, view: View): { from: Date; to: Date } {
+  if (view === "month") {
+    return { from: startOfWeek(startOfMonth(date)), to: endOfWeek(endOfMonth(date)) };
+  }
+  if (view === "week") {
+    return { from: startOfWeek(date), to: endOfWeek(date) };
+  }
+  return { from: startOfDay(date), to: endOfDay(date) };
+}
 
 export function AgendaClient({
   initialAppointments,
@@ -19,9 +31,19 @@ export function AgendaClient({
   const router = useRouter();
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(new Date());
+  const [appointments, setAppointments] = useState(initialAppointments);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [slot, setSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<AppointmentWithDetails | null>(null);
+
+  const refetch = useCallback(async () => {
+    const { from, to } = visibleRange(date, view);
+    setAppointments(await listAppointmentsAction(from.toISOString(), to.toISOString()));
+  }, [date, view]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   function handleSelectSlot(newSlot: { start: Date; end: Date }) {
     setEditingAppointment(null);
@@ -49,7 +71,7 @@ export function AgendaClient({
         </div>
       </div>
       <CalendarView
-        appointments={initialAppointments}
+        appointments={appointments}
         view={view}
         onViewChange={setView}
         date={date}
@@ -62,7 +84,7 @@ export function AgendaClient({
         onOpenChange={setDialogOpen}
         slot={slot}
         editingAppointment={editingAppointment}
-        onSaved={() => router.refresh()}
+        onSaved={refetch}
       />
     </>
   );
