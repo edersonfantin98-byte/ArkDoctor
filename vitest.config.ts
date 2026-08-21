@@ -8,6 +8,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     globals: true,
+    env: {
+      TZ: "UTC",
+    },
   },
   resolve: {
     alias: {
