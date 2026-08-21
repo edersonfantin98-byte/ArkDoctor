@@ -335,11 +335,11 @@ export type Database = {
       financial_entries: {
         Row: {
           account_id: string
-          amount: string
+          amount: number
           appointment_id: string | null
           category: string | null
           created_at: string
-          default_amount: string | null
+          default_amount: number | null
           description: string | null
           id: string
           occurred_at: string
@@ -382,10 +382,10 @@ export type Database = {
           },
           {
             foreignKeyName: "financial_entries_procedure_same_account"
-            columns: ["procedure_id"]
+            columns: ["procedure_id", "account_id"]
             isOneToOne: false
             referencedRelation: "procedures"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "account_id"]
           },
         ]
       }
