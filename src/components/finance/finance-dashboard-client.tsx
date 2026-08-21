@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarX, Receipt, TrendingDown, TrendingUp } from "lucide-react";
+import { Bar, BarChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Receipt, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getDashboardMetricsAction } from "@/app/(app)/financeiro/actions";
@@ -46,11 +46,6 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
       window.alert(err instanceof Error ? err.message : "Erro ao carregar o dashboard");
     }
   }
-
-  const chartData = [
-    { name: "Receita", value: metrics.revenueTotal, fill: "#16a34a" },
-    { name: "Despesa", value: metrics.expenseTotal, fill: "#dc2626" },
-  ];
 
   return (
     <div className="space-y-4 px-6 pb-6">
@@ -138,39 +133,70 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Taxa de cancelamento</CardTitle>
+            <CardTitle className="text-sm text-muted-foreground">Saldo</CardTitle>
             <CardAction>
-              <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <CalendarX className="size-4" />
+              <div className="flex size-8 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+                <Wallet className="size-4" />
               </div>
             </CardAction>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-muted-foreground">—</p>
-            <p className="text-sm text-muted-foreground">Disponível quando a Agenda estiver conectada</p>
+            <p className="text-3xl font-bold">{formatCurrency(metrics.balance)}</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Receita x Despesa</CardTitle>
+          <CardTitle>Receita vs. despesas</CardTitle>
+          <p className="text-sm text-muted-foreground">Comparativo mensal</p>
         </CardHeader>
         <CardContent>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" />
-                <YAxis />
+              <BarChart data={metrics.revenueExpenseHistory}>
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis hide />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Bar dataKey="value">
-                  {chartData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
-                  ))}
-                </Bar>
+                <Legend
+                  formatter={(value) => (value === "revenue" ? "Entradas" : "Saídas")}
+                  iconType="circle"
+                />
+                <Bar dataKey="revenue" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Por categoria</CardTitle>
+          <p className="text-sm text-muted-foreground">Despesas do período</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {metrics.expenseByCategory.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhuma despesa neste período.</p>
+          )}
+          {metrics.expenseByCategory.length > 0 &&
+            (() => {
+              const max = Math.max(...metrics.expenseByCategory.map((c) => c.total));
+              return metrics.expenseByCategory.map((c) => (
+                <div key={c.category} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 truncate text-sm text-muted-foreground">{c.category}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-red-400"
+                      style={{ width: `${(c.total / max) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums">
+                    {formatCurrency(c.total)}
+                  </span>
+                </div>
+              ));
+            })()}
         </CardContent>
       </Card>
 
