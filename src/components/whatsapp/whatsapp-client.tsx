@@ -7,10 +7,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
   getConversationMessagesAction,
   logMessageAction,
+  startConversationAction,
 } from "@/app/(app)/whatsapp/actions";
 import type { Conversation, Message } from "@/modules/whatsapp/types";
 
@@ -28,15 +36,79 @@ function formatRelativeTime(date: string | null) {
   return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ptBR });
 }
 
+function NewConversationDialog({
+  onCreated,
+}: {
+  onCreated: (conversation: Conversation) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  async function handleCreate() {
+    setError(null);
+    setCreating(true);
+    try {
+      const conversation = await startConversationAction({
+        contactId: null,
+        contactName,
+        contactPhone,
+      });
+      setContactName("");
+      setContactPhone("");
+      setOpen(false);
+      onCreated(conversation);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar conversa");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline">Nova conversa</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nova conversa</DialogTitle>
+        </DialogHeader>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="space-y-2">
+          <Input
+            placeholder="Nome do contato"
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+          />
+          <Input
+            placeholder="Telefone"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+          />
+          <Button
+            onClick={handleCreate}
+            disabled={creating || !contactName.trim() || !contactPhone.trim()}
+          >
+            Criar conversa
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function WhatsappClient({ initialConversations }: { initialConversations: Conversation[] }) {
-  const [conversations] = useState(initialConversations);
+  const [conversations, setConversations] = useState(initialConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
     initialConversations[0]?.id ?? null,
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -45,9 +117,17 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     }
     let cancelled = false;
     setMessagesLoading(true);
+    setMessagesError(null);
     getConversationMessagesAction(selectedConversationId)
       .then((data) => {
         if (!cancelled) setMessages(data);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setMessagesError(
+            err instanceof Error ? err.message : "Erro ao carregar mensagens",
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setMessagesLoading(false);
@@ -60,6 +140,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   async function handleSend() {
     if (!selectedConversationId || !draft.trim() || sending) return;
     setSending(true);
+    setSendError(null);
     try {
       await logMessageAction(selectedConversationId, {
         direction: "outbound",
@@ -68,16 +149,26 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
       setDraft("");
       const updated = await getConversationMessagesAction(selectedConversationId);
       setMessages(updated);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Erro ao enviar mensagem");
     } finally {
       setSending(false);
     }
+  }
+
+  function handleConversationCreated(conversation: Conversation) {
+    setConversations((prev) => [conversation, ...prev]);
+    setSelectedConversationId(conversation.id);
   }
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId) ?? null;
 
   return (
     <div className="space-y-4 px-6 pb-6">
-      <Badge className="bg-[#25D366]/10 text-[#188a44]">Conectado</Badge>
+      <div className="flex items-center justify-between gap-2">
+        <Badge className="bg-[#25D366]/10 text-[#188a44]">Conectado</Badge>
+        <NewConversationDialog onCreated={handleConversationCreated} />
+      </div>
 
       <div className="grid grid-cols-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 md:grid-cols-[320px_1fr]">
         <div className="flex flex-col border-b md:border-b-0 md:border-r">
@@ -129,6 +220,8 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
               <div className="flex-1 space-y-2 overflow-y-auto p-4">
                 {messagesLoading ? (
                   <p className="text-sm text-muted-foreground">Carregando mensagens...</p>
+                ) : messagesError ? (
+                  <p className="text-sm text-red-600">{messagesError}</p>
                 ) : messages.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda.</p>
                 ) : (
@@ -152,6 +245,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                   ))
                 )}
               </div>
+              {sendError && <p className="px-3 text-sm text-red-600">{sendError}</p>}
               <div className="flex items-center gap-2 border-t p-3">
                 <Input
                   value={draft}

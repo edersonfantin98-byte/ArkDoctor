@@ -49,7 +49,10 @@ export async function getDashboardOverview(
   const [pipeline, procedures, todaysAppointments] = await Promise.all([
     deps.crm.listPipeline(accountId),
     deps.scheduling.listProcedures(accountId),
-    deps.scheduling.listAppointments(accountId, { from: todayIso, to: todayIso }),
+    deps.scheduling.listAppointments(accountId, {
+      from: `${todayIso}T00:00:00.000Z`,
+      to: `${todayIso}T23:59:59.999Z`,
+    }),
   ]);
 
   const financeMetrics = await deps.finance.getDashboardMetrics(accountId, range, procedures);

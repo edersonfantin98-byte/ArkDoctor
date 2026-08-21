@@ -95,10 +95,18 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
 
     let cancelled = false;
     setCheckingConflict(true);
+    setError(null);
     checkConflictAction(start, end)
       .then((result) => {
         if (cancelled) return;
         setConflictReason(result.hasConflict ? result.reason : null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setConflictReason(null);
+        setError(
+          err instanceof Error ? err.message : "Erro ao verificar disponibilidade",
+        );
       })
       .finally(() => {
         if (!cancelled) setCheckingConflict(false);
@@ -304,7 +312,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
             </Button>
             <Button
               type="button"
-              disabled={submitting || checkingConflict || !!conflictReason}
+              disabled={submitting || checkingConflict || !!conflictReason || !!error}
               onClick={handleConfirm}
             >
               Confirmar

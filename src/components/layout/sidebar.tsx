@@ -45,7 +45,7 @@ function NavGroup({
         {label}
       </p>
       {items.map(({ label, href, icon: Icon, enabled }) => {
-        const isActive = enabled && pathname.startsWith(href);
+        const isActive = enabled && (pathname === href || pathname.startsWith(href + "/"));
 
         if (!enabled) {
           return (

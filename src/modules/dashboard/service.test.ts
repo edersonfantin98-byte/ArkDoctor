@@ -65,6 +65,10 @@ describe("getDashboardOverview", () => {
       [{ id: "proc-1", name: "Consulta" }],
     );
     expect(deps.crm.countNewContacts).toHaveBeenCalledWith("acc-1", "2026-08-01");
+    expect(deps.scheduling.listAppointments).toHaveBeenCalledWith("acc-1", {
+      from: "2026-08-20T00:00:00.000Z",
+      to: "2026-08-20T23:59:59.999Z",
+    });
   });
 
   it("returns null noShowRatePct when there are no appointments today", async () => {
