@@ -30,8 +30,12 @@ export function KanbanColumn({
               stage.kind === "follow_up" ? "#c2790a" : stage.kind === "lost" ? "#9ca3af" : "var(--primary)",
           }}
         />
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">{stage.name}</h2>
-        <span className="text-xs text-muted-foreground">{deals.length}</span>
+        <h2 className="flex-1 truncate font-mono text-[10px] font-bold tracking-[0.18em] text-foreground uppercase">
+          {stage.name}
+        </h2>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+          {deals.length}
+        </span>
       </div>
       <div className="space-y-2">
         {deals.map((deal) => (
