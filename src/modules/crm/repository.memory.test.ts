@@ -37,4 +37,17 @@ describe("createInMemoryCrmRepository", () => {
     const foundOtherAccount = await repo.searchContacts("acc-2", "Ana");
     expect(foundOtherAccount).toHaveLength(0);
   });
+
+  it("counts contacts created on or after the given date, scoped to the account", async () => {
+    const repo = createInMemoryCrmRepository();
+    await repo.insertContact("acc-1", { name: "Ana", phone: "11999990000" });
+    await repo.insertContact("acc-1", { name: "Beatriz", phone: "11988887777" });
+    await repo.insertContact("acc-2", { name: "Carla", phone: "11977776666" });
+
+    const futureCount = await repo.countNewContacts("acc-1", "2999-01-01T00:00:00.000Z");
+    expect(futureCount).toBe(0);
+
+    const pastCount = await repo.countNewContacts("acc-1", "2000-01-01T00:00:00.000Z");
+    expect(pastCount).toBe(2);
+  });
 });

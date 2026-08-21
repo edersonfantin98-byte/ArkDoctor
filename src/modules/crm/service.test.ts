@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createInMemoryCrmRepository } from "./repository.memory";
 import {
+  countNewContacts,
   createContact,
   createStage,
   deleteStage,
@@ -243,6 +244,16 @@ describe("getStages", () => {
       "Follow-up",
       "Perdido",
     ]);
+  });
+});
+
+describe("countNewContacts", () => {
+  it("counts contacts created on or after the given date", async () => {
+    const repo = createInMemoryCrmRepository();
+    await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    expect(await countNewContacts(repo, "acc-1", "2000-01-01T00:00:00.000Z")).toBe(1);
+    expect(await countNewContacts(repo, "acc-1", "2999-01-01T00:00:00.000Z")).toBe(0);
   });
 });
 

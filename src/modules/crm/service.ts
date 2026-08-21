@@ -153,6 +153,14 @@ export async function getStages(
   return repo.getStages(accountId);
 }
 
+export async function countNewContacts(
+  repo: CrmRepository,
+  accountId: string,
+  sinceIso: string,
+): Promise<number> {
+  return repo.countNewContacts(accountId, sinceIso);
+}
+
 export async function getOpenDealForContact(
   repo: CrmRepository,
   accountId: string,

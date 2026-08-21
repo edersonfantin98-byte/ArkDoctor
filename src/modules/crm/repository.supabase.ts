@@ -192,6 +192,16 @@ export function createSupabaseCrmRepository(
       return data.map(toContact);
     },
 
+    async countNewContacts(accountId, sinceIso) {
+      const { count, error } = await supabase
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId)
+        .gte("created_at", sinceIso);
+      if (error) throwDbError(error);
+      return count ?? 0;
+    },
+
     async insertDeal(accountId, contactId, stageId) {
       const { data, error } = await supabase
         .from("deals")

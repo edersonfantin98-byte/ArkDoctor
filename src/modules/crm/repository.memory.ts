@@ -131,6 +131,12 @@ export function createInMemoryCrmRepository(): CrmRepository {
       );
     },
 
+    async countNewContacts(accountId, sinceIso) {
+      return [...contacts.values()].filter(
+        (c) => c.accountId === accountId && c.createdAt >= sinceIso,
+      ).length;
+    },
+
     async insertDeal(accountId, contactId, stageId) {
       const id = crypto.randomUUID();
       const deal: Deal = {
