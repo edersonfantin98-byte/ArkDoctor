@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  KanbanSquare,
+  Filter,
   CalendarDays,
   CalendarPlus,
-  Wallet,
+  DollarSign,
   MessageCircle,
   Settings,
   LogOut,
@@ -18,9 +18,9 @@ import { logoutAction } from "@/app/(app)/actions";
 
 const generalModules = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: true },
-  { label: "Pipeline", href: "/pipeline", icon: KanbanSquare, enabled: true },
+  { label: "Pipeline", href: "/pipeline", icon: Filter, enabled: true },
   { label: "Agenda", href: "/agenda", icon: CalendarDays, enabled: true },
-  { label: "Financeiro", href: "/financeiro", icon: Wallet, enabled: true },
+  { label: "Financeiro", href: "/financeiro", icon: DollarSign, enabled: true },
   { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle, enabled: true },
 ];
 const patientModules = [
