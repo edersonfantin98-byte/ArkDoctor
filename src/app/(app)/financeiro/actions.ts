@@ -6,6 +6,7 @@ import { getCurrentAccountId } from "@/lib/supabase/account";
 import { createSupabaseFinanceRepository } from "@/modules/finance/repository.supabase";
 import { createSupabaseSchedulingRepository } from "@/modules/scheduling/repository.supabase";
 import * as finance from "@/modules/finance/service";
+import { createFinancialEntryInputSchema } from "@/modules/finance/schemas";
 import { listProcedures } from "@/modules/scheduling/service";
 
 async function getRepoAndAccount() {
@@ -19,12 +20,10 @@ async function getRepoAndAccount() {
 export async function createFinancialEntryAction(input: unknown) {
   const { repo, schedulingRepo, accountId } = await getRepoAndAccount();
 
-  const procedureId =
-    typeof input === "object" && input !== null && "procedureId" in input
-      ? (input as { procedureId?: unknown }).procedureId
-      : undefined;
+  const parsed = createFinancialEntryInputSchema.safeParse(input);
+  const procedureId = parsed.success ? parsed.data.procedureId : undefined;
   const linkedProcedure =
-    typeof procedureId === "string" ? await schedulingRepo.getProcedure(accountId, procedureId) : null;
+    procedureId !== undefined ? await schedulingRepo.getProcedure(accountId, procedureId) : null;
 
   const entry = await finance.createFinancialEntry(
     repo,
