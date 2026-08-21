@@ -22,7 +22,7 @@ export default async function AgendaPage() {
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-blue-700" />Confirmado</span>
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-green-600" />Concluído</span>
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-red-600" />Cancelado / não compareceu</span>
-        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-600" />Agendado</span>
+        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-600" />Pendente de status</span>
         <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-gray-300" />Indisponibilidade</span>
       </div>
       <AgendaClient
