@@ -28,6 +28,25 @@ export interface BackgroundEvent {
   end: Date;
 }
 
+const messages = {
+  date: "Data",
+  time: "Hora",
+  event: "Evento",
+  allDay: "Dia inteiro",
+  week: "Semana",
+  work_week: "Semana útil",
+  day: "Dia",
+  month: "Mês",
+  previous: "Anterior",
+  next: "Próximo",
+  yesterday: "Ontem",
+  tomorrow: "Amanhã",
+  today: "Hoje",
+  agenda: "Agenda",
+  noEventsInRange: "Não há agendamentos neste período.",
+  showMore: (total: number) => `+${total} mais`,
+};
+
 const statusClassName: Record<AppointmentWithDetails["status"], string> = {
   agendado: "rbc-event-agendado",
   confirmado: "rbc-event-confirmado",
@@ -71,6 +90,7 @@ export function CalendarView({
       <Calendar
         localizer={localizer}
         culture="pt-BR"
+        messages={messages}
         events={events}
         startAccessor="start"
         endAccessor="end"

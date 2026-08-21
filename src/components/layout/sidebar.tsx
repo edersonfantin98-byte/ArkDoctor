@@ -57,7 +57,7 @@ function NavGroup({
                 <Icon className="size-4" />
                 {label}
               </span>
-              <span className="rounded-full bg-sidebar-accent px-2 py-0.5 text-[10px] uppercase tracking-wide">
+              <span className="rounded-full bg-sidebar-accent px-2 py-0.5 text-[10px] whitespace-nowrap uppercase tracking-wide">
                 em breve
               </span>
             </div>
@@ -89,7 +89,7 @@ export function Sidebar({ userEmail }: { userEmail: string }) {
   const initials = userEmail.slice(0, 2).toUpperCase();
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="flex w-[232px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex justify-center px-5 pt-6 pb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo/arkdoctor-mark.webp" alt="ArkDoctor" className="h-9 w-auto" />
