@@ -62,7 +62,7 @@ Esse é o único ponto de acoplamento entre os módulos `scheduling` e `crm`; `s
 - Contact sem Deal aberto ao criar agendamento → agendamento criado normalmente, sem tentativa de mover estágio.
 - Estágio "Agendado" renomeado/removido → agendamento criado normalmente, sem mover nenhum Deal, sem erro.
 - Remover um Procedure referenciado por agendamentos existentes → bloqueado.
-- Timezone: MVP assume fuso único (o da profissional); sem suporte a múltiplos fusos.
+- Timezone: MVP assume fuso único (o da profissional); sem suporte a múltiplos fusos. Essa suposição depende de `TZ` estar fixado no ambiente de deployment para o fuso da profissional (ex.: `America/Sao_Paulo`) — `checkConflict` usa `Date.getDay()`/`getHours()`/`getMinutes()`, que resolvem contra o fuso do processo Node. Isso precisa ser configurado no deployment do Cloudflare Pages/OpenNext quando a Fase 2 for para produção (fora do escopo desta fase de fixes).
 
 ## Decisões de Teste (Vitest)
 

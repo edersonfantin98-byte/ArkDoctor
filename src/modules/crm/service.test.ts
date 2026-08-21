@@ -4,6 +4,8 @@ import {
   createContact,
   createStage,
   deleteStage,
+  getOpenDealForContact,
+  getStages,
   listPipeline,
   moveDeal,
   renameStage,
@@ -226,5 +228,33 @@ describe("reopenDeal", () => {
     const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
 
     await expect(reopenDeal(repo, "acc-1", contact.id)).rejects.toThrow();
+  });
+});
+
+describe("getStages", () => {
+  it("returns the account's stages in position order", async () => {
+    const repo = createInMemoryCrmRepository();
+    const stages = await getStages(repo, "acc-1");
+    expect(stages.map((s) => s.name)).toEqual([
+      "Novo Lead",
+      "Em Negociação",
+      "Agendado",
+      "Atendido",
+      "Follow-up",
+      "Perdido",
+    ]);
+  });
+});
+
+describe("getOpenDealForContact", () => {
+  it("returns the contact's open deal, or null if none", async () => {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    const openDeal = await getOpenDealForContact(repo, "acc-1", contact.id);
+    expect(openDeal).not.toBeNull();
+
+    const noneForOtherContact = await getOpenDealForContact(repo, "acc-1", "no-such-contact");
+    expect(noneForOtherContact).toBeNull();
   });
 });
