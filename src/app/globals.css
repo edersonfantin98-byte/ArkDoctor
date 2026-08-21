@@ -3,6 +3,11 @@
 @import "shadcn/tailwind.css";
 @import "react-big-calendar/lib/css/react-big-calendar.css";
 
+.rbc-event.rbc-event-agendado { background-color: #fef3c7; border-color: #f59e0b; color: #92400e; }
+.rbc-event.rbc-event-confirmado { background-color: #dbeafe; border-color: #1d4ed8; color: #1e3a8a; }
+.rbc-event.rbc-event-concluido { background-color: #d1fae5; border-color: #059669; color: #065f46; }
+.rbc-event.rbc-event-cancelado { background-color: #fee2e2; border-color: #dc2626; color: #991b1b; }
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
