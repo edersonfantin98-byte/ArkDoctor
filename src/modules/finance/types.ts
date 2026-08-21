@@ -1,15 +1,5 @@
 export type FinancialEntryType = "revenue" | "expense";
 
-export interface Procedure {
-  id: string;
-  accountId: string;
-  name: string;
-  defaultPrice: number;
-  category: string | null;
-  active: boolean;
-  createdAt: string;
-}
-
 export interface FinancialEntry {
   id: string;
   accountId: string;

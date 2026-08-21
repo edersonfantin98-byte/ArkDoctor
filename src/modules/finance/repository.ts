@@ -1,18 +1,6 @@
-import type { FinancialEntry, FinancialEntryType, Procedure } from "./types";
+import type { FinancialEntry, FinancialEntryType } from "./types";
 
 export interface FinanceRepository {
-  insertProcedure(
-    accountId: string,
-    input: { name: string; defaultPrice: number; category?: string },
-  ): Promise<Procedure>;
-  updateProcedure(
-    accountId: string,
-    procedureId: string,
-    input: { name?: string; defaultPrice?: number; category?: string | null; active?: boolean },
-  ): Promise<Procedure>;
-  getProcedure(accountId: string, procedureId: string): Promise<Procedure | null>;
-  listProcedures(accountId: string, options?: { activeOnly?: boolean }): Promise<Procedure[]>;
-
   insertFinancialEntry(
     accountId: string,
     input: {

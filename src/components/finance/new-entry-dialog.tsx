@@ -11,11 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  createFinancialEntryAction,
-  getProcedureDefaultsAction,
-} from "@/app/(app)/financeiro/actions";
-import type { Procedure } from "@/modules/finance/types";
+import { createFinancialEntryAction } from "@/app/(app)/financeiro/actions";
+import type { Procedure } from "@/modules/scheduling/types";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -41,12 +38,13 @@ export function NewEntryDialog({
     setError(null);
   }
 
-  async function handleProcedureChange(id: string) {
+  function handleProcedureChange(id: string) {
     setProcedureId(id);
     if (!id) return;
-    const defaults = await getProcedureDefaultsAction(id);
-    setAmount(String(defaults.defaultPrice));
-    setCategory(defaults.category ?? "");
+    const procedure = procedures.find((p) => p.id === id);
+    if (procedure) {
+      setAmount(String(procedure.defaultPrice));
+    }
   }
 
   async function handleSubmit(formData: FormData) {
@@ -102,13 +100,11 @@ export function NewEntryDialog({
                 className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
               >
                 <option value="">Nenhum</option>
-                {procedures
-                  .filter((p) => p.active)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
+                {procedures.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
               </select>
             </div>
           )}

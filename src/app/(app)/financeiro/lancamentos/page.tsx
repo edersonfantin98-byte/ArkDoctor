@@ -1,4 +1,5 @@
-import { listFinancialEntriesAction, listProceduresAction } from "../actions";
+import { listFinancialEntriesAction } from "../actions";
+import { listProceduresAction } from "@/app/(app)/agenda/actions";
 import { EntriesClient } from "@/components/finance/entries-client";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -13,7 +14,7 @@ export default async function EntriesPage() {
   const range = currentMonthRange();
   const [entries, procedures] = await Promise.all([
     listFinancialEntriesAction(range),
-    listProceduresAction({ activeOnly: true }),
+    listProceduresAction(),
   ]);
 
   return (

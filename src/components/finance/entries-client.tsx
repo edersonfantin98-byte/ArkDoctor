@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { NewEntryDialog } from "@/components/finance/new-entry-dialog";
 import { listFinancialEntriesAction } from "@/app/(app)/financeiro/actions";
 import type { FinancialEntry } from "@/modules/finance/types";
-import type { Procedure } from "@/modules/finance/types";
+import type { Procedure } from "@/modules/scheduling/types";
 
 export function EntriesClient({
   initialEntries,

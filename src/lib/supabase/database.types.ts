@@ -283,44 +283,6 @@ export type Database = {
           },
         ]
       }
-      procedures: {
-        Row: {
-          account_id: string
-          active: boolean
-          category: string | null
-          created_at: string
-          default_price: string
-          id: string
-          name: string
-        }
-        Insert: {
-          account_id: string
-          active?: boolean
-          category?: string | null
-          created_at?: string
-          default_price: number
-          id?: string
-          name: string
-        }
-        Update: {
-          account_id?: string
-          active?: boolean
-          category?: string | null
-          created_at?: string
-          default_price?: number
-          id?: string
-          name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "procedures_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never

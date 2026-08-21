@@ -1,67 +1,12 @@
 import type { FinanceRepository } from "./repository";
-import {
-  createFinancialEntryInputSchema,
-  createProcedureInputSchema,
-  dashboardPeriodSchema,
-  updateProcedureInputSchema,
-} from "./schemas";
-import type {
-  DashboardMetrics,
-  FinancialEntry,
-  FinancialEntryType,
-  Procedure,
-  ProcedureSalesSummary,
-} from "./types";
-
-export async function createProcedure(
-  repo: FinanceRepository,
-  accountId: string,
-  rawInput: unknown,
-): Promise<Procedure> {
-  const input = createProcedureInputSchema.parse(rawInput);
-  return repo.insertProcedure(accountId, input);
-}
-
-export async function updateProcedure(
-  repo: FinanceRepository,
-  accountId: string,
-  procedureId: string,
-  rawInput: unknown,
-): Promise<Procedure> {
-  const input = updateProcedureInputSchema.parse(rawInput);
-  return repo.updateProcedure(accountId, procedureId, input);
-}
-
-export async function deactivateProcedure(
-  repo: FinanceRepository,
-  accountId: string,
-  procedureId: string,
-): Promise<Procedure> {
-  return repo.updateProcedure(accountId, procedureId, { active: false });
-}
-
-export async function listProcedures(
-  repo: FinanceRepository,
-  accountId: string,
-  options?: { activeOnly?: boolean },
-): Promise<Procedure[]> {
-  return repo.listProcedures(accountId, options);
-}
-
-export async function getProcedureDefaults(
-  repo: FinanceRepository,
-  accountId: string,
-  procedureId: string,
-): Promise<{ defaultPrice: number; category: string | null }> {
-  const procedure = await repo.getProcedure(accountId, procedureId);
-  if (!procedure) throw new Error("Procedure not found");
-  return { defaultPrice: procedure.defaultPrice, category: procedure.category };
-}
+import { createFinancialEntryInputSchema, dashboardPeriodSchema } from "./schemas";
+import type { DashboardMetrics, FinancialEntry, FinancialEntryType, ProcedureSalesSummary } from "./types";
 
 export async function createFinancialEntry(
   repo: FinanceRepository,
   accountId: string,
   rawInput: unknown,
+  linkedProcedure: { defaultPrice: number } | null,
 ): Promise<FinancialEntry> {
   const input = createFinancialEntryInputSchema.parse(rawInput);
 
@@ -69,16 +14,11 @@ export async function createFinancialEntry(
     throw new Error("Despesas não podem ter um procedimento vinculado");
   }
 
-  let defaultAmount: number | null = null;
-  let category = input.category ?? null;
-
-  if (input.type === "revenue" && input.procedureId) {
-    const procedure = await repo.getProcedure(accountId, input.procedureId);
-    if (!procedure) throw new Error("Procedure not found");
-    defaultAmount = procedure.defaultPrice;
-    if (!category) category = procedure.category;
+  if (input.type === "revenue" && input.procedureId && !linkedProcedure) {
+    throw new Error("Procedure not found");
   }
 
+  const category = input.category ?? null;
   if (input.type === "expense" && !category) {
     throw new Error("Despesas exigem uma categoria");
   }
@@ -86,7 +26,8 @@ export async function createFinancialEntry(
   return repo.insertFinancialEntry(accountId, {
     type: input.type,
     amount: input.amount,
-    defaultAmount,
+    defaultAmount:
+      input.type === "revenue" && input.procedureId ? linkedProcedure!.defaultPrice : null,
     category,
     procedureId: input.procedureId ?? null,
     description: input.description ?? null,
@@ -106,11 +47,11 @@ export async function getDashboardMetrics(
   repo: FinanceRepository,
   accountId: string,
   rawPeriod: unknown,
+  procedures: { id: string; name: string }[],
 ): Promise<DashboardMetrics> {
   const period = dashboardPeriodSchema.parse(rawPeriod);
   const entries = await repo.listFinancialEntries(accountId, period);
   const prevEntries = await repo.listFinancialEntries(accountId, previousPeriod(period));
-  const procedures = await repo.listProcedures(accountId);
   const procedureNames = new Map(procedures.map((p) => [p.id, p.name]));
 
   const revenueTotal = sumByType(entries, "revenue");
