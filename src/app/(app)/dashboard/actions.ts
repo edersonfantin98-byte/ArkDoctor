@@ -9,8 +9,12 @@ import * as crm from "@/modules/crm/service";
 import * as scheduling from "@/modules/scheduling/service";
 import * as finance from "@/modules/finance/service";
 import { getDashboardOverview } from "@/modules/dashboard/service";
+import type { DashboardPeriodSelection } from "@/modules/dashboard/types";
 
-export async function getDashboardOverviewAction(todayIso: string) {
+export async function getDashboardOverviewAction(
+  todayIso: string,
+  selection?: DashboardPeriodSelection,
+) {
   const supabase = await createServerSupabaseClient();
   const accountId = await getCurrentAccountId(supabase);
   const crmRepo = createSupabaseCrmRepository(supabase);
@@ -36,5 +40,6 @@ export async function getDashboardOverviewAction(todayIso: string) {
     },
     accountId,
     todayIso,
+    selection,
   );
 }

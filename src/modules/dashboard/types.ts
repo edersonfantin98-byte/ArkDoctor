@@ -1,3 +1,8 @@
+export type DashboardPeriodSelection =
+  | { kind: "month" }
+  | { kind: "week" }
+  | { kind: "custom"; from: string; to: string };
+
 export interface DashboardOverview {
   revenueTotal: number;
   revenueChangePct: number | null;

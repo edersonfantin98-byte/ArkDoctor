@@ -1,11 +1,90 @@
 "use client";
 
+import { useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { TrendingUp, TrendingDown, CheckCircle2, UserX, UserPlus } from "lucide-react";
-import type { DashboardOverview } from "@/modules/dashboard/types";
+import type { DashboardOverview, DashboardPeriodSelection } from "@/modules/dashboard/types";
 import { formatCurrency } from "@/lib/format";
+import { getDashboardOverviewAction } from "@/app/(app)/dashboard/actions";
+
+type Preset = "week" | "month" | "custom";
+
+function comparisonLabel(preset: Preset): string {
+  if (preset === "week") return "vs. semana anterior";
+  if (preset === "custom") return "vs. período anterior";
+  return "vs. mês anterior";
+}
+
+function PeriodFilter({
+  preset,
+  onPresetChange,
+  customFrom,
+  customTo,
+  onCustomFromChange,
+  onCustomToChange,
+  onApplyCustom,
+}: {
+  preset: Preset;
+  onPresetChange: (preset: Preset) => void;
+  customFrom: string;
+  customTo: string;
+  onCustomFromChange: (value: string) => void;
+  onCustomToChange: (value: string) => void;
+  onApplyCustom: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant={preset === "week" ? "default" : "outline"}
+        size="sm"
+        onClick={() => onPresetChange("week")}
+      >
+        Semana
+      </Button>
+      <Button
+        type="button"
+        variant={preset === "month" ? "default" : "outline"}
+        size="sm"
+        onClick={() => onPresetChange("month")}
+      >
+        Mês
+      </Button>
+      <Button
+        type="button"
+        variant={preset === "custom" ? "default" : "outline"}
+        size="sm"
+        onClick={() => onPresetChange("custom")}
+      >
+        Personalizado
+      </Button>
+      {preset === "custom" && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            className="w-auto"
+            value={customFrom}
+            onChange={(e) => onCustomFromChange(e.target.value)}
+          />
+          <span className="text-sm text-muted-foreground">até</span>
+          <Input
+            type="date"
+            className="w-auto"
+            value={customTo}
+            onChange={(e) => onCustomToChange(e.target.value)}
+          />
+          <Button type="button" size="sm" onClick={onApplyCustom} disabled={!customFrom || !customTo}>
+            Aplicar
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const statusBadge: Record<string, { label: string; className: string }> = {
   agendado: { label: "Agendado", className: "bg-blue-100 text-blue-700" },
@@ -69,11 +148,44 @@ function ChangeCountIndicator({ count, previousLabel }: { count: number | null; 
   );
 }
 
-export function DashboardClient({ overview }: { overview: DashboardOverview }) {
+export function DashboardClient({
+  overview: initialOverview,
+  todayIso,
+}: {
+  overview: DashboardOverview;
+  todayIso: string;
+}) {
+  const [overview, setOverview] = useState(initialOverview);
+  const [preset, setPreset] = useState<Preset>("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const maxStageCount = Math.max(1, ...overview.pipelineByStage.map((s) => s.count));
+
+  async function applySelection(preset: Preset, selection: DashboardPeriodSelection) {
+    const next = await getDashboardOverviewAction(todayIso, selection);
+    setOverview(next);
+    setPreset(preset);
+  }
+
+  function handlePresetChange(newPreset: Preset) {
+    if (newPreset === "custom") {
+      setPreset("custom");
+      return;
+    }
+    applySelection(newPreset, { kind: newPreset });
+  }
 
   return (
     <div className="space-y-4 px-6 pb-6">
+      <PeriodFilter
+        preset={preset}
+        onPresetChange={handlePresetChange}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={setCustomFrom}
+        onCustomToChange={setCustomTo}
+        onApplyCustom={() => applySelection("custom", { kind: "custom", from: customFrom, to: customTo })}
+      />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
@@ -86,7 +198,7 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{formatCurrency(overview.revenueTotal)}</p>
-            <ChangeIndicator pct={overview.revenueChangePct} previousLabel="vs. mês anterior" />
+            <ChangeIndicator pct={overview.revenueChangePct} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
         <Card>
@@ -100,7 +212,7 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{overview.appointmentsCompletedCount}</p>
-            <ChangeIndicator pct={overview.appointmentsCompletedChangePct} previousLabel="vs. mês anterior" />
+            <ChangeIndicator pct={overview.appointmentsCompletedChangePct} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
         <Card>
@@ -116,7 +228,7 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
             <p className="text-3xl font-bold">
               {overview.noShowRatePct === null ? "—" : `${overview.noShowRatePct.toFixed(1)}%`}
             </p>
-            <ChangePointIndicator pp={overview.noShowRateChangePp} previousLabel="vs. mês anterior" />
+            <ChangePointIndicator pp={overview.noShowRateChangePp} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
         <Card>
@@ -130,7 +242,7 @@ export function DashboardClient({ overview }: { overview: DashboardOverview }) {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{overview.newContactsCount}</p>
-            <ChangeCountIndicator count={overview.newContactsChangeCount} previousLabel="vs. mês anterior" />
+            <ChangeCountIndicator count={overview.newContactsChangeCount} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
       </div>

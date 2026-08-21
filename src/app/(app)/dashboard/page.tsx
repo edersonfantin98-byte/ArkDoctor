@@ -14,7 +14,7 @@ export default async function DashboardPage() {
         description="Desempenho da clínica no mês atual."
         action={<ExportReportButton overview={overview} />}
       />
-      <DashboardClient overview={overview} />
+      <DashboardClient overview={overview} todayIso={today} />
     </div>
   );
 }

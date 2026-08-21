@@ -1,4 +1,4 @@
-import type { DashboardOverview } from "./types";
+import type { DashboardOverview, DashboardPeriodSelection } from "./types";
 
 interface DashboardDeps {
   crm: {
@@ -89,6 +89,40 @@ function previousMonthRange(todayIso: string): { from: string; to: string } {
   );
 }
 
+function weekRange(dateIso: string): { from: string; to: string } {
+  const [year, month, day] = dateIso.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const dayOfWeek = date.getUTCDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(date.getTime() + mondayOffset * 86400000);
+  const sunday = new Date(monday.getTime() + 6 * 86400000);
+  return { from: monday.toISOString().slice(0, 10), to: sunday.toISOString().slice(0, 10) };
+}
+
+function previousPeriodRange(range: { from: string; to: string }): { from: string; to: string } {
+  const from = new Date(`${range.from}T00:00:00.000Z`);
+  const to = new Date(`${range.to}T00:00:00.000Z`);
+  const lengthDays = Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
+  const prevTo = new Date(from.getTime() - 86400000);
+  const prevFrom = new Date(prevTo.getTime() - (lengthDays - 1) * 86400000);
+  return { from: prevFrom.toISOString().slice(0, 10), to: prevTo.toISOString().slice(0, 10) };
+}
+
+function resolvePeriod(
+  todayIso: string,
+  selection: DashboardPeriodSelection,
+): { current: { from: string; to: string }; previous: { from: string; to: string } } {
+  if (selection.kind === "month") {
+    return { current: monthRange(todayIso), previous: previousMonthRange(todayIso) };
+  }
+  if (selection.kind === "week") {
+    const current = weekRange(todayIso);
+    return { current, previous: previousPeriodRange(current) };
+  }
+  const current = { from: selection.from, to: selection.to };
+  return { current, previous: previousPeriodRange(current) };
+}
+
 function completedAndNoShow(appointments: { status: string }[]): {
   completed: number;
   noShowRate: number | null;
@@ -105,9 +139,9 @@ export async function getDashboardOverview(
   deps: DashboardDeps,
   accountId: string,
   todayIso: string,
+  selection: DashboardPeriodSelection = { kind: "month" },
 ): Promise<DashboardOverview> {
-  const range = monthRange(todayIso);
-  const prevRange = previousMonthRange(todayIso);
+  const { current: range, previous: prevRange } = resolvePeriod(todayIso, selection);
 
   const [pipeline, procedures, todaysAppointments, monthAppointments, prevMonthAppointments, history] =
     await Promise.all([

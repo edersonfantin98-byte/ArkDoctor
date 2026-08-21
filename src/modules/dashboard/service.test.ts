@@ -135,4 +135,86 @@ describe("getDashboardOverview", () => {
     expect(overview.noShowRateChangePp).toBeNull();
     expect(overview.newContactsChangeCount).toBe(0);
   });
+
+  it("resolves a week selection to the calendar week (Mon-Sun) containing today, vs. the prior week", async () => {
+    // Aug 20, 2026 is a Thursday -> week = Aug 17-23, previous week = Aug 10-16
+    const currentWeekAppointments = [
+      { id: "cw1", startsAt: "2026-08-18T10:00:00.000Z", status: "concluido", contact: { name: "X" }, procedure: { name: "Y" } },
+      { id: "cw2", startsAt: "2026-08-19T10:00:00.000Z", status: "nao_compareceu", contact: { name: "X" }, procedure: { name: "Y" } },
+    ];
+    const previousWeekAppointments = [
+      { id: "pw1", startsAt: "2026-08-11T10:00:00.000Z", status: "concluido", contact: { name: "X" }, procedure: { name: "Y" } },
+    ];
+
+    const listAppointments = vi.fn().mockImplementation((_accId: string, range: { from: string; to: string }) => {
+      if (range.from.startsWith("2026-08-17")) return Promise.resolve(currentWeekAppointments);
+      if (range.from.startsWith("2026-08-10")) return Promise.resolve(previousWeekAppointments);
+      return Promise.resolve([]);
+    });
+
+    const deps = {
+      crm: {
+        listPipeline: vi.fn().mockResolvedValue([]),
+        countNewContacts: vi.fn().mockResolvedValue(0),
+      },
+      scheduling: {
+        listAppointments,
+        listProcedures: vi.fn().mockResolvedValue([]),
+      },
+      finance: {
+        getDashboardMetrics: vi.fn().mockResolvedValue({ revenueTotal: 0, revenueChangePct: null }),
+        listEntries: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const overview = await getDashboardOverview(deps as never, "acc-1", "2026-08-20", { kind: "week" });
+
+    expect(overview.appointmentsCompletedCount).toBe(1);
+    // 1 completed, 1 previous completed => 0% change
+    expect(overview.appointmentsCompletedChangePct).toBeCloseTo(0, 5);
+  });
+
+  it("resolves a custom selection to the exact range, vs. an equal-length immediately preceding window", async () => {
+    const currentAppointments = Array.from({ length: 4 }, (_, i) => ({
+      id: `c${i}`,
+      startsAt: `2026-08-0${5 + i}T10:00:00.000Z`,
+      status: "concluido",
+      contact: { name: "X" },
+      procedure: { name: "Y" },
+    }));
+    const previousAppointments = [
+      { id: "p1", startsAt: "2026-07-30T10:00:00.000Z", status: "concluido", contact: { name: "X" }, procedure: { name: "Y" } },
+    ];
+
+    const listAppointments = vi.fn().mockImplementation((_accId: string, range: { from: string; to: string }) => {
+      if (range.from.startsWith("2026-08-05")) return Promise.resolve(currentAppointments);
+      if (range.from.startsWith("2026-07-26")) return Promise.resolve(previousAppointments);
+      return Promise.resolve([]);
+    });
+
+    const deps = {
+      crm: {
+        listPipeline: vi.fn().mockResolvedValue([]),
+        countNewContacts: vi.fn().mockResolvedValue(0),
+      },
+      scheduling: {
+        listAppointments,
+        listProcedures: vi.fn().mockResolvedValue([]),
+      },
+      finance: {
+        getDashboardMetrics: vi.fn().mockResolvedValue({ revenueTotal: 0, revenueChangePct: null }),
+        listEntries: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const overview = await getDashboardOverview(deps as never, "acc-1", "2026-08-20", {
+      kind: "custom",
+      from: "2026-08-05",
+      to: "2026-08-14",
+    });
+
+    // 4 completed this 10-day window vs. 1 completed in the preceding 10-day window (Jul 26 - Aug 4) => +300%
+    expect(overview.appointmentsCompletedCount).toBe(4);
+    expect(overview.appointmentsCompletedChangePct).toBeCloseTo(300, 5);
+  });
 });
