@@ -1,4 +1,5 @@
 import type { WhatsappRepository } from "./repository";
+import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
 
 export async function listConversations(repo: WhatsappRepository, accountId: string) {
@@ -22,6 +23,7 @@ export async function startConversation(repo: WhatsappRepository, accountId: str
 
 export async function logMessage(
   repo: WhatsappRepository,
+  provider: WhatsappProvider,
   accountId: string,
   conversationId: string,
   rawInput: unknown,
@@ -29,6 +31,11 @@ export async function logMessage(
   const input = logMessageInputSchema.parse(rawInput);
   const conversation = await repo.getConversation(accountId, conversationId);
   if (!conversation) throw new Error("Conversa não encontrada");
+
+  if (input.direction === "outbound") {
+    await provider.sendMessage(accountId, conversation.contactPhone, input.body);
+  }
+
   const message = await repo.insertMessage(accountId, conversationId, input);
   await repo.touchConversation(accountId, conversationId, input.body, message.sentAt);
   return message;

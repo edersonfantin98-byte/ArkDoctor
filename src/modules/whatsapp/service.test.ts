@@ -1,28 +1,53 @@
 import { describe, it, expect, vi } from "vitest";
 import { createInMemoryWhatsappRepository } from "./repository.memory";
 import { createInMemoryCrmRepository } from "../crm/repository.memory";
+import { createFakeWhatsappProvider } from "./provider.fake";
 import * as crm from "../crm/service";
 import { startConversation, logMessage, getConversationMessages, handleInboundMessage } from "./service";
 
 describe("whatsapp service", () => {
   it("rejects logging a message on a conversation that doesn't exist", async () => {
     const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
     await expect(
-      logMessage(repo, "acc-1", "does-not-exist", { direction: "outbound", body: "oi" }),
+      logMessage(repo, provider, "acc-1", "does-not-exist", { direction: "outbound", body: "oi" }),
     ).rejects.toThrow("Conversa não encontrada");
   });
 
   it("updates the conversation preview when a message is logged", async () => {
     const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
     const conversation = await startConversation(repo, "acc-1", {
       contactId: null,
       contactName: "Carla Souza",
       contactPhone: "51991234477",
     });
-    await logMessage(repo, "acc-1", conversation.id, { direction: "outbound", body: "Confirmado!" });
+    await logMessage(repo, provider, "acc-1", conversation.id, {
+      direction: "outbound",
+      body: "Confirmado!",
+    });
     const messages = await getConversationMessages(repo, "acc-1", conversation.id);
     expect(messages).toHaveLength(1);
     expect(messages[0].body).toBe("Confirmado!");
+  });
+
+  it("calls the provider to send an outbound message before logging it", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    const sendSpy = vi.spyOn(provider, "sendMessage");
+
+    await logMessage(repo, provider, "acc-1", conversation.id, {
+      direction: "outbound",
+      body: "Confirmado!",
+    });
+
+    expect(sendSpy).toHaveBeenCalledWith("acc-1", "51991234477", "Confirmado!");
   });
 });
 

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAccountId } from "@/lib/supabase/account";
 import { createSupabaseWhatsappRepository } from "@/modules/whatsapp/repository.supabase";
+import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import * as whatsapp from "@/modules/whatsapp/service";
 
 async function getRepoAndAccount() {
@@ -32,7 +33,8 @@ export async function startConversationAction(input: unknown) {
 
 export async function logMessageAction(conversationId: string, input: unknown) {
   const { repo, accountId } = await getRepoAndAccount();
-  const message = await whatsapp.logMessage(repo, accountId, conversationId, input);
+  const provider = getWhatsappProvider("fake", repo);
+  const message = await whatsapp.logMessage(repo, provider, accountId, conversationId, input);
   revalidatePath("/whatsapp");
   return message;
 }
