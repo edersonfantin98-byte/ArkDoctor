@@ -77,6 +77,17 @@ export function createSupabaseWhatsappRepository(
       return toConversation(data);
     },
 
+    async getConversationByPhone(accountId, phone) {
+      const { data, error } = await supabase
+        .from("whatsapp_conversations")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("contact_phone", phone)
+        .maybeSingle();
+      if (error) throwDbError(error);
+      return data ? toConversation(data) : null;
+    },
+
     async listMessages(accountId, conversationId) {
       const { data, error } = await supabase
         .from("whatsapp_messages")
@@ -110,6 +121,32 @@ export function createSupabaseWhatsappRepository(
           last_message_preview: lastMessagePreview,
           last_message_at: lastMessageAt,
         })
+        .eq("account_id", accountId)
+        .eq("id", conversationId);
+      if (error) throwDbError(error);
+    },
+
+    async incrementUnreadCount(accountId, conversationId) {
+      const { data: current, error: fetchError } = await supabase
+        .from("whatsapp_conversations")
+        .select("unread_count")
+        .eq("account_id", accountId)
+        .eq("id", conversationId)
+        .maybeSingle();
+      if (fetchError) throwDbError(fetchError);
+      if (!current) return;
+      const { error } = await supabase
+        .from("whatsapp_conversations")
+        .update({ unread_count: current.unread_count + 1 })
+        .eq("account_id", accountId)
+        .eq("id", conversationId);
+      if (error) throwDbError(error);
+    },
+
+    async resetUnreadCount(accountId, conversationId) {
+      const { error } = await supabase
+        .from("whatsapp_conversations")
+        .update({ unread_count: 0 })
         .eq("account_id", accountId)
         .eq("id", conversationId);
       if (error) throwDbError(error);

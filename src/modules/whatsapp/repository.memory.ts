@@ -34,6 +34,14 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
       return conversation;
     },
 
+    async getConversationByPhone(accountId, phone) {
+      return (
+        [...conversations.values()].find(
+          (c) => c.accountId === accountId && c.contactPhone === phone,
+        ) ?? null
+      );
+    },
+
     async listMessages(accountId, conversationId) {
       return [...messages.values()]
         .filter((m) => m.accountId === accountId && m.conversationId === conversationId)
@@ -58,6 +66,18 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
       const c = conversations.get(conversationId);
       if (!c || c.accountId !== accountId) return;
       conversations.set(conversationId, { ...c, lastMessagePreview, lastMessageAt });
+    },
+
+    async incrementUnreadCount(accountId, conversationId) {
+      const c = conversations.get(conversationId);
+      if (!c || c.accountId !== accountId) return;
+      conversations.set(conversationId, { ...c, unreadCount: c.unreadCount + 1 });
+    },
+
+    async resetUnreadCount(accountId, conversationId) {
+      const c = conversations.get(conversationId);
+      if (!c || c.accountId !== accountId) return;
+      conversations.set(conversationId, { ...c, unreadCount: 0 });
     },
   };
 }

@@ -41,4 +41,37 @@ describe("createInMemoryWhatsappRepository", () => {
     expect(msgs).toHaveLength(2);
     expect(msgs[0].body).toBe("Oi!");
   });
+
+  it("finds a conversation by exact phone match, scoped to the account", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    const found = await repo.getConversationByPhone("acc-1", "51991234477");
+    expect(found?.id).toBe(conversation.id);
+
+    const notFound = await repo.getConversationByPhone("acc-1", "00000000000");
+    expect(notFound).toBeNull();
+  });
+
+  it("increments and resets the unread count for a conversation", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    await repo.incrementUnreadCount("acc-1", conversation.id);
+    await repo.incrementUnreadCount("acc-1", conversation.id);
+    const afterIncrement = await repo.getConversation("acc-1", conversation.id);
+    expect(afterIncrement?.unreadCount).toBe(2);
+
+    await repo.resetUnreadCount("acc-1", conversation.id);
+    const afterReset = await repo.getConversation("acc-1", conversation.id);
+    expect(afterReset?.unreadCount).toBe(0);
+  });
 });

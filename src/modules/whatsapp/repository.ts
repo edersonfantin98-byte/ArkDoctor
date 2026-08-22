@@ -7,6 +7,7 @@ export interface WhatsappRepository {
     accountId: string,
     input: { contactId: string | null; contactName: string; contactPhone: string },
   ): Promise<Conversation>;
+  getConversationByPhone(accountId: string, phone: string): Promise<Conversation | null>;
   listMessages(accountId: string, conversationId: string): Promise<Message[]>;
   insertMessage(
     accountId: string,
@@ -19,4 +20,6 @@ export interface WhatsappRepository {
     lastMessagePreview: string,
     lastMessageAt: string,
   ): Promise<void>;
+  incrementUnreadCount(accountId: string, conversationId: string): Promise<void>;
+  resetUnreadCount(accountId: string, conversationId: string): Promise<void>;
 }
