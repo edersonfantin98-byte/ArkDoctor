@@ -9,6 +9,11 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ accountId: string }> },
 ) {
+  const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
+  if (webhookSecret && request.headers.get("x-webhook-secret") !== webhookSecret) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
   const { accountId } = await params;
   const body = await request.json();
 
