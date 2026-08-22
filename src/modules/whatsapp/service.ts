@@ -110,7 +110,7 @@ export function isValidWebhookSecret(
   providedSecret: string | null,
 ): boolean {
   const expectedSecret = connection?.config?.webhookSecret;
-  if (!expectedSecret) return true;
+  if (!expectedSecret) return process.env.NODE_ENV !== "production";
   return providedSecret === expectedSecret;
 }
 

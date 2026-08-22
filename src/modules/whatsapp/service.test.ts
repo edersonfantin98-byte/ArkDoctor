@@ -1,9 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { createInMemoryWhatsappRepository } from "./repository.memory";
 import { createInMemoryCrmRepository } from "../crm/repository.memory";
 import { createFakeWhatsappProvider } from "./provider.fake";
 import * as crm from "../crm/service";
-import { normalizeWhatsappJid } from "./provider.uazapi";
 import {
   startConversation,
   logMessage,
@@ -193,6 +192,10 @@ describe("resetUnreadCount", () => {
 });
 
 describe("isValidWebhookSecret", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("allows the request through when no secret has been configured yet", () => {
     expect(isValidWebhookSecret(null, null)).toBe(true);
     expect(
@@ -208,6 +211,24 @@ describe("isValidWebhookSecret", () => {
         null,
       ),
     ).toBe(true);
+  });
+
+  it("rejects when no secret has been configured yet in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    expect(isValidWebhookSecret(null, null)).toBe(false);
+    expect(
+      isValidWebhookSecret(
+        {
+          accountId: "acc-1",
+          provider: "fake",
+          status: "disconnected",
+          connectedAt: null,
+          qrCode: null,
+          config: null,
+        },
+        null,
+      ),
+    ).toBe(false);
   });
 
   it("rejects when a secret is configured but missing or wrong", () => {
