@@ -28,7 +28,9 @@ import {
   getUazapiQrCodeAction,
   getWhatsappConnectionAction,
 } from "@/app/(app)/whatsapp/actions";
-import type { Conversation, Message, WhatsappConnection } from "@/modules/whatsapp/types";
+import type { Conversation, Message } from "@/modules/whatsapp/types";
+
+type WhatsappConnectionSummary = Awaited<ReturnType<typeof getWhatsappConnectionAction>>;
 
 function initials(name: string) {
   return name
@@ -173,7 +175,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [connection, setConnection] = useState<WhatsappConnection | null>(null);
+  const [connection, setConnection] = useState<WhatsappConnectionSummary>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [togglingConnection, setTogglingConnection] = useState(false);
 
@@ -288,8 +290,8 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
             type="button"
             variant="outline"
             size="sm"
-            disabled={togglingConnection || !connection?.config}
-            title={!connection?.config ? "Configure a Uazapi antes de conectar" : undefined}
+            disabled={togglingConnection || !connection?.isConfigured}
+            title={!connection?.isConfigured ? "Configure a Uazapi antes de conectar" : undefined}
             onClick={handleToggleConnection}
           >
             {connection?.status === "connected" ? "Desconectar" : "Conectar"}

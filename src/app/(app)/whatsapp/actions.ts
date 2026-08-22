@@ -75,13 +75,12 @@ export async function saveUazapiConfigAction(subdomain: string, token: string) {
   const { repo, accountId } = await getRepoAndAccount();
   const existing = await repo.getConnection(accountId);
   const webhookSecret = existing?.config?.webhookSecret ?? crypto.randomUUID();
-  const connection = await repo.updateConnectionConfig(accountId, "uazapi", {
+  await repo.updateConnectionConfig(accountId, "uazapi", {
     subdomain,
     token,
     webhookSecret,
   });
   revalidatePath("/whatsapp");
-  return connection;
 }
 
 export async function getUazapiQrCodeAction() {
@@ -92,5 +91,11 @@ export async function getUazapiQrCodeAction() {
 
 export async function getWhatsappConnectionAction() {
   const { repo, accountId } = await getRepoAndAccount();
-  return repo.getConnection(accountId);
+  const connection = await repo.getConnection(accountId);
+  if (!connection) return null;
+  return {
+    provider: connection.provider,
+    status: connection.status,
+    isConfigured: connection.config !== null,
+  };
 }
