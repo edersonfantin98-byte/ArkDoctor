@@ -3,7 +3,16 @@ import { createInMemoryWhatsappRepository } from "./repository.memory";
 import { createInMemoryCrmRepository } from "../crm/repository.memory";
 import { createFakeWhatsappProvider } from "./provider.fake";
 import * as crm from "../crm/service";
-import { startConversation, logMessage, getConversationMessages, handleInboundMessage } from "./service";
+import {
+  startConversation,
+  logMessage,
+  getConversationMessages,
+  handleInboundMessage,
+  getConnectionStatus,
+  connectWhatsapp,
+  disconnectWhatsapp,
+  resetUnreadCount,
+} from "./service";
 
 describe("whatsapp service", () => {
   it("rejects logging a message on a conversation that doesn't exist", async () => {
@@ -125,5 +134,35 @@ describe("handleInboundMessage", () => {
 
     const contacts = await crmRepo.searchContacts("acc-1", "51999998888");
     expect(contacts[0].name).toBe("51999998888");
+  });
+});
+
+describe("connection status", () => {
+  it("connects, reports connected, then disconnects", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+
+    expect(await getConnectionStatus(provider, "acc-1")).toBe("disconnected");
+    await connectWhatsapp(provider, "acc-1");
+    expect(await getConnectionStatus(provider, "acc-1")).toBe("connected");
+    await disconnectWhatsapp(provider, "acc-1");
+    expect(await getConnectionStatus(provider, "acc-1")).toBe("disconnected");
+  });
+});
+
+describe("resetUnreadCount", () => {
+  it("zeroes the unread count for a conversation", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+    await repo.incrementUnreadCount("acc-1", conversation.id);
+
+    await resetUnreadCount(repo, "acc-1", conversation.id);
+
+    const updated = await repo.getConversation("acc-1", conversation.id);
+    expect(updated?.unreadCount).toBe(0);
   });
 });

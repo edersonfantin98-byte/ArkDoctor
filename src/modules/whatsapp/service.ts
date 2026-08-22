@@ -79,3 +79,23 @@ export async function handleInboundMessage(
 
   return message;
 }
+
+export async function getConnectionStatus(provider: WhatsappProvider, accountId: string) {
+  return provider.getConnectionStatus(accountId);
+}
+
+export async function connectWhatsapp(provider: WhatsappProvider, accountId: string) {
+  await provider.connect(accountId);
+}
+
+export async function disconnectWhatsapp(provider: WhatsappProvider, accountId: string) {
+  await provider.disconnect(accountId);
+}
+
+export async function resetUnreadCount(
+  repo: WhatsappRepository,
+  accountId: string,
+  conversationId: string,
+) {
+  await repo.resetUnreadCount(accountId, conversationId);
+}

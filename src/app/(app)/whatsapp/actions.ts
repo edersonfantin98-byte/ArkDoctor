@@ -38,3 +38,29 @@ export async function logMessageAction(conversationId: string, input: unknown) {
   revalidatePath("/whatsapp");
   return message;
 }
+
+export async function getConnectionStatusAction() {
+  const { repo, accountId } = await getRepoAndAccount();
+  const provider = getWhatsappProvider("fake", repo);
+  return whatsapp.getConnectionStatus(provider, accountId);
+}
+
+export async function connectWhatsappAction() {
+  const { repo, accountId } = await getRepoAndAccount();
+  const provider = getWhatsappProvider("fake", repo);
+  await whatsapp.connectWhatsapp(provider, accountId);
+  revalidatePath("/whatsapp");
+}
+
+export async function disconnectWhatsappAction() {
+  const { repo, accountId } = await getRepoAndAccount();
+  const provider = getWhatsappProvider("fake", repo);
+  await whatsapp.disconnectWhatsapp(provider, accountId);
+  revalidatePath("/whatsapp");
+}
+
+export async function resetUnreadCountAction(conversationId: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  await whatsapp.resetUnreadCount(repo, accountId, conversationId);
+  revalidatePath("/whatsapp");
+}
