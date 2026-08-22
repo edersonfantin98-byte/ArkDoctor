@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
@@ -24,8 +24,11 @@ import {
   connectWhatsappAction,
   disconnectWhatsappAction,
   resetUnreadCountAction,
+  saveUazapiConfigAction,
+  getUazapiQrCodeAction,
+  getWhatsappConnectionAction,
 } from "@/app/(app)/whatsapp/actions";
-import type { Conversation, Message, ConnectionStatus } from "@/modules/whatsapp/types";
+import type { Conversation, Message, WhatsappConnection } from "@/modules/whatsapp/types";
 
 function initials(name: string) {
   return name
@@ -110,6 +113,55 @@ function NewConversationDialog({
   );
 }
 
+function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [subdomain, setSubdomain] = useState("");
+  const [token, setToken] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setError(null);
+    setSaving(true);
+    try {
+      await saveUazapiConfigAction(subdomain.trim(), token.trim());
+      setOpen(false);
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar configuração");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline">Configurar Uazapi</Button>} />
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Configurar Uazapi</DialogTitle>
+        </DialogHeader>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="space-y-2">
+          <Input
+            placeholder="Subdomínio (ex: minhaclinica)"
+            value={subdomain}
+            onChange={(e) => setSubdomain(e.target.value)}
+          />
+          <Input
+            placeholder="Token da instância"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+          />
+          <Button onClick={handleSave} disabled={saving || !subdomain.trim() || !token.trim()}>
+            Salvar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function WhatsappClient({ initialConversations }: { initialConversations: Conversation[] }) {
   const [conversations, setConversations] = useState(initialConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
@@ -121,22 +173,42 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
+  const [connection, setConnection] = useState<WhatsappConnection | null>(null);
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [togglingConnection, setTogglingConnection] = useState(false);
 
-  useEffect(() => {
-    getConnectionStatusAction().then(setConnectionStatus);
+  const refreshConnection = useCallback(async () => {
+    const [conn, status] = await Promise.all([
+      getWhatsappConnectionAction(),
+      getConnectionStatusAction(),
+    ]);
+    setConnection(conn);
+    if (conn?.provider === "uazapi" && status === "connecting") {
+      setQrCode(await getUazapiQrCodeAction());
+    } else {
+      setQrCode(null);
+    }
   }, []);
+
+  useEffect(() => {
+    refreshConnection();
+  }, [refreshConnection]);
+
+  useEffect(() => {
+    if (connection?.provider !== "uazapi" || connection?.status !== "connecting") return;
+    const interval = setInterval(refreshConnection, 3000);
+    return () => clearInterval(interval);
+  }, [connection?.provider, connection?.status, refreshConnection]);
 
   async function handleToggleConnection() {
     setTogglingConnection(true);
     try {
-      if (connectionStatus === "connected") {
+      if (connection?.status === "connected") {
         await disconnectWhatsappAction();
       } else {
         await connectWhatsappAction();
       }
-      setConnectionStatus(await getConnectionStatusAction());
+      await refreshConnection();
     } finally {
       setTogglingConnection(false);
     }
@@ -205,25 +277,36 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
         <div className="flex items-center gap-2">
           <Badge
             className={
-              connectionStatus === "connected"
+              connection?.status === "connected"
                 ? "bg-[#25D366]/10 text-[#188a44]"
                 : "bg-muted text-muted-foreground"
             }
           >
-            {connectionStatus === "connected" ? "Conectado" : "Desconectado"}
+            {connection?.status === "connected" ? "Conectado" : "Desconectado"}
           </Badge>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            disabled={togglingConnection}
+            disabled={togglingConnection || !connection?.config}
+            title={!connection?.config ? "Configure a Uazapi antes de conectar" : undefined}
             onClick={handleToggleConnection}
           >
-            {connectionStatus === "connected" ? "Desconectar" : "Conectar"}
+            {connection?.status === "connected" ? "Desconectar" : "Conectar"}
           </Button>
+          <UazapiConfigDialog onSaved={refreshConnection} />
         </div>
         <NewConversationDialog onCreated={handleConversationCreated} />
       </div>
+      {qrCode && (
+        <div className="flex flex-col items-center gap-2 rounded-xl border p-4">
+          <p className="text-sm text-muted-foreground">
+            Escaneie o QR code no WhatsApp do celular para conectar
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element -- QR code is a data: URL from the provider, not an optimizable static asset */}
+          <img src={qrCode} alt="QR code de conexão do WhatsApp" className="size-48" />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 md:grid-cols-[320px_1fr]">
         <div className="flex flex-col border-b md:border-b-0 md:border-r">
