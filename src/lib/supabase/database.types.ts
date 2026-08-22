@@ -462,6 +462,7 @@ export type Database = {
           config: Json | null
           connected_at: string | null
           provider: string
+          qr_code: string | null
           status: string
         }
         Insert: {
@@ -469,6 +470,7 @@ export type Database = {
           config?: Json | null
           connected_at?: string | null
           provider?: string
+          qr_code?: string | null
           status?: string
         }
         Update: {
@@ -476,6 +478,7 @@ export type Database = {
           config?: Json | null
           connected_at?: string | null
           provider?: string
+          qr_code?: string | null
           status?: string
         }
         Relationships: [
