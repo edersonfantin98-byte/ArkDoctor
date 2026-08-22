@@ -58,6 +58,25 @@ describe("UazapiProvider", () => {
     expect(connection?.status).toBe("connecting");
   });
 
+  it("still connects and produces a QR code when webhook registration fails at the transport level", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith("/webhook")) return Promise.reject(new Error("getaddrinfo ENOTFOUND"));
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ qrcode: "data:image/png;base64,abc" }),
+      });
+    });
+
+    const provider = createUazapiProvider(repo);
+    await provider.connect("acc-1");
+
+    expect(await provider.getQrCode("acc-1")).toBe("data:image/png;base64,abc");
+    const connection = await repo.getConnection("acc-1");
+    expect(connection?.status).toBe("connecting");
+  });
+
   it("maps the hibernated status to disconnected", async () => {
     const repo = createInMemoryWhatsappRepository();
     await seedConfig(repo);

@@ -47,7 +47,7 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
           events: ["messages"],
           excludeMessages: ["wasSentByApi"],
         }),
-      });
+      }).catch(() => {});
 
       const response = await fetch(`${baseUrl(config.subdomain)}/instance/connect`, {
         method: "POST",
