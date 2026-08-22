@@ -33,3 +33,42 @@ export async function logMessage(
   await repo.touchConversation(accountId, conversationId, input.body, message.sentAt);
   return message;
 }
+
+export async function handleInboundMessage(
+  whatsappRepo: WhatsappRepository,
+  crmDeps: {
+    findContactByPhone: (accountId: string, phone: string) => Promise<{ id: string; name: string } | null>;
+    createContact: (
+      accountId: string,
+      input: { name: string; phone: string },
+    ) => Promise<{ id: string; name: string }>;
+  },
+  accountId: string,
+  input: { fromPhone: string; fromName?: string; body: string },
+) {
+  let contact = await crmDeps.findContactByPhone(accountId, input.fromPhone);
+  if (!contact) {
+    contact = await crmDeps.createContact(accountId, {
+      name: input.fromName ?? input.fromPhone,
+      phone: input.fromPhone,
+    });
+  }
+
+  let conversation = await whatsappRepo.getConversationByPhone(accountId, input.fromPhone);
+  if (!conversation) {
+    conversation = await whatsappRepo.insertConversation(accountId, {
+      contactId: contact.id,
+      contactName: contact.name,
+      contactPhone: input.fromPhone,
+    });
+  }
+
+  const message = await whatsappRepo.insertMessage(accountId, conversation.id, {
+    direction: "inbound",
+    body: input.body,
+  });
+  await whatsappRepo.touchConversation(accountId, conversation.id, input.body, message.sentAt);
+  await whatsappRepo.incrementUnreadCount(accountId, conversation.id);
+
+  return message;
+}
