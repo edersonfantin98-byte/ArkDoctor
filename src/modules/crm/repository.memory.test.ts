@@ -73,4 +73,18 @@ describe("createInMemoryCrmRepository", () => {
     );
     expect(bothInWideWindow).toBe(2);
   });
+
+  it("finds a contact by exact phone match, scoped to the account", async () => {
+    const repo = createInMemoryCrmRepository();
+    await repo.insertContact("acc-1", { name: "Ana", phone: "11999990000" });
+
+    const found = await repo.findContactByPhone("acc-1", "11999990000");
+    expect(found?.name).toBe("Ana");
+
+    const notFound = await repo.findContactByPhone("acc-1", "00000000000");
+    expect(notFound).toBeNull();
+
+    const wrongAccount = await repo.findContactByPhone("acc-2", "11999990000");
+    expect(wrongAccount).toBeNull();
+  });
 });

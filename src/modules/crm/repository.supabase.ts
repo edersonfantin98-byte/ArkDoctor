@@ -192,6 +192,17 @@ export function createSupabaseCrmRepository(
       return data.map(toContact);
     },
 
+    async findContactByPhone(accountId, phone) {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("phone", phone)
+        .maybeSingle();
+      if (error) throwDbError(error);
+      return data ? toContact(data) : null;
+    },
+
     async countNewContacts(accountId, sinceIso, untilIso) {
       let query = supabase
         .from("contacts")

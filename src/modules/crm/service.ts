@@ -26,6 +26,14 @@ export async function searchContacts(
   return repo.searchContacts(accountId, query);
 }
 
+export async function findContactByPhone(
+  repo: CrmRepository,
+  accountId: string,
+  phone: string,
+): Promise<Contact | null> {
+  return repo.findContactByPhone(accountId, phone);
+}
+
 export async function updateContact(
   repo: CrmRepository,
   accountId: string,

@@ -25,6 +25,7 @@ export interface CrmRepository {
     input: { name?: string; phone?: string; origin?: string | null; notes?: string | null },
   ): Promise<Contact>;
   searchContacts(accountId: string, query: string): Promise<Contact[]>;
+  findContactByPhone(accountId: string, phone: string): Promise<Contact | null>;
   countNewContacts(accountId: string, sinceIso: string, untilIso?: string): Promise<number>;
 
   insertDeal(accountId: string, contactId: string, stageId: string): Promise<Deal>;

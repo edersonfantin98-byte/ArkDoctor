@@ -131,6 +131,12 @@ export function createInMemoryCrmRepository(): CrmRepository {
       );
     },
 
+    async findContactByPhone(accountId, phone) {
+      return (
+        [...contacts.values()].find((c) => c.accountId === accountId && c.phone === phone) ?? null
+      );
+    },
+
     async countNewContacts(accountId, sinceIso, untilIso) {
       return [...contacts.values()].filter(
         (c) =>

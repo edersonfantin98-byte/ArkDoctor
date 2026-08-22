@@ -5,6 +5,7 @@ import {
   createContact,
   createStage,
   deleteStage,
+  findContactByPhone,
   getOpenDealForContact,
   getStages,
   listPipeline,
@@ -281,5 +282,18 @@ describe("getOpenDealForContact", () => {
 
     const noneForOtherContact = await getOpenDealForContact(repo, "acc-1", "no-such-contact");
     expect(noneForOtherContact).toBeNull();
+  });
+});
+
+describe("findContactByPhone", () => {
+  it("delegates to the repository", async () => {
+    const repo = createInMemoryCrmRepository();
+    await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    const found = await findContactByPhone(repo, "acc-1", "11999990000");
+    expect(found?.name).toBe("Ana");
+
+    const notFound = await findContactByPhone(repo, "acc-1", "00000000000");
+    expect(notFound).toBeNull();
   });
 });
