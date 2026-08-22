@@ -81,6 +81,12 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
       conversations.set(conversationId, { ...c, unreadCount: 0 });
     },
 
+    async linkConversationContact(accountId, conversationId, contactId) {
+      const c = conversations.get(conversationId);
+      if (!c || c.accountId !== accountId) return;
+      conversations.set(conversationId, { ...c, contactId });
+    },
+
     async getConnection(accountId) {
       return connections.get(accountId) ?? null;
     },

@@ -68,6 +68,9 @@ export async function handleInboundMessage(
       contactName: contact.name,
       contactPhone: input.fromPhone,
     });
+  } else if (conversation.contactId === null) {
+    await whatsappRepo.linkConversationContact(accountId, conversation.id, contact.id);
+    conversation = { ...conversation, contactId: contact.id };
   }
 
   const message = await whatsappRepo.insertMessage(accountId, conversation.id, {

@@ -22,6 +22,11 @@ export interface WhatsappRepository {
   ): Promise<void>;
   incrementUnreadCount(accountId: string, conversationId: string): Promise<void>;
   resetUnreadCount(accountId: string, conversationId: string): Promise<void>;
+  linkConversationContact(
+    accountId: string,
+    conversationId: string,
+    contactId: string,
+  ): Promise<void>;
   getConnection(accountId: string): Promise<WhatsappConnection | null>;
   upsertConnectionStatus(
     accountId: string,

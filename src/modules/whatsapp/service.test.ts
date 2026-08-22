@@ -123,6 +123,28 @@ describe("handleInboundMessage", () => {
     expect(messages).toHaveLength(1);
   });
 
+  it("links an existing contactless conversation to the resolved contact", async () => {
+    const whatsappRepo = createInMemoryWhatsappRepository();
+    const crmRepo = createInMemoryCrmRepository();
+    const existingConversation = await whatsappRepo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    await handleInboundMessage(whatsappRepo, buildCrmDeps(crmRepo), "acc-1", {
+      fromPhone: "51991234477",
+      fromName: "Carla Souza",
+      body: "Oi, gostaria de agendar uma consulta",
+    });
+
+    const contacts = await crmRepo.searchContacts("acc-1", "Carla");
+    expect(contacts).toHaveLength(1);
+
+    const conversation = await whatsappRepo.getConversation("acc-1", existingConversation.id);
+    expect(conversation?.contactId).toBe(contacts[0].id);
+  });
+
   it("falls back to the phone number as the contact name when none is given", async () => {
     const whatsappRepo = createInMemoryWhatsappRepository();
     const crmRepo = createInMemoryCrmRepository();
