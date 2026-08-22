@@ -143,4 +143,38 @@ describe("createInMemoryWhatsappRepository", () => {
     expect(disconnected.status).toBe("disconnected");
     expect(disconnected.connectedAt).toBeNull();
   });
+
+  it("stores and returns provider config, and preserves it across status updates", async () => {
+    const repo = createInMemoryWhatsappRepository();
+
+    const withConfig = await repo.updateConnectionConfig("acc-1", "uazapi", {
+      subdomain: "minhaclinica",
+      token: "abc123",
+      webhookSecret: "sekret",
+    });
+    expect(withConfig.provider).toBe("uazapi");
+    expect(withConfig.config).toEqual({
+      subdomain: "minhaclinica",
+      token: "abc123",
+      webhookSecret: "sekret",
+    });
+
+    await repo.upsertConnectionStatus("acc-1", "connecting", null);
+    const afterStatusChange = await repo.getConnection("acc-1");
+    expect(afterStatusChange?.config).toEqual({
+      subdomain: "minhaclinica",
+      token: "abc123",
+      webhookSecret: "sekret",
+    });
+  });
+
+  it("stores and clears the QR code", async () => {
+    const repo = createInMemoryWhatsappRepository();
+
+    const withQr = await repo.updateConnectionQrCode("acc-1", "data:image/png;base64,abc");
+    expect(withQr.qrCode).toBe("data:image/png;base64,abc");
+
+    const cleared = await repo.updateConnectionQrCode("acc-1", null);
+    expect(cleared.qrCode).toBeNull();
+  });
 });

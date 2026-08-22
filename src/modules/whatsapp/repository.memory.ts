@@ -98,6 +98,36 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
         provider: existing?.provider ?? "fake",
         status,
         connectedAt,
+        qrCode: existing?.qrCode ?? null,
+        config: existing?.config ?? null,
+      };
+      connections.set(accountId, connection);
+      return connection;
+    },
+
+    async updateConnectionConfig(accountId, provider, config) {
+      const existing = connections.get(accountId);
+      const connection: WhatsappConnection = {
+        accountId,
+        provider,
+        status: existing?.status ?? "disconnected",
+        connectedAt: existing?.connectedAt ?? null,
+        qrCode: existing?.qrCode ?? null,
+        config,
+      };
+      connections.set(accountId, connection);
+      return connection;
+    },
+
+    async updateConnectionQrCode(accountId, qrCode) {
+      const existing = connections.get(accountId);
+      const connection: WhatsappConnection = {
+        accountId,
+        provider: existing?.provider ?? "fake",
+        status: existing?.status ?? "disconnected",
+        connectedAt: existing?.connectedAt ?? null,
+        qrCode,
+        config: existing?.config ?? null,
       };
       connections.set(accountId, connection);
       return connection;

@@ -28,4 +28,6 @@ export interface WhatsappConnection {
   provider: string;
   status: ConnectionStatus;
   connectedAt: string | null;
+  qrCode: string | null;
+  config: Record<string, string> | null;
 }

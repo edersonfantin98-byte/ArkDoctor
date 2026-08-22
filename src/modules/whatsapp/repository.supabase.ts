@@ -45,6 +45,8 @@ function toConnection(
     provider: row.provider,
     status: row.status as ConnectionStatus,
     connectedAt: row.connected_at,
+    qrCode: row.qr_code,
+    config: row.config as Record<string, string> | null,
   };
 }
 
@@ -194,6 +196,26 @@ export function createSupabaseWhatsappRepository(
           { account_id: accountId, status, connected_at: connectedAt },
           { onConflict: "account_id" },
         )
+        .select("*")
+        .single();
+      if (error) throwDbError(error);
+      return toConnection(data);
+    },
+
+    async updateConnectionConfig(accountId, provider, config) {
+      const { data, error } = await supabase
+        .from("whatsapp_connections")
+        .upsert({ account_id: accountId, provider, config }, { onConflict: "account_id" })
+        .select("*")
+        .single();
+      if (error) throwDbError(error);
+      return toConnection(data);
+    },
+
+    async updateConnectionQrCode(accountId, qrCode) {
+      const { data, error } = await supabase
+        .from("whatsapp_connections")
+        .upsert({ account_id: accountId, qr_code: qrCode }, { onConflict: "account_id" })
         .select("*")
         .single();
       if (error) throwDbError(error);

@@ -33,4 +33,10 @@ export interface WhatsappRepository {
     status: ConnectionStatus,
     connectedAt: string | null,
   ): Promise<WhatsappConnection>;
+  updateConnectionConfig(
+    accountId: string,
+    provider: string,
+    config: Record<string, string>,
+  ): Promise<WhatsappConnection>;
+  updateConnectionQrCode(accountId: string, qrCode: string | null): Promise<WhatsappConnection>;
 }
