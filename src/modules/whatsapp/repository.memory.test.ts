@@ -57,6 +57,29 @@ describe("createInMemoryWhatsappRepository", () => {
     expect(notFound).toBeNull();
   });
 
+  // Supabase's .maybeSingle() throws on duplicate phone numbers (no unique
+  // constraint on contact_phone), so the Supabase repo orders by created_at
+  // ascending and takes the first row. This test pins the in-memory repo's
+  // existing .find() behavior (first in insertion order) so both repos agree
+  // on which row wins when phones collide. The Supabase repo itself can't be
+  // tested here (no live DB in this environment).
+  it("returns the first-inserted conversation when multiple share a phone", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const first = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+    await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Duplicada",
+      contactPhone: "51991234477",
+    });
+
+    const found = await repo.getConversationByPhone("acc-1", "51991234477");
+    expect(found?.id).toBe(first.id);
+  });
+
   it("increments and resets the unread count for a conversation", async () => {
     const repo = createInMemoryWhatsappRepository();
     const conversation = await repo.insertConversation("acc-1", {
@@ -73,6 +96,34 @@ describe("createInMemoryWhatsappRepository", () => {
     await repo.resetUnreadCount("acc-1", conversation.id);
     const afterReset = await repo.getConversation("acc-1", conversation.id);
     expect(afterReset?.unreadCount).toBe(0);
+  });
+
+  it("links a conversation to a contact", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    await repo.linkConversationContact("acc-1", conversation.id, "contact-1");
+
+    const updated = await repo.getConversation("acc-1", conversation.id);
+    expect(updated?.contactId).toBe("contact-1");
+  });
+
+  it("does not link a conversation belonging to another account", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    await repo.linkConversationContact("acc-2", conversation.id, "contact-1");
+
+    const unchanged = await repo.getConversation("acc-1", conversation.id);
+    expect(unchanged?.contactId).toBeNull();
   });
 
   it("returns null for a connection that hasn't been set up, then reflects upserts", async () => {

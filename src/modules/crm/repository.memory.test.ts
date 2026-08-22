@@ -87,4 +87,19 @@ describe("createInMemoryCrmRepository", () => {
     const wrongAccount = await repo.findContactByPhone("acc-2", "11999990000");
     expect(wrongAccount).toBeNull();
   });
+
+  // Supabase's .maybeSingle() throws on duplicate phone numbers (no unique
+  // constraint on contacts.phone), so the Supabase repo orders by created_at
+  // ascending and takes the first row. This test pins the in-memory repo's
+  // existing .find() behavior (first in insertion order) so both repos agree
+  // on which row wins when phones collide. The Supabase repo itself can't be
+  // tested here (no live DB in this environment).
+  it("returns the first-inserted contact when multiple share a phone", async () => {
+    const repo = createInMemoryCrmRepository();
+    const first = await repo.insertContact("acc-1", { name: "Ana", phone: "11999990000" });
+    await repo.insertContact("acc-1", { name: "Ana Duplicada", phone: "11999990000" });
+
+    const found = await repo.findContactByPhone("acc-1", "11999990000");
+    expect(found?.id).toBe(first.id);
+  });
 });

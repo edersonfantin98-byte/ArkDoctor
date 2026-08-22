@@ -89,11 +89,16 @@ export function createSupabaseWhatsappRepository(
     },
 
     async getConversationByPhone(accountId, phone) {
+      // contact_phone has no unique constraint, so pick the oldest row
+      // deterministically instead of using .maybeSingle() directly (which
+      // throws on duplicates).
       const { data, error } = await supabase
         .from("whatsapp_conversations")
         .select("*")
         .eq("account_id", accountId)
         .eq("contact_phone", phone)
+        .order("created_at", { ascending: true })
+        .limit(1)
         .maybeSingle();
       if (error) throwDbError(error);
       return data ? toConversation(data) : null;
@@ -158,6 +163,15 @@ export function createSupabaseWhatsappRepository(
       const { error } = await supabase
         .from("whatsapp_conversations")
         .update({ unread_count: 0 })
+        .eq("account_id", accountId)
+        .eq("id", conversationId);
+      if (error) throwDbError(error);
+    },
+
+    async linkConversationContact(accountId, conversationId, contactId) {
+      const { error } = await supabase
+        .from("whatsapp_conversations")
+        .update({ contact_id: contactId })
         .eq("account_id", accountId)
         .eq("id", conversationId);
       if (error) throwDbError(error);

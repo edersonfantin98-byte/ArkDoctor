@@ -193,11 +193,15 @@ export function createSupabaseCrmRepository(
     },
 
     async findContactByPhone(accountId, phone) {
+      // phone has no unique constraint, so pick the oldest row deterministically
+      // instead of using .maybeSingle() directly (which throws on duplicates).
       const { data, error } = await supabase
         .from("contacts")
         .select("*")
         .eq("account_id", accountId)
         .eq("phone", phone)
+        .order("created_at", { ascending: true })
+        .limit(1)
         .maybeSingle();
       if (error) throwDbError(error);
       return data ? toContact(data) : null;

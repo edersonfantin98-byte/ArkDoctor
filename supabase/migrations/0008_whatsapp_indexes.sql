@@ -1,0 +1,1 @@
+create index whatsapp_conversations_account_phone_idx on whatsapp_conversations (account_id, contact_phone);
