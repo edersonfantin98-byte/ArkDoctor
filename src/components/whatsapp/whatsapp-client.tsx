@@ -20,8 +20,12 @@ import {
   getConversationMessagesAction,
   logMessageAction,
   startConversationAction,
+  getConnectionStatusAction,
+  connectWhatsappAction,
+  disconnectWhatsappAction,
+  resetUnreadCountAction,
 } from "@/app/(app)/whatsapp/actions";
-import type { Conversation, Message } from "@/modules/whatsapp/types";
+import type { Conversation, Message, ConnectionStatus } from "@/modules/whatsapp/types";
 
 function initials(name: string) {
   return name
@@ -117,6 +121,26 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
+  const [togglingConnection, setTogglingConnection] = useState(false);
+
+  useEffect(() => {
+    getConnectionStatusAction().then(setConnectionStatus);
+  }, []);
+
+  async function handleToggleConnection() {
+    setTogglingConnection(true);
+    try {
+      if (connectionStatus === "connected") {
+        await disconnectWhatsappAction();
+      } else {
+        await connectWhatsappAction();
+      }
+      setConnectionStatus(await getConnectionStatusAction());
+    } finally {
+      setTogglingConnection(false);
+    }
+  }
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -126,20 +150,24 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     let cancelled = false;
     setMessagesLoading(true);
     setMessagesError(null);
-    getConversationMessagesAction(selectedConversationId)
-      .then((data) => {
-        if (!cancelled) setMessages(data);
-      })
-      .catch((err) => {
+    (async () => {
+      try {
+        const data = await getConversationMessagesAction(selectedConversationId);
+        if (cancelled) return;
+        setMessages(data);
+        await resetUnreadCountAction(selectedConversationId);
+        if (cancelled) return;
+        setConversations((prev) =>
+          prev.map((c) => (c.id === selectedConversationId ? { ...c, unreadCount: 0 } : c)),
+        );
+      } catch (err) {
         if (!cancelled) {
-          setMessagesError(
-            err instanceof Error ? err.message : "Erro ao carregar mensagens",
-          );
+          setMessagesError(err instanceof Error ? err.message : "Erro ao carregar mensagens");
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setMessagesLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -174,7 +202,26 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   return (
     <div className="space-y-4 px-6 pb-6">
       <div className="flex items-center justify-between gap-2">
-        <Badge className="bg-[#25D366]/10 text-[#188a44]">Conectado</Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            className={
+              connectionStatus === "connected"
+                ? "bg-[#25D366]/10 text-[#188a44]"
+                : "bg-muted text-muted-foreground"
+            }
+          >
+            {connectionStatus === "connected" ? "Conectado" : "Desconectado"}
+          </Badge>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={togglingConnection}
+            onClick={handleToggleConnection}
+          >
+            {connectionStatus === "connected" ? "Desconectar" : "Conectar"}
+          </Button>
+        </div>
         <NewConversationDialog onCreated={handleConversationCreated} />
       </div>
 
