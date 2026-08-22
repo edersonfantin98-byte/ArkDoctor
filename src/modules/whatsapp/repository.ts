@@ -1,4 +1,4 @@
-import type { Conversation, Message } from "./types";
+import type { Conversation, Message, WhatsappConnection, ConnectionStatus } from "./types";
 
 export interface WhatsappRepository {
   listConversations(accountId: string): Promise<Conversation[]>;
@@ -22,4 +22,10 @@ export interface WhatsappRepository {
   ): Promise<void>;
   incrementUnreadCount(accountId: string, conversationId: string): Promise<void>;
   resetUnreadCount(accountId: string, conversationId: string): Promise<void>;
+  getConnection(accountId: string): Promise<WhatsappConnection | null>;
+  upsertConnectionStatus(
+    accountId: string,
+    status: ConnectionStatus,
+    connectedAt: string | null,
+  ): Promise<WhatsappConnection>;
 }

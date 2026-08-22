@@ -74,4 +74,22 @@ describe("createInMemoryWhatsappRepository", () => {
     const afterReset = await repo.getConversation("acc-1", conversation.id);
     expect(afterReset?.unreadCount).toBe(0);
   });
+
+  it("returns null for a connection that hasn't been set up, then reflects upserts", async () => {
+    const repo = createInMemoryWhatsappRepository();
+
+    expect(await repo.getConnection("acc-1")).toBeNull();
+
+    const connected = await repo.upsertConnectionStatus(
+      "acc-1",
+      "connected",
+      "2026-08-21T10:00:00.000Z",
+    );
+    expect(connected.status).toBe("connected");
+    expect(connected.connectedAt).toBe("2026-08-21T10:00:00.000Z");
+
+    const disconnected = await repo.upsertConnectionStatus("acc-1", "disconnected", null);
+    expect(disconnected.status).toBe("disconnected");
+    expect(disconnected.connectedAt).toBeNull();
+  });
 });

@@ -1,7 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { WhatsappRepository } from "./repository";
-import type { Conversation, Message, MessageDirection } from "./types";
+import type { Conversation, Message, MessageDirection, WhatsappConnection, ConnectionStatus } from "./types";
 
 function throwDbError(error: PostgrestError): never {
   console.error("[whatsapp/repository.supabase]", error);
@@ -34,6 +34,17 @@ function toMessage(
     direction: row.direction as MessageDirection,
     body: row.body,
     sentAt: row.sent_at,
+  };
+}
+
+function toConnection(
+  row: Database["public"]["Tables"]["whatsapp_connections"]["Row"],
+): WhatsappConnection {
+  return {
+    accountId: row.account_id,
+    provider: row.provider,
+    status: row.status as ConnectionStatus,
+    connectedAt: row.connected_at,
   };
 }
 
@@ -150,6 +161,29 @@ export function createSupabaseWhatsappRepository(
         .eq("account_id", accountId)
         .eq("id", conversationId);
       if (error) throwDbError(error);
+    },
+
+    async getConnection(accountId) {
+      const { data, error } = await supabase
+        .from("whatsapp_connections")
+        .select("*")
+        .eq("account_id", accountId)
+        .maybeSingle();
+      if (error) throwDbError(error);
+      return data ? toConnection(data) : null;
+    },
+
+    async upsertConnectionStatus(accountId, status, connectedAt) {
+      const { data, error } = await supabase
+        .from("whatsapp_connections")
+        .upsert(
+          { account_id: accountId, status, connected_at: connectedAt },
+          { onConflict: "account_id" },
+        )
+        .select("*")
+        .single();
+      if (error) throwDbError(error);
+      return toConnection(data);
     },
   };
 }

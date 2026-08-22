@@ -1,9 +1,10 @@
 import type { WhatsappRepository } from "./repository";
-import type { Conversation, Message } from "./types";
+import type { Conversation, Message, WhatsappConnection } from "./types";
 
 export function createInMemoryWhatsappRepository(): WhatsappRepository {
   const conversations = new Map<string, Conversation>();
   const messages = new Map<string, Message>();
+  const connections = new Map<string, WhatsappConnection>();
 
   return {
     async listConversations(accountId) {
@@ -78,6 +79,22 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
       const c = conversations.get(conversationId);
       if (!c || c.accountId !== accountId) return;
       conversations.set(conversationId, { ...c, unreadCount: 0 });
+    },
+
+    async getConnection(accountId) {
+      return connections.get(accountId) ?? null;
+    },
+
+    async upsertConnectionStatus(accountId, status, connectedAt) {
+      const existing = connections.get(accountId);
+      const connection: WhatsappConnection = {
+        accountId,
+        provider: existing?.provider ?? "fake",
+        status,
+        connectedAt,
+      };
+      connections.set(accountId, connection);
+      return connection;
     },
   };
 }

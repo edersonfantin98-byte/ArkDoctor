@@ -20,3 +20,12 @@ export interface Message {
   body: string;
   sentAt: string;
 }
+
+export type ConnectionStatus = "disconnected" | "connecting" | "connected";
+
+export interface WhatsappConnection {
+  accountId: string;
+  provider: string;
+  status: ConnectionStatus;
+  connectedAt: string | null;
+}
