@@ -1,6 +1,7 @@
 import type { WhatsappRepository } from "./repository";
 import type { ConnectionStatus } from "./types";
 import { createFakeWhatsappProvider } from "./provider.fake";
+import { createUazapiProvider } from "./provider.uazapi";
 
 export interface WhatsappProvider {
   connect(accountId: string): Promise<void>;
@@ -18,5 +19,6 @@ export function getWhatsappProvider(
   repo: WhatsappRepository,
 ): WhatsappProvider {
   if (providerName === "fake") return createFakeWhatsappProvider(repo);
+  if (providerName === "uazapi") return createUazapiProvider(repo);
   throw new Error(`Provedor de WhatsApp desconhecido: ${providerName}`);
 }
