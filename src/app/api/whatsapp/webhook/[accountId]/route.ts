@@ -9,24 +9,24 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ accountId: string }> },
 ) {
-  const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
-  if (webhookSecret && request.headers.get("x-webhook-secret") !== webhookSecret) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-  }
-
   const { accountId } = await params;
-  const body = await request.json();
-
-  const fromPhone = typeof body.fromPhone === "string" ? body.fromPhone : null;
-  const messageBody = typeof body.body === "string" ? body.body : null;
-  if (!fromPhone || !messageBody) {
-    return NextResponse.json({ error: "fromPhone e body são obrigatórios" }, { status: 400 });
-  }
-  const fromName = typeof body.fromName === "string" ? body.fromName : undefined;
+  const url = new URL(request.url);
+  const providedSecret = url.searchParams.get("secret");
 
   const supabase = createServiceRoleSupabaseClient();
   const whatsappRepo = createSupabaseWhatsappRepository(supabase);
   const crmRepo = createSupabaseCrmRepository(supabase);
+
+  const connection = await whatsappRepo.getConnection(accountId);
+  if (!whatsapp.isValidWebhookSecret(connection, providedSecret)) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const rawBody = await request.json();
+  const parsed = whatsapp.parseWebhookPayload(rawBody);
+  if (!parsed) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
 
   const message = await whatsapp.handleInboundMessage(
     whatsappRepo,
@@ -35,7 +35,7 @@ export async function POST(
       createContact: (accId, input) => crm.createContact(crmRepo, accId, input),
     },
     accountId,
-    { fromPhone, fromName, body: messageBody },
+    parsed,
   );
 
   return NextResponse.json({ ok: true, messageId: message.id });

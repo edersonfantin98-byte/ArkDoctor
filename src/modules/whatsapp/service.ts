@@ -1,6 +1,8 @@
 import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
+import { normalizeWhatsappJid } from "./provider.uazapi";
+import type { WhatsappConnection } from "./types";
 
 export async function listConversations(repo: WhatsappRepository, accountId: string) {
   return repo.listConversations(accountId);
@@ -101,4 +103,43 @@ export async function resetUnreadCount(
   conversationId: string,
 ) {
   await repo.resetUnreadCount(accountId, conversationId);
+}
+
+export function isValidWebhookSecret(
+  connection: WhatsappConnection | null,
+  providedSecret: string | null,
+): boolean {
+  const expectedSecret = connection?.config?.webhookSecret;
+  if (!expectedSecret) return true;
+  return providedSecret === expectedSecret;
+}
+
+export function parseWebhookPayload(
+  body: unknown,
+): { fromPhone: string; fromName?: string; body: string } | null {
+  if (typeof body !== "object" || body === null) return null;
+  const payload = body as Record<string, unknown>;
+
+  if (payload.event === "messages") {
+    const data = payload.data;
+    if (typeof data !== "object" || data === null) return null;
+    const eventData = data as Record<string, unknown>;
+    if (eventData.fromMe === true || eventData.isGroup === true) return null;
+    if (typeof eventData.sender !== "string" || typeof eventData.text !== "string") return null;
+    return {
+      fromPhone: normalizeWhatsappJid(eventData.sender),
+      fromName: typeof eventData.senderName === "string" ? eventData.senderName : undefined,
+      body: eventData.text,
+    };
+  }
+
+  if (typeof payload.fromPhone === "string" && typeof payload.body === "string") {
+    return {
+      fromPhone: payload.fromPhone,
+      fromName: typeof payload.fromName === "string" ? payload.fromName : undefined,
+      body: payload.body,
+    };
+  }
+
+  return null;
 }
