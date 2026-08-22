@@ -1,10 +1,12 @@
 "use server";
 
+import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAccountId } from "@/lib/supabase/account";
 import { createSupabaseWhatsappRepository } from "@/modules/whatsapp/repository.supabase";
 import { getWhatsappProvider } from "@/modules/whatsapp/provider";
+import { createUazapiProvider } from "@/modules/whatsapp/provider.uazapi";
 import * as whatsapp from "@/modules/whatsapp/service";
 
 async function getRepoAndAccount() {
@@ -33,7 +35,8 @@ export async function startConversationAction(input: unknown) {
 
 export async function logMessageAction(conversationId: string, input: unknown) {
   const { repo, accountId } = await getRepoAndAccount();
-  const provider = getWhatsappProvider("fake", repo);
+  const connection = await repo.getConnection(accountId);
+  const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
   const message = await whatsapp.logMessage(repo, provider, accountId, conversationId, input);
   revalidatePath("/whatsapp");
   return message;
@@ -41,20 +44,23 @@ export async function logMessageAction(conversationId: string, input: unknown) {
 
 export async function getConnectionStatusAction() {
   const { repo, accountId } = await getRepoAndAccount();
-  const provider = getWhatsappProvider("fake", repo);
+  const connection = await repo.getConnection(accountId);
+  const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
   return whatsapp.getConnectionStatus(provider, accountId);
 }
 
 export async function connectWhatsappAction() {
   const { repo, accountId } = await getRepoAndAccount();
-  const provider = getWhatsappProvider("fake", repo);
+  const connection = await repo.getConnection(accountId);
+  const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
   await whatsapp.connectWhatsapp(provider, accountId);
   revalidatePath("/whatsapp");
 }
 
 export async function disconnectWhatsappAction() {
   const { repo, accountId } = await getRepoAndAccount();
-  const provider = getWhatsappProvider("fake", repo);
+  const connection = await repo.getConnection(accountId);
+  const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
   await whatsapp.disconnectWhatsapp(provider, accountId);
   revalidatePath("/whatsapp");
 }
@@ -63,4 +69,28 @@ export async function resetUnreadCountAction(conversationId: string) {
   const { repo, accountId } = await getRepoAndAccount();
   await whatsapp.resetUnreadCount(repo, accountId, conversationId);
   revalidatePath("/whatsapp");
+}
+
+export async function saveUazapiConfigAction(subdomain: string, token: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  const existing = await repo.getConnection(accountId);
+  const webhookSecret = existing?.config?.webhookSecret ?? crypto.randomUUID();
+  const connection = await repo.updateConnectionConfig(accountId, "uazapi", {
+    subdomain,
+    token,
+    webhookSecret,
+  });
+  revalidatePath("/whatsapp");
+  return connection;
+}
+
+export async function getUazapiQrCodeAction() {
+  const { repo, accountId } = await getRepoAndAccount();
+  const provider = createUazapiProvider(repo);
+  return provider.getQrCode(accountId);
+}
+
+export async function getWhatsappConnectionAction() {
+  const { repo, accountId } = await getRepoAndAccount();
+  return repo.getConnection(accountId);
 }
