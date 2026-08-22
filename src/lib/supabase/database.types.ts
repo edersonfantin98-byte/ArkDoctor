@@ -456,6 +456,38 @@ export type Database = {
           },
         ]
       }
+      whatsapp_connections: {
+        Row: {
+          account_id: string
+          config: Json | null
+          connected_at: string | null
+          provider: string
+          status: string
+        }
+        Insert: {
+          account_id: string
+          config?: Json | null
+          connected_at?: string | null
+          provider?: string
+          status?: string
+        }
+        Update: {
+          account_id?: string
+          config?: Json | null
+          connected_at?: string | null
+          provider?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_conversations: {
         Row: {
           account_id: string
