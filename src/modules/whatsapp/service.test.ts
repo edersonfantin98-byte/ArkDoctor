@@ -345,4 +345,20 @@ describe("parseWebhookPayload", () => {
     });
     expect(result).toBeNull();
   });
+
+  it("parses text from extendedTextMessage (replies and link-preview messages)", () => {
+    const result = parseWebhookPayload({
+      event: "messages.upsert",
+      data: {
+        key: { remoteJid: "5511999999999@s.whatsapp.net", fromMe: false },
+        message: { extendedTextMessage: { text: "Respondendo sua mensagem" } },
+        pushName: "Carla Souza",
+      },
+    });
+    expect(result).toEqual({
+      fromPhone: "5511999999999",
+      fromName: "Carla Souza",
+      body: "Respondendo sua mensagem",
+    });
+  });
 });

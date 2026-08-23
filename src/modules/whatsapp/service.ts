@@ -144,10 +144,15 @@ export function parseWebhookPayload(
     if (typeof keyData.remoteJid !== "string" || keyData.remoteJid.endsWith("@g.us")) return null;
 
     const message = eventData.message;
+    const messageObj =
+      typeof message === "object" && message !== null ? (message as Record<string, unknown>) : null;
+    const extendedText = messageObj?.extendedTextMessage;
     const body =
-      typeof message === "object" && message !== null
-        ? (message as Record<string, unknown>).conversation
-        : undefined;
+      typeof messageObj?.conversation === "string"
+        ? messageObj.conversation
+        : typeof extendedText === "object" && extendedText !== null
+          ? (extendedText as Record<string, unknown>).text
+          : undefined;
     if (typeof body !== "string") return null;
 
     return {

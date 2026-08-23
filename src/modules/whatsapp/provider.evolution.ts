@@ -70,7 +70,7 @@ export function createEvolutionProvider(repo: WhatsappRepository): EvolutionProv
         });
         if (!createResponse.ok) throw new Error("Falha ao criar a instância na Evolution API");
         const data = await createResponse.json();
-        qrCode = data.qrcode?.base64 ?? null;
+        qrCode = data.qrcode?.base64 ?? data.qrcode ?? data.base64 ?? data.code ?? null;
       } else {
         const connectResponse = await fetch(`${config.baseUrl}/instance/connect/${config.instanceName}`, {
           method: "GET",
@@ -78,7 +78,11 @@ export function createEvolutionProvider(repo: WhatsappRepository): EvolutionProv
         });
         if (!connectResponse.ok) throw new Error("Falha ao conectar com a Evolution API");
         const data = await connectResponse.json();
-        qrCode = data.qrcode ?? null;
+        qrCode = data.qrcode?.base64 ?? data.qrcode ?? data.base64 ?? data.code ?? null;
+      }
+
+      if (qrCode && !qrCode.startsWith("data:")) {
+        qrCode = `data:image/png;base64,${qrCode}`;
       }
 
       await repo.upsertConnectionStatus(accountId, "connecting", null);
@@ -92,7 +96,7 @@ export function createEvolutionProvider(repo: WhatsappRepository): EvolutionProv
       await fetch(`${config.baseUrl}/instance/logout/${config.instanceName}`, {
         method: "DELETE",
         headers: { apikey: config.apiKey },
-      });
+      }).catch(() => {});
 
       await repo.upsertConnectionStatus(accountId, "disconnected", null);
       await repo.updateConnectionQrCode(accountId, null);

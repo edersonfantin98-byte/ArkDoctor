@@ -81,6 +81,8 @@ export async function saveUazapiConfigAction(subdomain: string, token: string) {
     token,
     webhookSecret,
   });
+  await repo.upsertConnectionStatus(accountId, "disconnected", null);
+  await repo.updateConnectionQrCode(accountId, null);
   revalidatePath("/whatsapp");
 }
 
@@ -100,6 +102,8 @@ export async function saveEvolutionConfigAction(baseUrl: string, instanceName: s
     apiKey,
     webhookSecret,
   });
+  await repo.upsertConnectionStatus(accountId, "disconnected", null);
+  await repo.updateConnectionQrCode(accountId, null);
   revalidatePath("/whatsapp");
 }
 

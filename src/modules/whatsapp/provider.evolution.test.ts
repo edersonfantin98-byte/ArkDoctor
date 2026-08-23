@@ -173,4 +173,64 @@ describe("EvolutionProvider", () => {
     expect(connection?.status).toBe("disconnected");
     expect(connection?.qrCode).toBeNull();
   });
+
+  it("still clears the connection status and QR code when the logout call fails at the transport level", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    await repo.updateConnectionQrCode("acc-1", "data:image/png;base64,abc");
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith("/instance/logout/arkdoctor")) return Promise.reject(new Error("getaddrinfo ENOTFOUND"));
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const provider = createEvolutionProvider(repo);
+    await expect(provider.disconnect("acc-1")).resolves.not.toThrow();
+
+    const connection = await repo.getConnection("acc-1");
+    expect(connection?.status).toBe("disconnected");
+    expect(connection?.qrCode).toBeNull();
+  });
+
+  it("falls back to a bare base64 string when the create-instance response has no qrcode.base64, and prefixes it as a data URL", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith("/webhook/set/arkdoctor")) return Promise.reject(new Error("network error"));
+      if (url.endsWith("/instance/connectionState/arkdoctor")) {
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+      }
+      if (url.endsWith("/instance/create")) {
+        return Promise.resolve({ ok: true, json: async () => ({ qrcode: "bare-base64-string" }) });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const provider = createEvolutionProvider(repo);
+    await provider.connect("acc-1");
+
+    expect(await provider.getQrCode("acc-1")).toBe("data:image/png;base64,bare-base64-string");
+  });
+
+  it("does not double-prefix a qrcode that is already a data: URL", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    fetchMock.mockImplementation((url: string) => {
+      if (url.endsWith("/webhook/set/arkdoctor")) return Promise.reject(new Error("network error"));
+      if (url.endsWith("/instance/connectionState/arkdoctor")) {
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+      }
+      if (url.endsWith("/instance/create")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ qrcode: "data:image/png;base64,already-prefixed" }),
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const provider = createEvolutionProvider(repo);
+    await provider.connect("acc-1");
+
+    expect(await provider.getQrCode("acc-1")).toBe("data:image/png;base64,already-prefixed");
+  });
 });
