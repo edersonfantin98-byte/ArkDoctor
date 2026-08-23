@@ -7,6 +7,7 @@ import { getCurrentAccountId } from "@/lib/supabase/account";
 import { createSupabaseWhatsappRepository } from "@/modules/whatsapp/repository.supabase";
 import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import { createUazapiProvider } from "@/modules/whatsapp/provider.uazapi";
+import { createEvolutionProvider } from "@/modules/whatsapp/provider.evolution";
 import * as whatsapp from "@/modules/whatsapp/service";
 
 async function getRepoAndAccount() {
@@ -86,6 +87,25 @@ export async function saveUazapiConfigAction(subdomain: string, token: string) {
 export async function getUazapiQrCodeAction() {
   const { repo, accountId } = await getRepoAndAccount();
   const provider = createUazapiProvider(repo);
+  return provider.getQrCode(accountId);
+}
+
+export async function saveEvolutionConfigAction(baseUrl: string, instanceName: string, apiKey: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  const existing = await repo.getConnection(accountId);
+  const webhookSecret = existing?.config?.webhookSecret ?? crypto.randomUUID();
+  await repo.updateConnectionConfig(accountId, "evolution", {
+    baseUrl,
+    instanceName,
+    apiKey,
+    webhookSecret,
+  });
+  revalidatePath("/whatsapp");
+}
+
+export async function getEvolutionQrCodeAction() {
+  const { repo, accountId } = await getRepoAndAccount();
+  const provider = createEvolutionProvider(repo);
   return provider.getQrCode(accountId);
 }
 
