@@ -1,7 +1,7 @@
 # ArkDoctor — Design Doc
 
-Status: em construção (brainstorming em andamento)
-Última atualização: 2026-08-20
+Status: implementado (as 4 fases descritas abaixo estão construídas); ver `docs/prd/arkdoctor-prd.md` seção "Estado Atual da Implementação" para divergências e gaps
+Última atualização: 2026-08-22
 
 ## Visão Geral
 

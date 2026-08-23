@@ -1,7 +1,7 @@
 # WhatsApp Provider Adapter — Design
 
-Status: aprovado para implementação
-Última atualização: 2026-08-21
+Status: implementado (o provider real da Uazapi descrito como próximo passo já foi construído — ver `docs/superpowers/specs/2026-08-21-uazapi-provider-design.md`)
+Última atualização: 2026-08-22
 
 ## Contexto
 

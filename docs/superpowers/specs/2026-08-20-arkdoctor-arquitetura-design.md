@@ -1,7 +1,7 @@
 # ArkDoctor — Arquitetura & Setup Compartilhado — Design Doc
 
-Status: aprovado
-Última atualização: 2026-08-20
+Status: implementado
+Última atualização: 2026-08-22
 
 ## Contexto
 
@@ -9,14 +9,13 @@ Este documento é a spec "guarda-chuva" de arquitetura e infraestrutura comparti
 
 Cada fase terá sua própria spec técnica detalhada (schema específico, rotas, componentes) e seu próprio plano de implementação, escritos separadamente. Esta spec cobre apenas o que é comum a todas elas.
 
-O repositório é greenfield: não há código ainda, apenas documentação.
-
 ## Arquitetura & Stack
 
-- **Framework**: Next.js 15 (App Router), TypeScript. Server Components e Server Actions como padrão de acesso a dados/mutações — evita duplicar API routes quando não há necessidade de um endpoint HTTP separado (ex.: webhook do WhatsApp, que sim precisa de API route).
+- **Framework**: Next.js 16 (App Router), TypeScript. Server Components e Server Actions como padrão de acesso a dados/mutações — evita duplicar API routes quando não há necessidade de um endpoint HTTP separado (ex.: webhook do WhatsApp, que sim precisa de API route).
 - **UI**: Tailwind CSS + shadcn/ui (componentes copiados para o projeto e customizáveis) para formulários, diálogos, tabelas, kanban. Recharts para os gráficos do dashboard financeiro. Calendário (dia/semana/mês) construído como componente próprio, sem lib pesada de terceiros — o caso de uso (criar/editar/bloquear horários) é simples o suficiente para não justificar uma dependência como FullCalendar.
 - **Banco de dados & Auth**: Supabase (Postgres + Supabase Auth). Acesso via `@supabase/supabase-js` e `@supabase/ssr` diretamente em Server Components/Server Actions — sem camada de ORM adicional. Tipos TypeScript gerados a partir do schema via `supabase gen types typescript`.
 - **Segurança de dados**: Row Level Security (RLS) do Postgres habilitada em todas as tabelas de domínio desde o início, com policies baseadas em `account_id`. Mesmo com um único usuário no MVP, isso garante isolamento de dados correto por padrão e evita retrabalho de segurança quando o produto expandir para múltiplas contas/usuários.
+- **Proxy / autenticação de rota / CSP**: `src/proxy.ts` (a partir do Next.js 16, o arquivo antes chamado `middleware.ts` foi renomeado para `proxy.ts` — precisa ficar no mesmo nível de `app/`, ou seja, dentro de `src/`, não na raiz do projeto) roda em toda rota não-estática. Gera um nonce por request e define o header `Content-Security-Policy` com `script-src 'self' 'nonce-<valor>' 'strict-dynamic'` (mais `'unsafe-eval'` só em desenvolvimento, exigido pelas ferramentas de debug do React em dev). Um `script-src` sem nonce/`unsafe-inline` bloqueia os scripts inline que o próprio Next injeta para hidratar a página — descoberto via um bug real em produção onde nenhum componente client-side reagia a clique algum. O mesmo arquivo também redireciona para `/login` requisições não-autenticadas às rotas protegidas (`PROTECTED_PREFIXES`: `/pipeline`, `/financeiro`, `/agenda`, `/dashboard`, `/whatsapp`, `/agendamento`, `/procedimentos`).
 - **Deploy**: Cloudflare Pages, via adapter OpenNext para Next.js.
 - **Testes**: Vitest + React Testing Library. Sem testes end-to-end (Playwright) no MVP — reavaliar se a complexidade de fluxos entre módulos justificar no futuro.
 
@@ -31,15 +30,17 @@ O repositório é greenfield: não há código ainda, apenas documentação.
 
 ```
 src/
-  app/                    # rotas (App Router): /login, /pipeline, /agenda, /financeiro, /inbox
+  app/                    # rotas (App Router): /login, /pipeline, /agenda, /procedimentos,
+                           # /financeiro, /whatsapp, /dashboard, /agendamento
+  proxy.ts                # CSP por request + guarda de autenticação (ver seção Arquitetura & Stack)
   components/             # componentes React reutilizáveis (components/ui = shadcn)
   modules/
     crm/                  # server actions + lógica de domínio do CRM/Pipeline
-    scheduling/           # agendamento/calendário
+    scheduling/           # agendamento/calendário + procedimentos
     finance/              # financeiro/dashboard
     whatsapp/             # adapter + inbox
   lib/
-    supabase/             # clients (server, browser, middleware) + tipos gerados
+    supabase/             # clients (server, browser) + tipos gerados
   types/
 supabase/
   migrations/             # SQL migrations versionadas (Supabase CLI)

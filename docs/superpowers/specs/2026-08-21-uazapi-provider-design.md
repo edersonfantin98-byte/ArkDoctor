@@ -1,7 +1,7 @@
 # Uazapi Provider — Design
 
-Status: aprovado para implementação
-Última atualização: 2026-08-21
+Status: implementado
+Última atualização: 2026-08-22
 
 ## Contexto
 
@@ -43,7 +43,7 @@ Coluna nova em `whatsapp_connections`: `qr_code text` — guarda o QR code (stri
 
 Na página do WhatsApp, quando `provider === "uazapi"` e `status === "connecting"`, mostra a imagem do QR code (via `<img src={qrCode} />`, já que a Uazapi retorna como data URL) com um botão "Verificar novamente" e polling automático a cada 3 segundos chamando `getConnectionStatusAction` até `connected` ou até passar 2 minutos (timeout — mostra mensagem para tentar reconectar).
 
-Configuração da conta (subdomínio + token da Uazapi): um dialog "Configurar Uazapi" na própria página do WhatsApp (mesmo padrão dos dialogs "Procedimentos"/"Bloqueios de agenda" já existentes na Agenda) com dois campos de texto e um botão "Salvar" — grava em `config` via uma action dedicada. Sem essa configuração salva, o botão "Conectar via Uazapi" fica desabilitado com uma dica explicando o motivo. (A entrada "Configurações" no menu lateral continua desativada — é um hub geral para uso futuro, não específico desta integração.)
+Configuração da conta (subdomínio + token da Uazapi): um dialog "Configurar Uazapi" na própria página do WhatsApp (mesmo padrão do dialog "Bloqueios de agenda" já existente na Agenda) com dois campos de texto e um botão "Salvar" — grava em `config` via uma action dedicada. Sem essa configuração salva, o botão "Conectar via Uazapi" fica desabilitado com uma dica explicando o motivo. (A entrada "Configurações" no menu lateral, que era um hub geral desativado para uso futuro, foi removida em 2026-08-22 por não ter nenhuma tela por trás — não afeta este fluxo, que sempre viveu no dialog da própria página do WhatsApp.)
 
 ## Testes
 

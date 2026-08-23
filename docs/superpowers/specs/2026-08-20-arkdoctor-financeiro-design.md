@@ -1,7 +1,7 @@
 # ArkDoctor — Financeiro/Dashboard (Fase 3) — Design Doc
 
-Status: aprovado
-Última atualização: 2026-08-20
+Status: implementado, com divergências — ver notas inline ("**Nota (implementação real)**") nas seções Modelo de Dados, Rotas e UI, e Testes
+Última atualização: 2026-08-22
 
 ## Contexto
 
@@ -28,6 +28,8 @@ O PRD descreve o Financeiro como dependente do Agendamento (o fluxo principal de
 | `category` | text | livre |
 | `active` | boolean | default `true`; desativar em vez de apagar (preserva histórico de `financial_entries`) |
 | `created_at` | timestamptz | default `now()` |
+
+**Nota (implementação real):** a tabela `procedures` acabou nascendo em `0004_scheduling.sql` (módulo `scheduling`, não `finance` — ver `docs/superpowers/specs/2026-08-20-arkdoctor-agendamento-design.md`), sem os campos `active` nem `category` descritos acima. A remoção é hard delete bloqueado quando há agendamento vinculado (`deleteProcedure`), não soft-delete via `active`.
 
 ### `financial_entries`
 
@@ -65,12 +67,13 @@ Segue exatamente a estrutura já estabelecida por `src/modules/crm/`:
   - Valida via Zod.
   - Se `type === 'revenue'` e `procedureId` informado: busca o `Procedure`, preenche `defaultAmount = procedure.defaultPrice` e `category = procedure.category` (se `category` não vier explícita no input) — implementa a "sugestão editável" da story 21/22 no fluxo manual (a usuária escolhe o procedimento, o valor vem pré-preenchido, mas ela confirma/edita antes de salvar — a UI faz esse preenchimento client-side chamando uma função exposta pelo service, `getProcedureDefaults`, e o valor final vai no `createFinancialEntry`).
   - Se `type === 'expense'`: `procedureId` deve ser `null` (rejeitar caso contrário).
+- `updateFinancialEntry(repo, accountId, id, { amount, category?, description?, occurredAt })` e `deleteFinancialEntry(repo, accountId, id)` — **adicionados após a implementação inicial, não faziam parte desta spec.** Edição não permite trocar `type` nem `procedureId` (só valor, categoria, descrição e data); exclusão é definitiva, sem confirmação além da UI (duas etapas). Sem teste automatizado ainda — ver seção Testes.
 - `getDashboardMetrics(repo, accountId, { from, to })`:
   - Busca `FinancialEntry` do período `[from, to]` e do período anterior equivalente (mesma duração, imediatamente anterior a `from`).
   - Calcula: receita total, despesa total, saldo, variação percentual de receita vs. período anterior (story 24).
   - Agrupa receitas por `procedureId`, soma `amount` e conta ocorrências, ordena desc (story 25).
   - Ticket médio = média de `amount` das entradas de receita no período (story 27).
-  - Taxa de cancelamento (story 26): retorna `{ available: false }` — não há dado de `Appointment` ainda. Campo tipado desde já como union (`{ available: true, rate: number } | { available: false }`) para a integração futura não quebrar o contrato.
+  - Taxa de cancelamento (story 26): retorna `{ available: false }` — não há dado de `Appointment` ainda. Campo tipado desde já como union (`{ available: true, rate: number } | { available: false }`) para a integração futura não quebrar o contrato. **Nota (2026-08-22): o módulo `scheduling` já foi implementado e mesclado, mas essa integração continua retornando `{ available: false }` — ficou pendente e não foi retomada.**
   - Todo cálculo de receita usa exclusivamente `financial_entries` já confirmadas — não há conceito de "agendamento não concluído" nesta fase, então a story 28 (não entrar em métricas sem status de conclusão) já é satisfeita trivialmente: só existe lançamento manual confirmado.
 
 ## Rotas e UI
@@ -78,12 +81,12 @@ Segue exatamente a estrutura já estabelecida por `src/modules/crm/`:
 ```
 src/app/(app)/financeiro/
   page.tsx                 # dashboard: cards de métrica + gráfico + tabela de procedimentos mais vendidos
-  procedimentos/
-    page.tsx                # lista de procedures + botão "novo procedimento"
   lancamentos/
     page.tsx                # lista de financial_entries + botão "novo lançamento"
   actions.ts                # Server Actions, chamam src/modules/finance/service.ts
 ```
+
+**Nota (implementação real):** `procedimentos/` não ficou dentro de `financeiro/` — é uma rota própria em `src/app/(app)/procedimentos/`, com item próprio na sidebar (ver `docs/superpowers/specs/2026-08-20-arkdoctor-agendamento-design.md`).
 
 - Sidebar (`src/components/layout/sidebar.tsx`): item "Financeiro" passa de `enabled: false` para `enabled: true`.
 - Filtro de período (semana / mês / customizado) como pílulas no topo do dashboard, controla as chamadas de `getDashboardMetrics`.
@@ -91,12 +94,14 @@ src/app/(app)/financeiro/
 - Card de taxa de cancelamento: mesmo formato dos demais, mas com estado vazio ("Disponível quando a Agenda estiver conectada") em vez de número, usando a cor neutra/cinza da paleta semântica.
 - Gráfico receita × despesa por período: Recharts, verde para receita e vermelho para despesa (paleta semântica already-approved).
 - Formulário de novo lançamento: campo tipo (receita/despesa) → se receita, seletor de procedimento (opcional) que pré-preenche valor e categoria via `getProcedureDefaults`, editável antes de salvar.
+- **Adicionado após a implementação inicial**: cada linha da lista de lançamentos é clicável e abre um diálogo de edição (valor, categoria, descrição, data — não permite trocar tipo/procedimento) com botão "Excluir lançamento" (confirmação em duas etapas).
 
 ## Testes
 
 - `service.test.ts` (módulo `finance`): prioridade alta, conforme decisão de teste do PRD — cobre cálculo de métricas do dashboard (receita/despesa por período, comparação com período anterior, ticket médio, agrupamento por procedimento), snapshot de `defaultAmount`, rejeição de `procedureId` em despesa.
 - `repository.memory.test.ts`: cobre a implementação em memória usada pelos testes de serviço.
 - Sem testes E2E (decisão já fechada no PRD/arquitetura).
+- **Gap conhecido**: `updateFinancialEntry`/`deleteFinancialEntry` (adicionados após a implementação inicial) ainda sem cobertura em `service.test.ts`.
 
 ## Fora de Escopo (desta spec)
 

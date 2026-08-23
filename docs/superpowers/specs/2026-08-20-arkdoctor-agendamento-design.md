@@ -1,7 +1,7 @@
 # ArkDoctor — Agendamento/Calendário (Fase 2) — Design Doc
 
-Status: aprovado
-Última atualização: 2026-08-20
+Status: implementado (com divergências pós-implementação na localização da tela de Procedimentos — ver seção UI/Rotas — e uma feature fora desta spec, o wizard de autoagendamento em `/agendamento`, não coberta aqui)
+Última atualização: 2026-08-22
 
 ## Contexto
 
@@ -51,8 +51,9 @@ Esse é o único ponto de acoplamento entre os módulos `scheduling` e `crm`; `s
 - **Criar/editar agendamento**: modal com busca de Contact (reaproveita `searchContacts` do CRM), seleção de Procedure (preenche duração sugerida), data/hora início (fim ajustável), campo de notas. Erro de conflito é mostrado inline, sem submeter.
 - **Alterar status**: menu no card do evento (mesmo padrão de "mover para" usado no Pipeline para mobile/touch).
 - **Configuração de bloqueios**: painel simples para listar/criar/remover bloqueios pontuais e regras recorrentes.
-- **Cadastro de Procedimentos**: painel simples (lista + formulário nome/valor/duração) — acessível a partir de `/agenda` nesta fase; a Fase 3 adiciona campo de categoria e o move para dentro do módulo Financeiro se fizer mais sentido na navegação naquele momento.
+- **Cadastro de Procedimentos** (`/procedimentos`, item próprio na sidebar): lista + formulário nome/valor/duração. Implementado inicialmente como diálogo dentro de `/agenda` (conforme planejado nesta spec); promovido a página própria depois, em vez de ser movido para dentro do módulo Financeiro como esta spec cogitava — nunca ganhou campo `category`.
 - Sidebar: módulo "Agenda" passa de desabilitado para ativo.
+- **Fora desta spec**: existe também `/agendamento` (grupo "Paciente" na sidebar), um wizard de 3 passos (procedimento → dia/horário → confirmação) para marcar uma consulta. Não corresponde a nenhuma story do PRD nem foi planejado em nenhuma spec — ver `docs/prd/arkdoctor-prd.md`, seção "Estado Atual da Implementação", para o gap conhecido (não permite cadastrar um paciente novo).
 
 ## Casos de Borda
 

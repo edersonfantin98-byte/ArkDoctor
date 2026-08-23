@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ArkDoctor
 
-## Getting Started
+Sistema de gestão para profissionais de saúde autônomos: CRM/Pipeline, Agendamento, Financeiro e WhatsApp Inbox centralizados em um só lugar.
 
-First, run the development server:
+Contexto completo do produto: `docs/prd/arkdoctor-prd.md` (ver seção "Estado Atual da Implementação" para o que já está construído e os gaps conhecidos). Decisões técnicas: `docs/superpowers/specs/`.
+
+## Stack
+
+- Next.js 16 (App Router) + TypeScript
+- Supabase (Postgres + Auth), acesso via `@supabase/supabase-js`/`@supabase/ssr`, sem ORM
+- Tailwind CSS + Base UI (`@base-ui/react`)
+- Vitest + React Testing Library
+- Deploy: Cloudflare Pages via `@opennextjs/cloudflare`
+
+## Rodando localmente
+
+1. Copie `.env.local.example` para `.env.local` e preencha:
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — do projeto Supabase.
+   - `SUPABASE_SERVICE_ROLE_KEY` — usada só no servidor (ex.: webhook do WhatsApp), nunca exposta ao browser.
+   - `NEXT_PUBLIC_APP_URL` — URL pública onde a app está acessível (a Uazapi chama de volta essa URL para entregar mensagens recebidas).
+2. Aplique as migrations em `supabase/migrations/` no projeto Supabase (`supabase db push`, ou colando manualmente no SQL editor — ver `supabase/migrations/README.md` para o que já está aplicado em produção).
+3. Crie o usuário no Supabase Auth e vincule a uma `Account` — não há cadastro self-service; siga `supabase/seed_account.sql`.
+4. `npm install && npm run dev` — abre em `http://localhost:3000`.
+
+## Comandos
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev      # servidor de desenvolvimento (Turbopack)
+npm run build    # build de produção
+npm run start    # roda o build de produção localmente
+npm run lint     # ESLint
+npm test         # vitest run (123 testes)
+npm run deploy   # build + deploy no Cloudflare Pages via Wrangler
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Segurança
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+CSP com nonce por request e guarda de autenticação de rota vivem em `src/proxy.ts` (não `middleware.ts` — o Next 16 renomeou o arquivo e ele precisa ficar dentro de `src/`, ao lado de `app/`). RLS do Postgres habilitada em todas as tabelas de domínio, com policies por `account_id`.

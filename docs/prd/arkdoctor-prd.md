@@ -1,7 +1,7 @@
 # ArkDoctor — PRD
 
-Status: rascunho para revisão
-Última atualização: 2026-08-20
+Status: MVP construído e em uso; ver "Estado Atual da Implementação" para o que diverge ou vai além deste PRD original
+Última atualização: 2026-08-22
 
 ## Problem Statement
 
@@ -17,6 +17,20 @@ O ArkDoctor centraliza em um único sistema web (responsivo para celular e deskt
 4. **WhatsApp Inbox** — conversas com clientes acontecem dentro do próprio sistema, vinculadas automaticamente ao contato/pipeline
 
 O sistema é construído para uma única profissional usar sozinha no MVP, mas o modelo de dados já é preparado para expansão futura (múltiplos usuários por conta, outros tipos de profissionais de saúde).
+
+## Estado Atual da Implementação
+
+As quatro frentes (CRM/Pipeline, Agendamento/Calendário, Financeiro/Dashboard, WhatsApp Inbox) estão construídas e em uso por uma conta real (`silvana@arkdoctor.com`). As user stories 1–37 abaixo estão implementadas. Esta seção documenta o que foi adicionado além do PRD original e os gaps conhecidos que ainda restam.
+
+**Adicionado além das user stories originais:**
+- **Tela dedicada de Procedimentos** (`/procedimentos`, com item próprio no menu lateral) — as stories 19-20 ("cadastrar/editar procedimentos") não especificavam uma tela própria; inicialmente foi implementada como diálogo dentro da Agenda, depois promovida a página própria.
+- **Excluir contato** — não havia story original para isso (o PRD só previa mover para o estágio "Perdido", story 6). Adicionado por necessidade operacional; exclusão é definitiva e em cascata (remove negociações, histórico de estágio e agendamentos vinculados; não afeta lançamentos financeiros já registrados).
+- **Editar e excluir lançamento financeiro** — as stories 22-23 falavam de criar/editar o valor *antes* de confirmar o lançamento; não havia previsão de editar/excluir um lançamento *já confirmado*. Adicionado pelo mesmo motivo.
+- **Wizard de autoagendamento** (`/agendamento`, grupo "Paciente" no menu) — fluxo de 3 passos (procedimento → dia/horário → confirmação) que não corresponde a nenhuma story deste PRD (as stories 11-18 de Agendamento são todas do ponto de vista da profissional usando `/agenda`, não de um paciente se autoagendando). **Gap conhecido**: o campo "Contato" desse wizard só aceita selecionar alguém que já existe no CRM (busca por nome/telefone) — não há campo para cadastrar nome/telefone de um paciente novo, então não é possível concluir o agendamento para quem ainda não é contato. Pendente de decisão: se esse fluxo deve virar público (sem login) para pacientes reais ou se seu propósito é outro.
+
+**Divergências de implementação:**
+- `Procedure` não tem o campo `active` (soft-delete) mencionado nas specs técnicas de Financeiro — a remoção implementada é definitiva (hard delete), bloqueada quando há agendamento vinculado. Ver `docs/superpowers/specs/2026-08-20-arkdoctor-agendamento-design.md`.
+- A story 26 (taxa de cancelamento/não comparecimento no dashboard) continua retornando "indisponível" mesmo com o módulo de Agendamento já implementado — a integração real com dados de `Appointment` ficou pendente após o merge das duas fases e não foi retomada.
 
 ## User Stories
 

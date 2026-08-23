@@ -1,7 +1,7 @@
 # ArkDoctor — CRM/Pipeline (Fase 1) — Design Doc
 
-Status: aprovado
-Última atualização: 2026-08-20
+Status: implementado (com uma adição pós-implementação: exclusão de contato — ver seção Server Actions)
+Última atualização: 2026-08-22
 
 ## Contexto
 
@@ -32,12 +32,13 @@ Regras de negócio:
 - `moveDeal(dealId, toStageId)` — valida, grava `deal_stage_history`, atualiza `stage_id`; no-op se `toStageId === stage_id` atual; seta `closed_at` se o estágio destino é `kind = 'lost'`.
 - `createStage({ name, position })`, `renameStage(id, name)`, `reorderStages(orderedIds)`, `deleteStage(id)` — as três últimas só operam sobre estágios `kind = 'normal'`; `deleteStage` retorna erro se houver Deal aberto no estágio.
 - `reopenDeal(contactId)` — cria novo Deal (nova negociação) para um Contact sem Deal aberto no momento; erro se já existir um Deal aberto para o contato.
+- `deleteContact(contactId)` — **adicionado após a implementação inicial, não fazia parte desta spec original.** Exclusão definitiva: `deals.contact_id` e `appointments.contact_id` têm `on delete cascade` no schema, então apagar um Contact apaga automaticamente seus Deals, `deal_stage_history` (via cascade de `deals`) e Appointments vinculados. Não afeta `financial_entries` (sem FK para Contact). Sem teste automatizado ainda — ver Decisões de Teste.
 
 ## UI / Rotas / Componentes
 
 - **`/pipeline`**: kanban com uma coluna por `pipeline_stage` (ordenadas por `position`). Cards mostram nome/telefone do Contact e tempo no estágio atual. Drag-and-drop via `dnd-kit`; em telas pequenas, menu "mover para" no card como alternativa ao arraste.
 - **Busca**: barra no topo da página, filtra cards visíveis via `searchContacts`.
-- **Painel de detalhe do Contact** (abre ao clicar no card): dados do contato, campo de notas editável, histórico de movimentação do Deal atual, lista de Deals anteriores (se houver, com opção de ver quando foram fechados).
+- **Painel de detalhe do Contact** (abre ao clicar no card): dados do contato, campo de notas editável, histórico de movimentação do Deal atual (nome do estágio, resolvido a partir do `stageId`), lista de Deals anteriores (se houver, com opção de ver quando foram fechados). Botão "Excluir contato" com confirmação em duas etapas (clicar → "Confirmar exclusão"/"Cancelar").
 - **Botão "Novo contato"**: formulário (nome, telefone, origem, notas) → `createContact`.
 - **Configuração de estágios**: painel acessível a partir de `/pipeline` para renomear/reordenar/criar/remover estágios `normal`; estágios especiais aparecem só com opção de renomear.
 
@@ -47,6 +48,7 @@ Regras de negócio:
 - Remover estágio `normal` com Deals ativos → bloqueado, com mensagem indicando que é preciso mover os Deals primeiro.
 - Contact com telefone duplicado → permitido (não bloqueado automaticamente); a busca por telefone ajuda a usuária a notar duplicatas manualmente.
 - `reopenDeal` quando já existe um Deal aberto para o Contact → erro.
+- Excluir um Contact com negociações, histórico e agendamentos vinculados → tudo é removido em cascata pelo banco; sem confirmação adicional além da UI (duas etapas).
 
 ## Decisões de Teste (Vitest)
 
@@ -55,6 +57,7 @@ Regras de negócio:
 - `createContact`: cria Contact e Deal inicial no primeiro estágio (`position = 0`).
 - `reopenDeal`: cria novo Deal apenas quando não há um já aberto para o Contact.
 - `searchContacts`: casa por nome parcial e por telefone.
+- `deleteContact`: **gap conhecido** — sem teste automatizado cobrindo o cascade de deleção (deals/histórico/agendamentos).
 
 ## Fora de Escopo (Fase 1)
 
