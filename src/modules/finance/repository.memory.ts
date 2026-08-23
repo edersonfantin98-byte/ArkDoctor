@@ -39,5 +39,27 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
         ) ?? null
       );
     },
+
+    async updateFinancialEntry(accountId, id, input) {
+      const existing = entries.get(id);
+      if (!existing || existing.accountId !== accountId) {
+        throw new Error("Financial entry not found");
+      }
+      const updated: FinancialEntry = {
+        ...existing,
+        amount: input.amount,
+        category: input.category,
+        description: input.description,
+        occurredAt: input.occurredAt,
+      };
+      entries.set(id, updated);
+      return updated;
+    },
+
+    async deleteFinancialEntry(accountId, id) {
+      const existing = entries.get(id);
+      if (!existing || existing.accountId !== accountId) return;
+      entries.delete(id);
+    },
   };
 }

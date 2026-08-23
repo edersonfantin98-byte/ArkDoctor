@@ -207,6 +207,15 @@ export function createSupabaseCrmRepository(
       return data ? toContact(data) : null;
     },
 
+    async deleteContact(accountId, contactId) {
+      const { error } = await supabase
+        .from("contacts")
+        .delete()
+        .eq("account_id", accountId)
+        .eq("id", contactId);
+      if (error) throwDbError(error);
+    },
+
     async countNewContacts(accountId, sinceIso, untilIso) {
       let query = supabase
         .from("contacts")

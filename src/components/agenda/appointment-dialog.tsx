@@ -168,14 +168,21 @@ export function AppointmentDialog({
           {!editingAppointment && (
             <div className="space-y-1">
               <Label htmlFor="procedure">Procedimento</Label>
-              <Select value={procedureId} onValueChange={(value) => setProcedureId(value ?? "")}>
+              <Select
+                value={procedureId}
+                onValueChange={(value) => setProcedureId(value ?? "")}
+                items={procedures.map((p) => ({
+                  value: p.id,
+                  label: `${p.name} (${p.defaultDurationMinutes}min)`,
+                }))}
+              >
                 <SelectTrigger id="procedure">
                   <SelectValue placeholder="Selecione um procedimento" />
                 </SelectTrigger>
                 <SelectContent>
                   {procedures.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.defaultDurationMinutes}min)
+                      {`${p.name} (${p.defaultDurationMinutes}min)`}
                     </SelectItem>
                   ))}
                 </SelectContent>

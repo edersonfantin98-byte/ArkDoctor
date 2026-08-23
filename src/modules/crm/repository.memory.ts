@@ -137,6 +137,21 @@ export function createInMemoryCrmRepository(): CrmRepository {
       );
     },
 
+    async deleteContact(accountId, contactId) {
+      const contact = contacts.get(contactId);
+      if (!contact || contact.accountId !== accountId) return;
+      contacts.delete(contactId);
+      const dealIdsToRemove = [...deals.values()]
+        .filter((d) => d.contactId === contactId)
+        .map((d) => d.id);
+      for (const dealId of dealIdsToRemove) {
+        deals.delete(dealId);
+        for (let i = history.length - 1; i >= 0; i -= 1) {
+          if (history[i].dealId === dealId) history.splice(i, 1);
+        }
+      }
+    },
+
     async countNewContacts(accountId, sinceIso, untilIso) {
       return [...contacts.values()].filter(
         (c) =>

@@ -9,7 +9,7 @@ import {
   CalendarPlus,
   DollarSign,
   MessageCircle,
-  Settings,
+  ClipboardList,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,14 +20,12 @@ const generalModules = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: true },
   { label: "Pipeline", href: "/pipeline", icon: Filter, enabled: true },
   { label: "Agenda", href: "/agenda", icon: CalendarDays, enabled: true },
+  { label: "Procedimentos", href: "/procedimentos", icon: ClipboardList, enabled: true },
   { label: "Financeiro", href: "/financeiro", icon: DollarSign, enabled: true },
   { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle, enabled: true },
 ];
 const patientModules = [
   { label: "Agendamento", href: "/agendamento", icon: CalendarPlus, enabled: true },
-];
-const systemModules = [
-  { label: "Configurações", href: "/configuracoes", icon: Settings, enabled: false },
 ];
 
 function NavGroup({
@@ -103,7 +101,6 @@ export function Sidebar({ userEmail, accountName }: { userEmail: string; account
       <nav className="flex-1 px-3">
         <NavGroup label="Geral" items={generalModules} pathname={pathname} />
         <NavGroup label="Paciente" items={patientModules} pathname={pathname} />
-        <NavGroup label="Sistema" items={systemModules} pathname={pathname} />
       </nav>
 
       <form

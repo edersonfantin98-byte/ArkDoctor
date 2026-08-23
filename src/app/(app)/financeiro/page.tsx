@@ -21,7 +21,7 @@ export default async function FinancePage() {
         title="Fluxo de caixa"
         description="Receita, despesa e desempenho por procedimento."
         action={
-          <Button render={<Link href="/financeiro/lancamentos" />}>
+          <Button nativeButton={false} render={<Link href="/financeiro/lancamentos" />}>
             <Plus className="size-4" />
             Novo lançamento
           </Button>

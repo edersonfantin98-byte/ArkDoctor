@@ -36,6 +36,21 @@ export async function createFinancialEntryAction(input: unknown) {
   return entry;
 }
 
+export async function updateFinancialEntryAction(id: string, input: unknown) {
+  const { repo, accountId } = await getRepoAndAccount();
+  const entry = await finance.updateFinancialEntry(repo, accountId, id, input);
+  revalidatePath("/financeiro");
+  revalidatePath("/financeiro/lancamentos");
+  return entry;
+}
+
+export async function deleteFinancialEntryAction(id: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  await finance.deleteFinancialEntry(repo, accountId, id);
+  revalidatePath("/financeiro");
+  revalidatePath("/financeiro/lancamentos");
+}
+
 export async function getFinancialEntryByAppointmentAction(appointmentId: string) {
   const { repo, accountId } = await getRepoAndAccount();
   return finance.getFinancialEntryByAppointmentId(repo, accountId, appointmentId);

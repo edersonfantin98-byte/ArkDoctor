@@ -27,6 +27,12 @@ export async function updateContactAction(contactId: string, input: unknown) {
   return contact;
 }
 
+export async function deleteContactAction(contactId: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  await crm.deleteContact(repo, accountId, contactId);
+  revalidatePath("/pipeline");
+}
+
 export async function searchContactsAction(query: string) {
   const { repo, accountId } = await getRepoAndAccount();
   return crm.searchContacts(repo, accountId, query);

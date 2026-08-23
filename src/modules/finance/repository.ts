@@ -22,4 +22,15 @@ export interface FinanceRepository {
     accountId: string,
     appointmentId: string,
   ): Promise<FinancialEntry | null>;
+  updateFinancialEntry(
+    accountId: string,
+    id: string,
+    input: {
+      amount: number;
+      category: string | null;
+      description: string | null;
+      occurredAt: string;
+    },
+  ): Promise<FinancialEntry>;
+  deleteFinancialEntry(accountId: string, id: string): Promise<void>;
 }

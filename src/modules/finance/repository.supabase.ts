@@ -72,5 +72,31 @@ export function createSupabaseFinanceRepository(
       if (error) throwDbError(error);
       return data ? toFinancialEntry(data) : null;
     },
+
+    async updateFinancialEntry(accountId, id, input) {
+      const { data, error } = await supabase
+        .from("financial_entries")
+        .update({
+          amount: input.amount,
+          category: input.category,
+          description: input.description,
+          occurred_at: input.occurredAt,
+        })
+        .eq("account_id", accountId)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throwDbError(error);
+      return toFinancialEntry(data);
+    },
+
+    async deleteFinancialEntry(accountId, id) {
+      const { error } = await supabase
+        .from("financial_entries")
+        .delete()
+        .eq("account_id", accountId)
+        .eq("id", id);
+      if (error) throwDbError(error);
+    },
   };
 }

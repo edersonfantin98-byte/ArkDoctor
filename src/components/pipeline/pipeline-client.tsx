@@ -37,6 +37,7 @@ export function PipelineClient({ initialColumns }: { initialColumns: PipelineCol
       <KanbanBoard columns={filteredColumns} onDealClick={setSelectedDeal} />
       <ContactDetailDialog
         deal={selectedDeal}
+        stages={initialColumns.map((c) => c.stage)}
         open={selectedDeal !== null}
         onOpenChange={(open) => {
           if (!open) setSelectedDeal(null);

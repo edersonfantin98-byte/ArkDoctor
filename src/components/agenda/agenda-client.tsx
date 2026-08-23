@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { View } from "react-big-calendar";
 import { Plus } from "lucide-react";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
@@ -9,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { CalendarView, type BackgroundEvent } from "./calendar-view";
 import { AppointmentDialog } from "./appointment-dialog";
 import { AvailabilityDialog } from "./availability-dialog";
-import { ProcedureDialog } from "./procedure-dialog";
 import {
   listAppointmentsAction,
   listAvailabilityBlocksAction,
@@ -71,7 +69,6 @@ export function AgendaClient({
   initialAppointments: AppointmentWithDetails[];
   pendingStatusCount: number;
 }) {
-  const router = useRouter();
   const [view, setView] = useState<View>("week");
   const [date, setDate] = useState(new Date());
   const [appointments, setAppointments] = useState(initialAppointments);
@@ -120,7 +117,6 @@ export function AgendaClient({
           </p>
         )}
         <div className="flex justify-end gap-2 px-6">
-          <ProcedureDialog onChanged={() => router.refresh()} />
           <AvailabilityDialog onChanged={refetch} />
           <Button
             onClick={() => {

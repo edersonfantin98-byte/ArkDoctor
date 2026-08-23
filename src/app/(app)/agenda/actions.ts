@@ -81,6 +81,7 @@ export async function createProcedureAction(input: unknown) {
   const { schedulingRepo, accountId } = await getReposAndAccount();
   const procedure = await scheduling.createProcedure(schedulingRepo, accountId, input);
   revalidatePath("/agenda");
+  revalidatePath("/procedimentos");
   return procedure;
 }
 
@@ -88,6 +89,7 @@ export async function updateProcedureAction(id: string, input: unknown) {
   const { schedulingRepo, accountId } = await getReposAndAccount();
   const procedure = await scheduling.updateProcedure(schedulingRepo, accountId, id, input);
   revalidatePath("/agenda");
+  revalidatePath("/procedimentos");
   return procedure;
 }
 
@@ -100,6 +102,7 @@ export async function deleteProcedureAction(id: string) {
   const { schedulingRepo, accountId } = await getReposAndAccount();
   await scheduling.deleteProcedure(schedulingRepo, accountId, id);
   revalidatePath("/agenda");
+  revalidatePath("/procedimentos");
 }
 
 export async function createAvailabilityBlockAction(input: unknown) {

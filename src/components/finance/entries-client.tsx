@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { NewEntryDialog } from "@/components/finance/new-entry-dialog";
+import { EditEntryDialog } from "@/components/finance/edit-entry-dialog";
 import { listFinancialEntriesAction } from "@/app/(app)/financeiro/actions";
 import type { FinancialEntry } from "@/modules/finance/types";
 import type { Procedure } from "@/modules/scheduling/types";
@@ -19,6 +20,7 @@ export function EntriesClient({
   range: { from: string; to: string };
 }) {
   const [entries, setEntries] = useState(initialEntries);
+  const [selectedEntry, setSelectedEntry] = useState<FinancialEntry | null>(null);
 
   async function refresh() {
     try {
@@ -41,7 +43,12 @@ export function EntriesClient({
             </p>
           )}
           {entries.map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between gap-4 p-4">
+            <button
+              key={entry.id}
+              type="button"
+              onClick={() => setSelectedEntry(entry)}
+              className="flex w-full items-center justify-between gap-4 p-4 text-left hover:bg-muted"
+            >
               <div>
                 <p className="font-medium">
                   {entry.category ?? "Sem categoria"}
@@ -59,10 +66,19 @@ export function EntriesClient({
               >
                 {entry.type === "revenue" ? "+" : "-"} {formatCurrency(entry.amount)}
               </Badge>
-            </div>
+            </button>
           ))}
         </CardContent>
       </Card>
+
+      <EditEntryDialog
+        entry={selectedEntry}
+        open={selectedEntry !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedEntry(null);
+        }}
+        onChanged={refresh}
+      />
     </div>
   );
 }

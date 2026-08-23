@@ -44,6 +44,14 @@ export async function updateContact(
   return repo.updateContact(accountId, contactId, input);
 }
 
+export async function deleteContact(
+  repo: CrmRepository,
+  accountId: string,
+  contactId: string,
+): Promise<void> {
+  await repo.deleteContact(accountId, contactId);
+}
+
 export async function listPipeline(
   repo: CrmRepository,
   accountId: string,

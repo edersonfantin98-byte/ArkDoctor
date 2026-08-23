@@ -1,5 +1,9 @@
 import type { FinanceRepository } from "./repository";
-import { createFinancialEntryInputSchema, dashboardPeriodSchema } from "./schemas";
+import {
+  createFinancialEntryInputSchema,
+  dashboardPeriodSchema,
+  updateFinancialEntryInputSchema,
+} from "./schemas";
 import type { DashboardMetrics, FinancialEntry, FinancialEntryType, ProcedureSalesSummary } from "./types";
 
 const MONTH_LABELS = [
@@ -85,6 +89,29 @@ export async function createFinancialEntry(
     description: input.description ?? null,
     occurredAt: input.occurredAt,
   });
+}
+
+export async function updateFinancialEntry(
+  repo: FinanceRepository,
+  accountId: string,
+  id: string,
+  rawInput: unknown,
+): Promise<FinancialEntry> {
+  const input = updateFinancialEntryInputSchema.parse(rawInput);
+  return repo.updateFinancialEntry(accountId, id, {
+    amount: input.amount,
+    category: input.category ?? null,
+    description: input.description ?? null,
+    occurredAt: input.occurredAt,
+  });
+}
+
+export async function deleteFinancialEntry(
+  repo: FinanceRepository,
+  accountId: string,
+  id: string,
+): Promise<void> {
+  await repo.deleteFinancialEntry(accountId, id);
 }
 
 export async function getFinancialEntryByAppointmentId(

@@ -4,34 +4,40 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  deleteContactAction,
   getContactDetailAction,
   reopenDealAction,
   updateContactAction,
 } from "@/app/(app)/pipeline/actions";
-import type { Deal, DealStageHistoryEntry, DealWithContact } from "@/modules/crm/types";
+import type { Deal, DealStageHistoryEntry, DealWithContact, PipelineStage } from "@/modules/crm/types";
 
 export function ContactDetailDialog({
   deal,
+  stages,
   open,
   onOpenChange,
   onChanged,
 }: {
   deal: DealWithContact | null;
+  stages: PipelineStage[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChanged: () => void;
 }) {
   const [notes, setNotes] = useState(deal?.contact.notes ?? "");
   const [allDeals, setAllDeals] = useState<(Deal & { history: DealStageHistoryEntry[] })[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     setNotes(deal?.contact.notes ?? "");
+    setConfirmingDelete(false);
     if (deal) {
       getContactDetailAction(deal.contact.id).then(({ deals }) => setAllDeals(deals));
     }
@@ -50,7 +56,18 @@ export function ContactDetailDialog({
     onOpenChange(false);
   }
 
+  async function handleDelete() {
+    await deleteContactAction(deal!.contact.id);
+    setConfirmingDelete(false);
+    onOpenChange(false);
+    onChanged();
+  }
+
   const hasOpenDeal = allDeals.some((d) => d.closedAt === null);
+
+  function stageName(stageId: string) {
+    return stages.find((s) => s.id === stageId)?.name ?? stageId;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,7 +91,7 @@ export function ContactDetailDialog({
               <p>{d.closedAt ? `Encerrada em ${new Date(d.closedAt).toLocaleDateString()}` : "Em andamento"}</p>
               <ul className="ml-4 list-disc">
                 {d.history.map((h) => (
-                  <li key={h.id}>{new Date(h.movedAt).toLocaleString()} → estágio {h.toStageId}</li>
+                  <li key={h.id}>{new Date(h.movedAt).toLocaleString()} → estágio {stageName(h.toStageId)}</li>
                 ))}
               </ul>
             </div>
@@ -86,6 +103,26 @@ export function ContactDetailDialog({
             Reabrir negociação
           </Button>
         )}
+
+        <DialogFooter>
+          {confirmingDelete ? (
+            <>
+              <span className="mr-auto self-center text-sm text-muted-foreground">
+                Excluir este contato e todo o seu histórico?
+              </span>
+              <Button variant="outline" onClick={() => setConfirmingDelete(false)}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                Confirmar exclusão
+              </Button>
+            </>
+          ) : (
+            <Button variant="destructive" onClick={() => setConfirmingDelete(true)}>
+              Excluir contato
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
