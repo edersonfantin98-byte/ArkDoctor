@@ -36,6 +36,7 @@ export function ContactDetailDialog({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs the form when a different deal is opened in this persistent dialog
     setNotes(deal?.contact.notes ?? "");
     setConfirmingDelete(false);
     if (deal) {

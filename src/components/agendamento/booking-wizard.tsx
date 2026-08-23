@@ -130,6 +130,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
     const start = startsAtIso();
     const end = endsAtIso();
     if (!start || !end) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears a stale conflict result once the slot becomes incomplete
       setConflictReason(null);
       return;
     }

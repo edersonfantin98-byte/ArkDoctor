@@ -193,6 +193,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetches connection status on mount, not deriving state from a prop
     refreshConnection();
   }, [refreshConnection]);
 
@@ -218,6 +219,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
 
   useEffect(() => {
     if (!selectedConversationId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears stale messages before fetching the new conversation
       setMessages([]);
       return;
     }

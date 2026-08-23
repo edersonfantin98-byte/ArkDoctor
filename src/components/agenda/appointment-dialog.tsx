@@ -71,6 +71,7 @@ export function AppointmentDialog({
     listProceduresAction().then(setProcedures);
 
     if (editingAppointment) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs the form when a different appointment is opened in this persistent dialog
       setSelectedContactId(editingAppointment.contactId);
       setContactQuery(editingAppointment.contact.name);
       setProcedureId(editingAppointment.procedureId);

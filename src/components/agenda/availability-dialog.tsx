@@ -43,6 +43,7 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetches when the dialog opens, not deriving state from a prop
     if (open) refresh();
   }, [open]);
 

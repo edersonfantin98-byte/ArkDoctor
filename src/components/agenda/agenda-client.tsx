@@ -91,6 +91,7 @@ export function AgendaClient({
   }, [date, view]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetches on mount/date/view change, not deriving state from a prop
     refetch();
   }, [refetch]);
 
