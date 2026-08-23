@@ -295,4 +295,54 @@ describe("parseWebhookPayload", () => {
     expect(parseWebhookPayload({ foo: "bar" })).toBeNull();
     expect(parseWebhookPayload(null)).toBeNull();
   });
+
+  it("parses the Evolution API messages.upsert envelope", () => {
+    const result = parseWebhookPayload({
+      event: "messages.upsert",
+      instance: "arkdoctor",
+      data: {
+        key: { remoteJid: "5511999999999@s.whatsapp.net", fromMe: false, id: "3EB0XXXXX" },
+        message: { conversation: "Oi, gostaria de agendar" },
+        pushName: "Carla Souza",
+      },
+    });
+    expect(result).toEqual({
+      fromPhone: "5511999999999",
+      fromName: "Carla Souza",
+      body: "Oi, gostaria de agendar",
+    });
+  });
+
+  it("ignores messages.upsert events sent by the API itself", () => {
+    const result = parseWebhookPayload({
+      event: "messages.upsert",
+      data: {
+        key: { remoteJid: "5511999999999@s.whatsapp.net", fromMe: true },
+        message: { conversation: "oi" },
+      },
+    });
+    expect(result).toBeNull();
+  });
+
+  it("ignores messages.upsert events from groups", () => {
+    const result = parseWebhookPayload({
+      event: "messages.upsert",
+      data: {
+        key: { remoteJid: "123456789@g.us", fromMe: false },
+        message: { conversation: "oi" },
+      },
+    });
+    expect(result).toBeNull();
+  });
+
+  it("returns null for a messages.upsert event with no text content", () => {
+    const result = parseWebhookPayload({
+      event: "messages.upsert",
+      data: {
+        key: { remoteJid: "5511999999999@s.whatsapp.net", fromMe: false },
+        message: { imageMessage: {} },
+      },
+    });
+    expect(result).toBeNull();
+  });
 });

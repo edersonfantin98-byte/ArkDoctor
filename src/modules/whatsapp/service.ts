@@ -133,6 +133,30 @@ export function parseWebhookPayload(
     };
   }
 
+  if (payload.event === "messages.upsert") {
+    const data = payload.data;
+    if (typeof data !== "object" || data === null) return null;
+    const eventData = data as Record<string, unknown>;
+    const key = eventData.key;
+    if (typeof key !== "object" || key === null) return null;
+    const keyData = key as Record<string, unknown>;
+    if (keyData.fromMe === true) return null;
+    if (typeof keyData.remoteJid !== "string" || keyData.remoteJid.endsWith("@g.us")) return null;
+
+    const message = eventData.message;
+    const body =
+      typeof message === "object" && message !== null
+        ? (message as Record<string, unknown>).conversation
+        : undefined;
+    if (typeof body !== "string") return null;
+
+    return {
+      fromPhone: normalizeWhatsappJid(keyData.remoteJid),
+      fromName: typeof eventData.pushName === "string" ? eventData.pushName : undefined,
+      body,
+    };
+  }
+
   if (typeof payload.fromPhone === "string" && typeof payload.body === "string") {
     return {
       fromPhone: payload.fromPhone,
