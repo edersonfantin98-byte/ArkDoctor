@@ -9,10 +9,34 @@
 .rbc-event.rbc-event-cancelado { background-color: #fee2e2; border-color: #dc2626; color: #991b1b; }
 .rbc-event.rbc-event-blocked { background-color: #e5e7eb; border-color: #9ca3af; color: #374151; }
 
+.rbc-event,
+.rbc-day-slot .rbc-event,
+.rbc-day-slot .rbc-background-event {
+  border-width: 0 0 0 3px;
+  border-style: solid;
+  border-radius: 8px;
+  padding: 2px 7px;
+  box-shadow: none;
+  min-height: 22px;
+}
+.rbc-day-slot .rbc-event-label {
+  display: none;
+}
+.rbc-day-slot .rbc-event-content {
+  line-height: 1.2;
+}
+
 .rbc-month-view {
   border-color: var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background: var(--card);
+}
+.rbc-time-view {
+  border-color: var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--card);
 }
 .rbc-month-row + .rbc-month-row {
   border-color: var(--border);
@@ -22,6 +46,8 @@
 }
 .rbc-header {
   border-color: var(--border);
+}
+.rbc-month-view .rbc-header {
   padding: 8px 4px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -29,15 +55,242 @@
   letter-spacing: 0.05em;
   color: var(--muted-foreground);
 }
+.rbc-time-header-content .rbc-row.rbc-time-header-cell {
+  flex-shrink: 0;
+  height: 52px;
+}
+.rbc-time-header-content .rbc-header {
+  padding: 0;
+  border-bottom: none;
+}
+.rbc-allday-cell {
+  display: none;
+}
 .rbc-off-range-bg {
   background: var(--muted);
 }
-.rbc-today {
+.rbc-month-view .rbc-today {
   background-color: color-mix(in oklch, var(--primary) 8%, transparent);
+}
+.rbc-time-view .rbc-today {
+  background-color: transparent;
 }
 .rbc-date-cell {
   padding: 6px 8px;
   font-size: 0.8125rem;
+}
+.rbc-timeslot-group {
+  border-color: var(--border);
+  min-height: 48px;
+}
+.rbc-day-slot .rbc-time-slot {
+  border-color: var(--border);
+}
+.rbc-time-content,
+.rbc-time-header.rbc-overflowing {
+  border-color: var(--border);
+}
+.rbc-time-gutter .rbc-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.rbc-time-gutter,
+.rbc-time-header-gutter {
+  min-width: 56px;
+}
+.rbc-current-time-indicator {
+  background-color: var(--destructive);
+  height: 2px;
+}
+.rbc-current-time-indicator::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--destructive);
+}
+
+/* Toolbar */
+.rbc-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  font-size: inherit;
+}
+.rbc-toolbar .rbc-toolbar-label {
+  flex: 1;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+}
+.ark-toolbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rbc-toolbar button.ark-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted-foreground);
+}
+.rbc-toolbar button.ark-nav-btn:hover,
+.rbc-toolbar button.ark-nav-btn:focus {
+  background: var(--muted);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: none;
+}
+.rbc-toolbar button.ark-today-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  background: var(--card);
+}
+.rbc-toolbar button.ark-today-pill:hover,
+.rbc-toolbar button.ark-today-pill:focus {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: none;
+}
+.ark-view-switch {
+  display: flex;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.rbc-toolbar button.ark-view-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: none;
+}
+.rbc-toolbar button.ark-view-btn:hover,
+.rbc-toolbar button.ark-view-btn:focus {
+  background: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+}
+.rbc-toolbar button.ark-view-btn-active,
+.rbc-toolbar button.ark-view-btn-active:hover,
+.rbc-toolbar button.ark-view-btn-active:focus {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Day/week header (weekday name + date pill) */
+.rbc-time-header-content .rbc-header .rbc-button-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+.ark-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+  padding: 4px;
+}
+.ark-day-header-name {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+}
+.ark-day-header-num {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.ark-day-header-num-today {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  padding-top: 1px;
+}
+
+/* Month date number pill */
+.ark-date-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ark-date-pill-today {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding-top: 1px;
+}
+
+/* Event content */
+.ark-event-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+.ark-event-title {
+  font-weight: 700;
+  font-size: 0.71875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ark-event-sub {
+  font-size: 0.65625rem;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ark-event-chip {
+  display: block;
+  font-weight: 600;
+  font-size: 0.65625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @custom-variant dark (&:is(.dark *));

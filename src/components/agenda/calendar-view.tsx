@@ -1,8 +1,10 @@
 "use client";
 
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
+import type { DateHeaderProps, EventProps, HeaderProps, ToolbarProps } from "react-big-calendar";
+import { format, parse, startOfWeek, getDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { AppointmentWithDetails } from "@/modules/scheduling/types";
 
 const localizer = dateFnsLocalizer({
@@ -27,6 +29,8 @@ export interface BackgroundEvent {
   start: Date;
   end: Date;
 }
+
+type AgendaEvent = CalendarEvent | BackgroundEvent;
 
 const messages = {
   date: "Data",
@@ -55,6 +59,84 @@ const statusClassName: Record<AppointmentWithDetails["status"], string> = {
   cancelado: "rbc-event-cancelado",
 };
 
+function CalendarToolbar({ label, view, views, localizer: toolbarLocalizer, onNavigate, onView }: ToolbarProps<AgendaEvent>) {
+  const viewNames = (Array.isArray(views) ? views : (Object.keys(views) as View[])) as View[];
+  const toolbarMessages = toolbarLocalizer.messages;
+
+  return (
+    <div className="rbc-toolbar">
+      <div className="ark-toolbar-nav">
+        <button type="button" className="ark-nav-btn" aria-label={String(toolbarMessages.previous)} onClick={() => onNavigate("PREV")}>
+          <ChevronLeft className="size-4" />
+        </button>
+        <button type="button" className="ark-nav-btn" aria-label={String(toolbarMessages.next)} onClick={() => onNavigate("NEXT")}>
+          <ChevronRight className="size-4" />
+        </button>
+        <button type="button" className="ark-today-pill" onClick={() => onNavigate("TODAY")}>
+          {toolbarMessages.today}
+        </button>
+      </div>
+      <span className="rbc-toolbar-label">{label}</span>
+      <div className="ark-view-switch">
+        {viewNames.map((name) => (
+          <button
+            key={name}
+            type="button"
+            className={name === view ? "ark-view-btn ark-view-btn-active" : "ark-view-btn"}
+            onClick={() => onView(name)}
+          >
+            {toolbarMessages[name]}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TimeGridDayHeader({ date }: HeaderProps) {
+  const today = isSameDay(date, new Date());
+  return (
+    <div className="ark-day-header">
+      <div className={today ? "ark-day-header-num ark-day-header-num-today" : "ark-day-header-num"}>
+        {format(date, "d")}
+      </div>
+      <div className="ark-day-header-name">{format(date, "EEE", { locale: ptBR })}</div>
+    </div>
+  );
+}
+
+function MonthDateHeader({ date, label, drilldownView, onDrillDown }: DateHeaderProps) {
+  const today = isSameDay(date, new Date());
+  const pill = <span className={today ? "ark-date-pill ark-date-pill-today" : "ark-date-pill"}>{label}</span>;
+  if (!drilldownView) return pill;
+  return (
+    <button type="button" className="rbc-button-link" onClick={onDrillDown}>
+      {pill}
+    </button>
+  );
+}
+
+function AgendaEventContent({ event }: EventProps<AgendaEvent>) {
+  if ("appointment" in event) {
+    return (
+      <div className="ark-event-content">
+        <span className="ark-event-title">{event.appointment.contact.name}</span>
+        <span className="ark-event-sub">{event.appointment.procedure.name}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="ark-event-content">
+      <span className="ark-event-title">{event.title}</span>
+    </div>
+  );
+}
+
+function MonthEventContent({ event }: EventProps<AgendaEvent>) {
+  const label = "appointment" in event ? event.appointment.contact.name : event.title;
+  return <span className="ark-event-chip">{label}</span>;
+}
+
 export function CalendarView({
   appointments,
   backgroundEvents = [],
@@ -74,7 +156,7 @@ export function CalendarView({
   onSelectSlot: (slot: { start: Date; end: Date }) => void;
   onSelectEvent: (appointment: AppointmentWithDetails) => void;
 }) {
-  const events: (CalendarEvent | BackgroundEvent)[] = [
+  const events: AgendaEvent[] = [
     ...appointments.map((appointment) => ({
       id: appointment.id,
       title: `${appointment.contact.name} — ${appointment.procedure.name}`,
@@ -91,6 +173,7 @@ export function CalendarView({
         localizer={localizer}
         culture="pt-BR"
         messages={messages}
+        views={["month", "week", "day"] as View[]}
         events={events}
         startAccessor="start"
         endAccessor="end"
@@ -100,13 +183,20 @@ export function CalendarView({
         onNavigate={onNavigate}
         selectable
         onSelectSlot={onSelectSlot}
-        onSelectEvent={(event: CalendarEvent | BackgroundEvent) => {
+        onSelectEvent={(event: AgendaEvent) => {
           if ("appointment" in event) onSelectEvent(event.appointment);
         }}
-        eventPropGetter={(event: CalendarEvent | BackgroundEvent) => ({
+        eventPropGetter={(event: AgendaEvent) => ({
           className:
             "appointment" in event ? statusClassName[event.appointment.status] : "rbc-event-blocked",
         })}
+        components={{
+          toolbar: CalendarToolbar,
+          event: AgendaEventContent,
+          week: { header: TimeGridDayHeader },
+          day: { header: TimeGridDayHeader },
+          month: { event: MonthEventContent, dateHeader: MonthDateHeader },
+        }}
       />
     </div>
   );
