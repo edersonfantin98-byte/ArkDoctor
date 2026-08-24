@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -199,32 +199,53 @@ export type Database = {
       contacts: {
         Row: {
           account_id: string
+          birth_date: string | null
+          cpf: string | null
           created_at: string
+          email: string | null
+          guardian_name: string | null
+          guardian_phone: string | null
+          guardian_relationship: string | null
           id: string
           name: string
           notes: string | null
           origin: string | null
           phone: string
+          sex: string | null
           updated_at: string
         }
         Insert: {
           account_id: string
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string
+          email?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          guardian_relationship?: string | null
           id?: string
           name: string
           notes?: string | null
           origin?: string | null
           phone: string
+          sex?: string | null
           updated_at?: string
         }
         Update: {
           account_id?: string
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string
+          email?: string | null
+          guardian_name?: string | null
+          guardian_phone?: string | null
+          guardian_relationship?: string | null
           id?: string
           name?: string
           notes?: string | null
           origin?: string | null
           phone?: string
+          sex?: string | null
           updated_at?: string
         }
         Relationships: [

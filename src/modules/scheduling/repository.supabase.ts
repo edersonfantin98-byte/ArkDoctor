@@ -23,6 +23,13 @@ function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contac
     phone: row.phone,
     origin: row.origin,
     notes: row.notes,
+    email: row.email,
+    birthDate: row.birth_date,
+    cpf: row.cpf,
+    sex: row.sex as Contact["sex"],
+    guardianName: row.guardian_name,
+    guardianPhone: row.guardian_phone,
+    guardianRelationship: row.guardian_relationship,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

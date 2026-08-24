@@ -25,6 +25,13 @@ function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contac
     phone: row.phone,
     origin: row.origin,
     notes: row.notes,
+    email: row.email,
+    birthDate: row.birth_date,
+    cpf: row.cpf,
+    sex: row.sex as Contact["sex"],
+    guardianName: row.guardian_name,
+    guardianPhone: row.guardian_phone,
+    guardianRelationship: row.guardian_relationship,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -157,6 +164,13 @@ export function createSupabaseCrmRepository(
           phone: input.phone,
           origin: input.origin ?? null,
           notes: input.notes ?? null,
+          email: input.email ?? null,
+          birth_date: input.birthDate ?? null,
+          cpf: input.cpf ?? null,
+          sex: input.sex ?? null,
+          guardian_name: input.guardianName ?? null,
+          guardian_phone: input.guardianPhone ?? null,
+          guardian_relationship: input.guardianRelationship ?? null,
         })
         .select("*")
         .single();
@@ -172,6 +186,15 @@ export function createSupabaseCrmRepository(
           ...(input.phone !== undefined ? { phone: input.phone } : {}),
           ...(input.origin !== undefined ? { origin: input.origin } : {}),
           ...(input.notes !== undefined ? { notes: input.notes } : {}),
+          ...(input.email !== undefined ? { email: input.email } : {}),
+          ...(input.birthDate !== undefined ? { birth_date: input.birthDate } : {}),
+          ...(input.cpf !== undefined ? { cpf: input.cpf } : {}),
+          ...(input.sex !== undefined ? { sex: input.sex } : {}),
+          ...(input.guardianName !== undefined ? { guardian_name: input.guardianName } : {}),
+          ...(input.guardianPhone !== undefined ? { guardian_phone: input.guardianPhone } : {}),
+          ...(input.guardianRelationship !== undefined
+            ? { guardian_relationship: input.guardianRelationship }
+            : {}),
           updated_at: new Date().toISOString(),
         })
         .eq("account_id", accountId)
@@ -228,6 +251,16 @@ export function createSupabaseCrmRepository(
       const { count, error } = await query;
       if (error) throwDbError(error);
       return count ?? 0;
+    },
+
+    async listContacts(accountId) {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("account_id", accountId)
+        .order("name", { ascending: true });
+      if (error) throwDbError(error);
+      return data.map(toContact);
     },
 
     async insertDeal(accountId, contactId, stageId) {
