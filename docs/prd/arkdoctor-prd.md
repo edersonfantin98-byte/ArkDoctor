@@ -1,7 +1,7 @@
 # ArkDoctor — PRD
 
 Status: MVP construído e em uso; ver "Estado Atual da Implementação" para o que diverge ou vai além deste PRD original
-Última atualização: 2026-08-22
+Última atualização: 2026-08-24
 
 ## Problem Statement
 
@@ -26,11 +26,13 @@ As quatro frentes (CRM/Pipeline, Agendamento/Calendário, Financeiro/Dashboard, 
 - **Tela dedicada de Procedimentos** (`/procedimentos`, com item próprio no menu lateral) — as stories 19-20 ("cadastrar/editar procedimentos") não especificavam uma tela própria; inicialmente foi implementada como diálogo dentro da Agenda, depois promovida a página própria.
 - **Excluir contato** — não havia story original para isso (o PRD só previa mover para o estágio "Perdido", story 6). Adicionado por necessidade operacional; exclusão é definitiva e em cascata (remove negociações, histórico de estágio e agendamentos vinculados; não afeta lançamentos financeiros já registrados).
 - **Editar e excluir lançamento financeiro** — as stories 22-23 falavam de criar/editar o valor *antes* de confirmar o lançamento; não havia previsão de editar/excluir um lançamento *já confirmado*. Adicionado pelo mesmo motivo.
-- **Wizard de autoagendamento** (`/agendamento`, grupo "Paciente" no menu) — fluxo de 3 passos (procedimento → dia/horário → confirmação) que não corresponde a nenhuma story deste PRD (as stories 11-18 de Agendamento são todas do ponto de vista da profissional usando `/agenda`, não de um paciente se autoagendando). **Gap conhecido**: o campo "Contato" desse wizard só aceita selecionar alguém que já existe no CRM (busca por nome/telefone) — não há campo para cadastrar nome/telefone de um paciente novo, então não é possível concluir o agendamento para quem ainda não é contato. Pendente de decisão: se esse fluxo deve virar público (sem login) para pacientes reais ou se seu propósito é outro.
+- **Wizard de autoagendamento interno** (`/agendamento`, grupo "Clínica" no menu) — fluxo de 3 passos (procedimento → dia/horário → confirmação) que não corresponde a nenhuma story deste PRD (as stories 11-18 de Agendamento são todas do ponto de vista da profissional usando `/agenda`, não de um paciente se autoagendando). Usado pela profissional logada para marcar um atendimento sem passar pelo calendário completo; o campo "Contato" só aceita alguém que já existe no CRM.
+- **Autoagendamento público** (`/agendar/[accountId]`, sem login) — resolve o gap que existia aqui antes: um link público, sem autenticação, onde o próprio paciente escolhe procedimento/dia/horário e informa nome+telefone; se o telefone (normalizado para o formato E.164 sem o `+`, ex. `55` + DDD + número) já existir como contato — inclusive um contato criado via WhatsApp — o agendamento é vinculado a ele em vez de duplicar; caso contrário cria um novo contato. A profissional logada copia esse link a partir de um botão em `/agendamento`. Usa a service-role key do Supabase no servidor (sem sessão de usuário), então `SUPABASE_SERVICE_ROLE_KEY` passou a ser uma variável obrigatória, não só usada pelo webhook do WhatsApp. Ver `docs/superpowers/specs/2026-08-24-autoagendamento-publico-design.md`.
+- **Tela dedicada de Pacientes** (`/pacientes`, grupo "Clínica" no menu) — estende o `Contact` existente com campos clínicos opcionais (e-mail, data de nascimento, CPF, sexo, dados de responsável) e adiciona busca, edição, exclusão e um fluxo de envio de mensagem de WhatsApp em massa para os contatos selecionados (com atraso aleatório entre envios). Não corresponde a nenhuma story original. Ver `docs/superpowers/specs/2026-08-24-tela-pacientes-design.md`.
+- **Relatório em PDF via impressão** — o botão de exportar do Dashboard (`/dashboard`) não gera mais CSV; aciona `window.print()` sobre uma versão só-impressão da própria página (cabeçalho com nome da clínica/período/timestamp, resumo financeiro com despesa/saldo/procedimento mais vendido, sidebar e controles ocultos), e o usuário salva como PDF pelo diálogo de impressão do navegador. Não há geração de PDF no servidor (o deploy roda em Cloudflare Workers, que não roda Chrome headless). Ver `docs/superpowers/specs/2026-08-24-relatorio-impressao-design.md`.
 
 **Divergências de implementação:**
 - `Procedure` não tem o campo `active` (soft-delete) mencionado nas specs técnicas de Financeiro — a remoção implementada é definitiva (hard delete), bloqueada quando há agendamento vinculado. Ver `docs/superpowers/specs/2026-08-20-arkdoctor-agendamento-design.md`.
-- A story 26 (taxa de cancelamento/não comparecimento no dashboard) continua retornando "indisponível" mesmo com o módulo de Agendamento já implementado — a integração real com dados de `Appointment` ficou pendente após o merge das duas fases e não foi retomada.
 
 ## User Stories
 

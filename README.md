@@ -16,7 +16,7 @@ Contexto completo do produto: `docs/prd/arkdoctor-prd.md` (ver seção "Estado A
 
 1. Copie `.env.local.example` para `.env.local` e preencha:
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — do projeto Supabase.
-   - `SUPABASE_SERVICE_ROLE_KEY` — usada só no servidor (ex.: webhook do WhatsApp), nunca exposta ao browser.
+   - `SUPABASE_SERVICE_ROLE_KEY` — usada só no servidor (webhook do WhatsApp e o fluxo de autoagendamento público em `/agendar`, que não tem sessão de login), nunca exposta ao browser.
    - `NEXT_PUBLIC_APP_URL` — URL pública onde a app está acessível (a Uazapi chama de volta essa URL para entregar mensagens recebidas).
 2. Aplique as migrations em `supabase/migrations/` no projeto Supabase (`supabase db push`, ou colando manualmente no SQL editor — ver `supabase/migrations/README.md` para o que já está aplicado em produção).
 3. Crie o usuário no Supabase Auth e vincule a uma `Account` — não há cadastro self-service; siga `supabase/seed_account.sql`.
@@ -29,7 +29,7 @@ npm run dev      # servidor de desenvolvimento (Turbopack)
 npm run build    # build de produção
 npm run start    # roda o build de produção localmente
 npm run lint     # ESLint
-npm test         # vitest run (123 testes)
+npm test         # vitest run (159 testes)
 npm run deploy   # build + deploy no Cloudflare Pages via Wrangler
 ```
 
