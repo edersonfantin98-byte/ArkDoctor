@@ -37,15 +37,15 @@ Como `DashboardClient` é quem sabe o período atual, esse cabeçalho é renderi
 
 ### 3. Resumo financeiro (só impressão)
 
-Decisão confirmada com a usuária: em vez do detalhe de paciente/procedimento do dia, o relatório traz receita e despesa vindas da tela Financeiro (`src/components/finance/finance-dashboard-client.tsx`), para o mesmo período selecionado.
+Decisão confirmada com a usuária: em vez do detalhe de paciente/procedimento do dia, o relatório traz receita, despesa e o procedimento mais vendido, vindos da tela Financeiro (`src/components/finance/finance-dashboard-client.tsx`), para o mesmo período selecionado.
 
-Descoberta importante: os dados já existem. `getDashboardOverview` (`src/modules/dashboard/service.ts:165`) já chama `deps.finance.getDashboardMetrics(...)` internamente para calcular `revenueTotal`/`revenueChangePct`, e essa chamada real (`finance.getDashboardMetrics` em `src/modules/finance/service.ts`) já retorna `expenseTotal`, `balance` e `revenueExpenseHistory` — só não estão no tipo `DashboardOverview` (`src/modules/dashboard/types.ts`), que descarta esses campos. Não é necessária nenhuma nova busca de dados nem nova query — só expor o que já é calculado.
+Descoberta importante: os dados já existem. `getDashboardOverview` (`src/modules/dashboard/service.ts:165`) já chama `deps.finance.getDashboardMetrics(...)` internamente para calcular `revenueTotal`/`revenueChangePct`, e essa chamada real (`finance.getDashboardMetrics` em `src/modules/finance/service.ts`) já retorna `expenseTotal`, `balance`, `revenueExpenseHistory` e `topProcedures` (já ordenado por `totalAmount` decrescente, ver `summarizeByProcedure` em `finance/service.ts`) — só não estão no tipo `DashboardOverview` (`src/modules/dashboard/types.ts`), que descarta esses campos. Não é necessária nenhuma nova busca de dados nem nova query — só expor o que já é calculado.
 
 Mudanças:
-- `DashboardOverview` ganha `expenseTotal: number`, `balance: number`, `revenueExpenseHistory: { month: string; revenue: number; expense: number }[]`.
-- `DashboardDeps["finance"]["getDashboardMetrics"]` (o tipo do dep em `dashboard/service.ts`) passa a declarar esses 3 campos no retorno (hoje só declara `revenueTotal`/`revenueChangePct`, embora a implementação real já devolva mais).
-- `getDashboardOverview` passa esses 3 campos adiante no retorno.
-- `DashboardClient` ganha uma seção nova, visível só na impressão (`hidden print:block`), com dois cards (Despesa, Saldo — mesmo estilo dos cards de KPI já existentes) e o gráfico de barras "Receita vs. despesas" (mesmo componente/visual já usado em `finance-dashboard-client.tsx`, com `revenueExpenseHistory`). A tela normal do Dashboard não muda — esses dados só aparecem no relatório impresso.
+- `DashboardOverview` ganha `expenseTotal: number`, `balance: number`, `revenueExpenseHistory: { month: string; revenue: number; expense: number }[]`, `topProcedures: ProcedureSalesSummary[]` (tipo já existente em `modules/finance/types.ts`, reexportado ou importado direto — sem duplicar a forma).
+- `DashboardDeps["finance"]["getDashboardMetrics"]` (o tipo do dep em `dashboard/service.ts`) passa a declarar esses 4 campos no retorno (hoje só declara `revenueTotal`/`revenueChangePct`, embora a implementação real já devolva mais).
+- `getDashboardOverview` passa esses 4 campos adiante no retorno.
+- `DashboardClient` ganha uma seção nova, visível só na impressão (`hidden print:block`), com três cards (Despesa, Saldo, Procedimento mais vendido — mesmo estilo dos cards de KPI já existentes) e o gráfico de barras "Receita vs. despesas" (mesmo componente/visual já usado em `finance-dashboard-client.tsx`, com `revenueExpenseHistory`). O card "Procedimento mais vendido" usa `topProcedures[0]` (nome + valor total do período); se `topProcedures` estiver vazio (nenhuma receita vinculada a procedimento no período), mostra "—". A tela normal do Dashboard não muda — esses dados só aparecem no relatório impresso.
 
 ### 4. Botão de exportação vira botão de impressão
 
@@ -61,6 +61,7 @@ Mudanças:
 - Gráfico de receita (Recharts/SVG dentro de `ResponsiveContainer`): imprime como SVG normalmente; paginação exata do gráfico entre páginas não é controlada — comportamento padrão do navegador.
 - Período sem dados (ex: sem atendimentos hoje, sem histórico de receita): já tratado pelos estados vazios existentes na tela ("Nenhum atendimento hoje.") — nada muda para impressão.
 - `accountName` sempre presente (mesma garantia que `AppLayout` já assume hoje) — sem necessidade de fallback.
+- Nenhuma receita vinculada a procedimento no período (`topProcedures` vazio) → card "Procedimento mais vendido" mostra "—", mesmo padrão já usado no card "Receita" quando não há período anterior.
 
 ## Fora de Escopo
 

@@ -4,7 +4,7 @@
 
 **Goal:** Replace the buggy CSV export on the Dashboard with a print-optimized view of the same page, triggered by `window.print()`, so the user can "Save as PDF" from the browser's own print dialog.
 
-**Architecture:** No new route, no new data fetching beyond exposing 3 fields the Dashboard module already computes. Adds `print:` (Tailwind v4) CSS rules to hide the sidebar, interactive controls, and the "Próximos atendimentos" card when printing; extends `DashboardOverview` with `expenseTotal`/`balance`/`revenueExpenseHistory` (already returned internally by `finance.getDashboardMetrics`, just not surfaced); adds a print-only header (clinic name, period, generation timestamp) and a print-only financial summary (Despesa, Saldo, Receita vs. despesas chart) inside the existing `DashboardClient`; rewrites `ExportReportButton` to call `window.print()` instead of building a CSV blob.
+**Architecture:** No new route, no new data fetching beyond exposing 4 fields the Dashboard module already computes. Adds `print:` (Tailwind v4) CSS rules to hide the sidebar, interactive controls, and the "Próximos atendimentos" card when printing; extends `DashboardOverview` with `expenseTotal`/`balance`/`revenueExpenseHistory`/`topProcedures` (already returned internally by `finance.getDashboardMetrics`, just not surfaced); adds a print-only header (clinic name, period, generation timestamp) and a print-only financial summary (Despesa, Saldo, Procedimento mais vendido, Receita vs. despesas chart) inside the existing `DashboardClient`; rewrites `ExportReportButton` to call `window.print()` instead of building a CSV blob.
 
 **Tech Stack:** Next.js (App Router, Server Components), Tailwind v4 `print:` variant, `lucide-react`.
 
@@ -65,8 +65,8 @@ git commit -m "feat(dashboard): add print CSS to hide sidebar and interactive co
 - Test: `src/modules/dashboard/service.test.ts`
 
 **Interfaces:**
-- Consumes: nothing new — `deps.finance.getDashboardMetrics(...)` is already called inside `getDashboardOverview` (`src/modules/dashboard/service.ts:165`); the real implementation (`finance.getDashboardMetrics` in `src/modules/finance/service.ts`) already returns `expenseTotal`, `balance`, `revenueExpenseHistory`, but the narrower `DashboardDeps["finance"]["getDashboardMetrics"]` return type in `dashboard/service.ts` only declares `revenueTotal`/`revenueChangePct`, so those fields are silently dropped today.
-- Produces: `DashboardOverview` gains `expenseTotal: number`, `balance: number`, `revenueExpenseHistory: { month: string; revenue: number; expense: number }[]` — consumed by Task 4's print-only financial summary.
+- Consumes: nothing new — `deps.finance.getDashboardMetrics(...)` is already called inside `getDashboardOverview` (`src/modules/dashboard/service.ts:165`); the real implementation (`finance.getDashboardMetrics` in `src/modules/finance/service.ts`) already returns `expenseTotal`, `balance`, `revenueExpenseHistory`, `topProcedures` (already sorted by `totalAmount` descending, per `summarizeByProcedure`), but the narrower `DashboardDeps["finance"]["getDashboardMetrics"]` return type in `dashboard/service.ts` only declares `revenueTotal`/`revenueChangePct`, so those fields are silently dropped today.
+- Produces: `DashboardOverview` gains `expenseTotal: number`, `balance: number`, `revenueExpenseHistory: { month: string; revenue: number; expense: number }[]`, `topProcedures: ProcedureSalesSummary[]` (type imported from `@/modules/finance/types`, not duplicated) — consumed by Task 4's print-only financial summary.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -79,6 +79,9 @@ In `src/modules/dashboard/service.test.ts`, update the first test's `finance.get
           expenseTotal: 9100,
           balance: 29140,
           revenueExpenseHistory: [{ month: "Ago", revenue: 38240, expense: 9100 }],
+          topProcedures: [
+            { procedureId: "proc-1", procedureName: "Limpeza de pele", totalAmount: 5400, count: 12 },
+          ],
         }),
 ```
 
@@ -88,26 +91,34 @@ Add assertions right after the existing `expect(overview.revenueHistory).toHaveL
     expect(overview.expenseTotal).toBe(9100);
     expect(overview.balance).toBe(29140);
     expect(overview.revenueExpenseHistory).toEqual([{ month: "Ago", revenue: 38240, expense: 9100 }]);
+    expect(overview.topProcedures).toEqual([
+      { procedureId: "proc-1", procedureName: "Limpeza de pele", totalAmount: 5400, count: 12 },
+    ]);
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm run test -- src/modules/dashboard/service.test.ts`
-Expected: FAIL — `overview.expenseTotal`/`balance`/`revenueExpenseHistory` are `undefined`, since `getDashboardOverview`'s return object doesn't include them yet.
+Expected: FAIL — `overview.expenseTotal`/`balance`/`revenueExpenseHistory`/`topProcedures` are `undefined`, since `getDashboardOverview`'s return object doesn't include them yet.
 
 - [ ] **Step 3: Extend `DashboardOverview`**
 
-In `src/modules/dashboard/types.ts`, add the 3 fields to the `DashboardOverview` interface (after `revenueChangePct`):
+In `src/modules/dashboard/types.ts`, import `ProcedureSalesSummary` from the finance module and add the 4 fields to the `DashboardOverview` interface (after `revenueChangePct`):
+
+```ts
+import type { ProcedureSalesSummary } from "@/modules/finance/types";
+```
 
 ```ts
   expenseTotal: number;
   balance: number;
   revenueExpenseHistory: { month: string; revenue: number; expense: number }[];
+  topProcedures: ProcedureSalesSummary[];
 ```
 
 - [ ] **Step 4: Extend the `DashboardDeps["finance"]["getDashboardMetrics"]` return type**
 
-In `src/modules/dashboard/service.ts`, in the `DashboardDeps` interface, update the `finance.getDashboardMetrics` return type:
+In `src/modules/dashboard/service.ts`, in the `DashboardDeps` interface, update the `finance.getDashboardMetrics` return type (import `ProcedureSalesSummary` from `@/modules/finance/types` here too):
 
 ```ts
     getDashboardMetrics: (
@@ -120,17 +131,19 @@ In `src/modules/dashboard/service.ts`, in the `DashboardDeps` interface, update 
       expenseTotal: number;
       balance: number;
       revenueExpenseHistory: { month: string; revenue: number; expense: number }[];
+      topProcedures: ProcedureSalesSummary[];
     }>;
 ```
 
 - [ ] **Step 5: Pass the fields through in `getDashboardOverview`**
 
-In `src/modules/dashboard/service.ts`, in the returned object at the end of `getDashboardOverview`, add the 3 fields (after `revenueChangePct: financeMetrics.revenueChangePct,`):
+In `src/modules/dashboard/service.ts`, in the returned object at the end of `getDashboardOverview`, add the 4 fields (after `revenueChangePct: financeMetrics.revenueChangePct,`):
 
 ```ts
     expenseTotal: financeMetrics.expenseTotal,
     balance: financeMetrics.balance,
     revenueExpenseHistory: financeMetrics.revenueExpenseHistory,
+    topProcedures: financeMetrics.topProcedures,
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**
@@ -147,7 +160,7 @@ Expected: PASS — the other two tests in this file mock `getDashboardMetrics` w
 
 ```bash
 git add src/modules/dashboard/types.ts src/modules/dashboard/service.ts src/modules/dashboard/service.test.ts
-git commit -m "feat(dashboard): expose expense/balance/revenue-expense-history on DashboardOverview"
+git commit -m "feat(dashboard): expose expense/balance/revenue-expense-history/top-procedures on DashboardOverview"
 ```
 
 ---
@@ -259,13 +272,13 @@ git commit -m "feat(dashboard): add print-only header with clinic name and perio
 
 ---
 
-### Task 4: Print-only financial summary (Despesa, Saldo, Receita vs. despesas)
+### Task 4: Print-only financial summary (Despesa, Saldo, Procedimento mais vendido, Receita vs. despesas)
 
 **Files:**
 - Modify: `src/components/dashboard/dashboard-client.tsx`
 
 **Interfaces:**
-- Consumes: `overview.expenseTotal`, `overview.balance`, `overview.revenueExpenseHistory` (Task 2).
+- Consumes: `overview.expenseTotal`, `overview.balance`, `overview.revenueExpenseHistory`, `overview.topProcedures` (Task 2).
 - Produces: nothing new — pure UI addition inside `DashboardClient`, visible only when printing.
 
 - [ ] **Step 1: Add the `recharts` imports needed for the bar chart**
@@ -281,7 +294,7 @@ import { Area, AreaChart, Bar, BarChart, Legend, ResponsiveContainer, Tooltip, X
 Add this block right after the "Próximos atendimentos" `Card` (the last one in the file, now `print:hidden` per Task 1), still inside the root `<div className="space-y-4 px-6 pb-6">`:
 
 ```tsx
-<div className="hidden print:grid print:grid-cols-2 print:gap-4">
+<div className="hidden print:grid print:grid-cols-3 print:gap-4">
   <Card className="print:break-inside-avoid">
     <CardHeader>
       <CardTitle className="text-sm text-muted-foreground">Despesa</CardTitle>
@@ -296,6 +309,23 @@ Add this block right after the "Próximos atendimentos" `Card` (the last one in 
     </CardHeader>
     <CardContent>
       <p className="text-3xl font-bold">{formatCurrency(overview.balance)}</p>
+    </CardContent>
+  </Card>
+  <Card className="print:break-inside-avoid">
+    <CardHeader>
+      <CardTitle className="text-sm text-muted-foreground">Procedimento mais vendido</CardTitle>
+    </CardHeader>
+    <CardContent>
+      {overview.topProcedures.length === 0 ? (
+        <p className="text-3xl font-bold">—</p>
+      ) : (
+        <>
+          <p className="text-xl font-bold">{overview.topProcedures[0].procedureName}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatCurrency(overview.topProcedures[0].totalAmount)} · {overview.topProcedures[0].count} atendimento(s)
+          </p>
+        </>
+      )}
     </CardContent>
   </Card>
 </div>
@@ -331,7 +361,7 @@ Expected: no errors.
 
 - [ ] **Step 4: Manually verify**
 
-Run `npm run dev` (skip if already running), open `/dashboard`, open print preview. Confirm: Despesa/Saldo cards and the "Receita vs. despesas" chart appear only in the print preview (not in the normal screen view), with correct values for the selected period.
+Run `npm run dev` (skip if already running), open `/dashboard`, open print preview. Confirm: Despesa/Saldo/Procedimento mais vendido cards and the "Receita vs. despesas" chart appear only in the print preview (not in the normal screen view), with correct values for the selected period.
 
 - [ ] **Step 5: Commit**
 
