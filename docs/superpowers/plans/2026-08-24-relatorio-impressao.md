@@ -404,7 +404,7 @@ export function ExportReportButton() {
 - [ ] **Step 2: Typecheck**
 
 Run: `npx tsc --noEmit`
-Expected: no errors — confirms no other call site still passes the now-removed `overview` prop (Task 2 already updated the one call site in `page.tsx`).
+Expected: no errors — confirms no other call site still passes the now-removed `overview` prop (Task 3 already updated the one call site in `page.tsx`).
 
 - [ ] **Step 3: Manually verify**
 
