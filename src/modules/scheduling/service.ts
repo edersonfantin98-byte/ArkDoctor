@@ -1,4 +1,5 @@
 import type { SchedulingRepository } from "./repository";
+import { parseOrThrow } from "@/lib/zod-error";
 
 export interface ConflictCheckInput {
   startsAt: string;
@@ -69,7 +70,7 @@ export async function createProcedure(
   accountId: string,
   rawInput: unknown,
 ): Promise<Procedure> {
-  const input = createProcedureInputSchema.parse(rawInput);
+  const input = parseOrThrow(createProcedureInputSchema, rawInput);
   return repo.insertProcedure(accountId, input);
 }
 
@@ -79,7 +80,7 @@ export async function updateProcedure(
   procedureId: string,
   rawInput: unknown,
 ): Promise<Procedure> {
-  const input = updateProcedureInputSchema.parse(rawInput);
+  const input = parseOrThrow(updateProcedureInputSchema, rawInput);
   return repo.updateProcedure(accountId, procedureId, input);
 }
 
@@ -132,7 +133,7 @@ export async function createAppointment(
   accountId: string,
   rawInput: unknown,
 ): Promise<Appointment> {
-  const input = createAppointmentInputSchema.parse(rawInput);
+  const input = parseOrThrow(createAppointmentInputSchema, rawInput);
 
   const procedure = await repos.scheduling.getProcedure(accountId, input.procedureId);
   if (!procedure) throw new Error("Procedimento não encontrado");
@@ -228,7 +229,7 @@ export async function createAvailabilityBlock(
   accountId: string,
   rawInput: unknown,
 ): Promise<AvailabilityBlock> {
-  const input = createAvailabilityBlockInputSchema.parse(rawInput);
+  const input = parseOrThrow(createAvailabilityBlockInputSchema, rawInput);
   return repo.insertAvailabilityBlock(accountId, {
     startsAt: input.startsAt,
     endsAt: input.endsAt,
@@ -256,7 +257,7 @@ export async function createAvailabilityRule(
   accountId: string,
   rawInput: unknown,
 ): Promise<AvailabilityRule> {
-  const input = createAvailabilityRuleInputSchema.parse(rawInput);
+  const input = parseOrThrow(createAvailabilityRuleInputSchema, rawInput);
   return repo.insertAvailabilityRule(accountId, {
     dayOfWeek: input.dayOfWeek,
     startTime: input.startTime,

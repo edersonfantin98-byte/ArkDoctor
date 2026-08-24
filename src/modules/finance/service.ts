@@ -5,6 +5,7 @@ import {
   updateFinancialEntryInputSchema,
 } from "./schemas";
 import type { DashboardMetrics, FinancialEntry, FinancialEntryType, ProcedureSalesSummary } from "./types";
+import { parseOrThrow } from "@/lib/zod-error";
 
 const MONTH_LABELS = [
   "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
@@ -63,7 +64,7 @@ export async function createFinancialEntry(
   rawInput: unknown,
   linkedProcedure: { defaultPrice: number } | null,
 ): Promise<FinancialEntry> {
-  const input = createFinancialEntryInputSchema.parse(rawInput);
+  const input = parseOrThrow(createFinancialEntryInputSchema, rawInput);
 
   if (input.type === "expense" && input.procedureId) {
     throw new Error("Despesas não podem ter um procedimento vinculado");
@@ -97,7 +98,7 @@ export async function updateFinancialEntry(
   id: string,
   rawInput: unknown,
 ): Promise<FinancialEntry> {
-  const input = updateFinancialEntryInputSchema.parse(rawInput);
+  const input = parseOrThrow(updateFinancialEntryInputSchema, rawInput);
   return repo.updateFinancialEntry(accountId, id, {
     amount: input.amount,
     category: input.category ?? null,
@@ -136,7 +137,7 @@ export async function getDashboardMetrics(
   rawPeriod: unknown,
   procedures: { id: string; name: string }[],
 ): Promise<DashboardMetrics> {
-  const period = dashboardPeriodSchema.parse(rawPeriod);
+  const period = parseOrThrow(dashboardPeriodSchema, rawPeriod);
   const entries = await repo.listFinancialEntries(accountId, period);
   const prevEntries = await repo.listFinancialEntries(accountId, previousPeriod(period));
   const procedureNames = new Map(procedures.map((p) => [p.id, p.name]));

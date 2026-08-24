@@ -2,15 +2,15 @@ import { z } from "zod";
 
 export const createProcedureInputSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório").max(200),
-  defaultPrice: z.number().nonnegative(),
-  defaultDurationMinutes: z.number().int().positive(),
+  defaultPrice: z.number().nonnegative("Valor não pode ser negativo"),
+  defaultDurationMinutes: z.number().int().positive("Duração deve ser maior que zero"),
 });
 export type CreateProcedureInput = z.infer<typeof createProcedureInputSchema>;
 
 export const updateProcedureInputSchema = z.object({
-  name: z.string().trim().min(1).max(200).optional(),
-  defaultPrice: z.number().nonnegative().optional(),
-  defaultDurationMinutes: z.number().int().positive().optional(),
+  name: z.string().trim().min(1, "Nome é obrigatório").max(200).optional(),
+  defaultPrice: z.number().nonnegative("Valor não pode ser negativo").optional(),
+  defaultDurationMinutes: z.number().int().positive("Duração deve ser maior que zero").optional(),
 });
 export type UpdateProcedureInput = z.infer<typeof updateProcedureInputSchema>;
 

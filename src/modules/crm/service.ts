@@ -1,13 +1,14 @@
 import type { CrmRepository } from "./repository";
 import { createContactInputSchema, updateContactInputSchema } from "./schemas";
 import type { Contact, Deal, DealWithContact, PipelineStage } from "./types";
+import { parseOrThrow } from "@/lib/zod-error";
 
 export async function createContact(
   repo: CrmRepository,
   accountId: string,
   rawInput: unknown,
 ): Promise<Contact> {
-  const input = createContactInputSchema.parse(rawInput);
+  const input = parseOrThrow(createContactInputSchema, rawInput);
   const contact = await repo.insertContact(accountId, input);
 
   const stages = await repo.getStages(accountId);
@@ -40,7 +41,7 @@ export async function updateContact(
   contactId: string,
   rawInput: unknown,
 ): Promise<Contact> {
-  const input = updateContactInputSchema.parse(rawInput);
+  const input = parseOrThrow(updateContactInputSchema, rawInput);
   return repo.updateContact(accountId, contactId, input);
 }
 

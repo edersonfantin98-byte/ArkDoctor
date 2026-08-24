@@ -3,6 +3,7 @@ import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
 import { normalizeWhatsappJid } from "./provider.uazapi";
 import type { WhatsappConnection } from "./types";
+import { parseOrThrow } from "@/lib/zod-error";
 
 export async function listConversations(repo: WhatsappRepository, accountId: string) {
   return repo.listConversations(accountId);
@@ -19,7 +20,7 @@ export async function getConversationMessages(
 }
 
 export async function startConversation(repo: WhatsappRepository, accountId: string, rawInput: unknown) {
-  const input = startConversationInputSchema.parse(rawInput);
+  const input = parseOrThrow(startConversationInputSchema, rawInput);
   return repo.insertConversation(accountId, input);
 }
 
@@ -30,7 +31,7 @@ export async function logMessage(
   conversationId: string,
   rawInput: unknown,
 ) {
-  const input = logMessageInputSchema.parse(rawInput);
+  const input = parseOrThrow(logMessageInputSchema, rawInput);
   const conversation = await repo.getConversation(accountId, conversationId);
   if (!conversation) throw new Error("Conversa não encontrada");
 
