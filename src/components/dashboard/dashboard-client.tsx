@@ -19,6 +19,16 @@ function comparisonLabel(preset: Preset): string {
   return "vs. mês anterior";
 }
 
+function periodLabel(preset: Preset, customFrom: string, customTo: string): string {
+  if (preset === "week") return "Semana atual";
+  if (preset === "month") return "Mês atual";
+  if (customFrom && customTo) {
+    const format = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
+    return `${format(customFrom)} a ${format(customTo)}`;
+  }
+  return "Período personalizado";
+}
+
 function PeriodFilter({
   preset,
   onPresetChange,
@@ -151,9 +161,11 @@ function ChangeCountIndicator({ count, previousLabel }: { count: number | null; 
 export function DashboardClient({
   overview: initialOverview,
   todayIso,
+  accountName,
 }: {
   overview: DashboardOverview;
   todayIso: string;
+  accountName: string;
 }) {
   const [overview, setOverview] = useState(initialOverview);
   const [preset, setPreset] = useState<Preset>("month");
@@ -177,6 +189,15 @@ export function DashboardClient({
 
   return (
     <div className="space-y-4 px-6 pb-6">
+      <div className="hidden print:block print:mb-4">
+        <h1 className="text-xl font-bold">{accountName}</h1>
+        <p className="text-sm text-muted-foreground">
+          Relatório — {periodLabel(preset, customFrom, customTo)}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Gerado em {new Date().toLocaleString("pt-BR")}
+        </p>
+      </div>
       <PeriodFilter
         preset={preset}
         onPresetChange={handlePresetChange}
