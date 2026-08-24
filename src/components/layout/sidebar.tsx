@@ -19,14 +19,16 @@ import { logoutAction } from "@/app/(app)/actions";
 
 const generalModules = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: true },
-  { label: "Pipeline", href: "/pipeline", icon: Filter, enabled: true },
-  { label: "Pacientes", href: "/pacientes", icon: Users, enabled: true },
-  { label: "Agenda", href: "/agenda", icon: CalendarDays, enabled: true },
-  { label: "Procedimentos", href: "/procedimentos", icon: ClipboardList, enabled: true },
   { label: "Financeiro", href: "/financeiro", icon: DollarSign, enabled: true },
-  { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle, enabled: true },
+  { label: "Agenda", href: "/agenda", icon: CalendarDays, enabled: true },
 ];
-const patientModules = [
+const atendimentoModules = [
+  { label: "WhatsApp", href: "/whatsapp", icon: MessageCircle, enabled: true },
+  { label: "Pipeline", href: "/pipeline", icon: Filter, enabled: true },
+];
+const clinicaModules = [
+  { label: "Pacientes", href: "/pacientes", icon: Users, enabled: true },
+  { label: "Procedimentos", href: "/procedimentos", icon: ClipboardList, enabled: true },
   { label: "Agendamento", href: "/agendamento", icon: CalendarPlus, enabled: true },
 ];
 
@@ -102,7 +104,8 @@ export function Sidebar({ userEmail, accountName }: { userEmail: string; account
 
       <nav className="flex-1 px-3">
         <NavGroup label="Geral" items={generalModules} pathname={pathname} />
-        <NavGroup label="Paciente" items={patientModules} pathname={pathname} />
+        <NavGroup label="Atendimento" items={atendimentoModules} pathname={pathname} />
+        <NavGroup label="Clínica" items={clinicaModules} pathname={pathname} />
       </nav>
 
       <form

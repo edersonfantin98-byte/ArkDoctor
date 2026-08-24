@@ -90,7 +90,7 @@ Regra geral: paleta enxuta por princípio — laranja + cinza/preto + branco com
 ### Sidebar
 Fundo escuro (`bg-foreground`), texto branco. Logo no topo com padding generoso. Grupos com label mono (10px, uppercase, tracking largo, opacidade baixa). Item de menu: `rounded-lg`, ícone 16px + label, `px-3 py-2`. Ativo = fundo laranja sólido + texto branco. Inativo = texto semi-apagado, hover com fundo sutil. Rodapé fixo com avatar + email + botão de sair. Mobile: vira barra superior + drawer lateral (Sheet).
 
-Módulos do ArkDoctor na sidebar (implementação atual, 2026-08-22): grupo "Geral" — Dashboard, Pipeline, Agenda, Procedimentos, Financeiro, WhatsApp; grupo "Paciente" — Agendamento. O item "Configurações" (planejado como hub futuro desabilitado) foi removido por não ter nenhuma tela por trás.
+Módulos do ArkDoctor na sidebar (implementação atual, 2026-08-24): grupo "Geral" — Dashboard, Financeiro, Agenda; grupo "Atendimento" — WhatsApp, Pipeline; grupo "Clínica" — Pacientes, Procedimentos, Agendamento. O item "Configurações" (planejado como hub futuro desabilitado) foi removido por não ter nenhuma tela por trás.
 
 ### Cabeçalho de página (padrão em toda tela)
 Eyebrow mono laranja com tracinho (`h-0.5 w-6 rounded-full bg-primary`) antes do texto → título `text-2xl font-bold tracking-tight` → descrição `text-sm text-muted-foreground`. Ação/botão principal alinhado à direita, mesma linha de base do título.
