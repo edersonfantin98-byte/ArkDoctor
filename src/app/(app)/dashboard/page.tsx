@@ -15,11 +15,13 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Visão geral"
-        description="Desempenho da clínica no mês atual."
-        action={<ExportReportButton />}
-      />
+      <div className="print:hidden">
+        <PageHeader
+          title="Visão geral"
+          description="Desempenho da clínica no mês atual."
+          action={<ExportReportButton />}
+        />
+      </div>
       <DashboardClient overview={overview} todayIso={today} accountName={accountName} />
     </div>
   );

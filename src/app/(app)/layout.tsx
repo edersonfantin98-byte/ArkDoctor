@@ -12,9 +12,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const accountName = await getCurrentAccountName(supabase, accountId);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen print:h-auto">
       <Sidebar userEmail={user?.email ?? ""} accountName={accountName} />
-      <main className="min-w-0 flex-1 overflow-y-auto bg-background">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto bg-background print:overflow-visible">{children}</main>
     </div>
   );
 }

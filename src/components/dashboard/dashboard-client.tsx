@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ function periodLabel(preset: Preset, customFrom: string, customTo: string): stri
   if (preset === "week") return "Semana atual";
   if (preset === "month") return "Mês atual";
   if (customFrom && customTo) {
-    const format = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
+    const format = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR");
     return `${format(customFrom)} a ${format(customTo)}`;
   }
   return "Período personalizado";
@@ -171,7 +171,23 @@ export function DashboardClient({
   const [preset, setPreset] = useState<Preset>("month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [printTick, setPrintTick] = useState(0);
+  const [generatedAt, setGeneratedAt] = useState("");
   const maxStageCount = Math.max(1, ...overview.pipelineByStage.map((s) => s.count));
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("print");
+    const refresh = () => {
+      setPrintTick((t) => t + 1);
+      setGeneratedAt(new Date().toLocaleString("pt-BR"));
+    };
+    mediaQuery.addEventListener("change", refresh);
+    window.addEventListener("beforeprint", refresh);
+    return () => {
+      mediaQuery.removeEventListener("change", refresh);
+      window.removeEventListener("beforeprint", refresh);
+    };
+  }, []);
 
   async function applySelection(preset: Preset, selection: DashboardPeriodSelection) {
     const next = await getDashboardOverviewAction(todayIso, selection);
@@ -195,7 +211,7 @@ export function DashboardClient({
           Relatório — {periodLabel(preset, customFrom, customTo)}
         </p>
         <p className="text-xs text-muted-foreground">
-          Gerado em {new Date().toLocaleString("pt-BR")}
+          Gerado em {generatedAt}
         </p>
       </div>
       <PeriodFilter
@@ -275,7 +291,7 @@ export function DashboardClient({
             <p className="text-sm text-muted-foreground">Faturamento confirmado por mês</p>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-64" key={printTick}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={overview.revenueHistory}>
                   <defs>
@@ -409,15 +425,14 @@ export function DashboardClient({
       <Card className="hidden print:block print:break-inside-avoid">
         <CardHeader>
           <CardTitle>Receita vs. despesas</CardTitle>
-          <p className="text-sm text-muted-foreground">Comparativo do período</p>
+          <p className="text-sm text-muted-foreground">Últimos 6 meses</p>
         </CardHeader>
         <CardContent>
-          <div className="h-64">
+          <div className="h-64" key={printTick}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={overview.revenueExpenseHistory}>
                 <XAxis dataKey="month" axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 <Legend formatter={(value) => (value === "revenue" ? "Receita" : "Despesa")} iconType="circle" />
                 <Bar dataKey="revenue" fill="#16a34a" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} />
