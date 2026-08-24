@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePhone } from "./actions";
+import { normalizePhone } from "./phone";
 
 describe("normalizePhone", () => {
   it("strips formatting characters", () => {
