@@ -11,6 +11,7 @@ import {
   MessageCircle,
   ClipboardList,
   LogOut,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,6 +20,7 @@ import { logoutAction } from "@/app/(app)/actions";
 const generalModules = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, enabled: true },
   { label: "Pipeline", href: "/pipeline", icon: Filter, enabled: true },
+  { label: "Pacientes", href: "/pacientes", icon: Users, enabled: true },
   { label: "Agenda", href: "/agenda", icon: CalendarDays, enabled: true },
   { label: "Procedimentos", href: "/procedimentos", icon: ClipboardList, enabled: true },
   { label: "Financeiro", href: "/financeiro", icon: DollarSign, enabled: true },
