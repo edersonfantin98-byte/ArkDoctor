@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { searchPatientsAction, deletePatientAction } from "@/app/(app)/pacientes/actions";
+import { listPatientsAction, searchPatientsAction, deletePatientAction } from "@/app/(app)/pacientes/actions";
 import { PatientFormDialog } from "./patient-form-dialog";
 import { BulkMessageDialog } from "./bulk-message-dialog";
 import type { Contact } from "@/modules/crm/types";
@@ -34,7 +34,7 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
     setQuery(value);
     setError(null);
     try {
-      const results = value.trim() ? await searchPatientsAction(value) : initialPatients;
+      const results = value.trim() ? await searchPatientsAction(value) : await listPatientsAction();
       setPatients(results);
       setSelectedIds(new Set());
     } catch (err) {
