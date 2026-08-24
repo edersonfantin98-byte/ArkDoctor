@@ -85,6 +85,69 @@ export async function handleInboundMessage(
   return message;
 }
 
+export function personalizeMessage(template: string, contactName: string): string {
+  return template.replaceAll("{{nome}}", contactName);
+}
+
+function randomBulkSendDelayMs(): number {
+  return 5000 + Math.random() * 5000;
+}
+
+function waitMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function sendBulkMessages(
+  whatsappRepo: WhatsappRepository,
+  provider: WhatsappProvider,
+  accountId: string,
+  contacts: { id: string; name: string; phone: string }[],
+  messageTemplate: string,
+  wait: (ms: number) => Promise<void> = waitMs,
+  randomDelayMs: () => number = randomBulkSendDelayMs,
+): Promise<{ sent: string[]; failed: { contactId: string; error: string }[] }> {
+  const sent: string[] = [];
+  const failed: { contactId: string; error: string }[] = [];
+
+  for (let i = 0; i < contacts.length; i += 1) {
+    const contact = contacts[i];
+    try {
+      const body = personalizeMessage(messageTemplate, contact.name);
+
+      let conversation = await whatsappRepo.getConversationByPhone(accountId, contact.phone);
+      if (!conversation) {
+        conversation = await whatsappRepo.insertConversation(accountId, {
+          contactId: contact.id,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+        });
+      } else if (conversation.contactId === null) {
+        await whatsappRepo.linkConversationContact(accountId, conversation.id, contact.id);
+      }
+
+      await provider.sendMessage(accountId, contact.phone, body);
+      const message = await whatsappRepo.insertMessage(accountId, conversation.id, {
+        direction: "outbound",
+        body,
+      });
+      await whatsappRepo.touchConversation(accountId, conversation.id, body, message.sentAt);
+
+      sent.push(contact.id);
+    } catch (err) {
+      failed.push({
+        contactId: contact.id,
+        error: err instanceof Error ? err.message : "Erro desconhecido",
+      });
+    }
+
+    if (i < contacts.length - 1) {
+      await wait(randomDelayMs());
+    }
+  }
+
+  return { sent, failed };
+}
+
 export async function getConnectionStatus(provider: WhatsappProvider, accountId: string) {
   return provider.getConnectionStatus(accountId);
 }

@@ -14,6 +14,8 @@ import {
   resetUnreadCount,
   isValidWebhookSecret,
   parseWebhookPayload,
+  personalizeMessage,
+  sendBulkMessages,
 } from "./service";
 
 describe("whatsapp service", () => {
@@ -360,5 +362,127 @@ describe("parseWebhookPayload", () => {
       fromName: "Carla Souza",
       body: "Respondendo sua mensagem",
     });
+  });
+});
+
+describe("personalizeMessage", () => {
+  it("replaces {{nome}} with the contact's name", () => {
+    expect(personalizeMessage("Olá {{nome}}, tudo bem?", "Ana")).toBe("Olá Ana, tudo bem?");
+  });
+
+  it("leaves the message unchanged when there's no placeholder", () => {
+    expect(personalizeMessage("Mensagem fixa", "Ana")).toBe("Mensagem fixa");
+  });
+
+  it("replaces every occurrence of the placeholder", () => {
+    expect(personalizeMessage("{{nome}}, oi {{nome}}", "Ana")).toBe("Ana, oi Ana");
+  });
+});
+
+describe("sendBulkMessages", () => {
+  const noWait = async () => {};
+  const noDelay = () => 0;
+
+  it("sends a personalized message to every contact and logs it as an outbound message", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    const sendSpy = vi.spyOn(provider, "sendMessage");
+
+    const result = await sendBulkMessages(
+      repo,
+      provider,
+      "acc-1",
+      [
+        { id: "contact-1", name: "Ana", phone: "11999990000" },
+        { id: "contact-2", name: "Beatriz", phone: "11988887777" },
+      ],
+      "Olá {{nome}}!",
+      noWait,
+      noDelay,
+    );
+
+    expect(result.sent).toEqual(["contact-1", "contact-2"]);
+    expect(result.failed).toEqual([]);
+    expect(sendSpy).toHaveBeenNthCalledWith(1, "acc-1", "11999990000", "Olá Ana!");
+    expect(sendSpy).toHaveBeenNthCalledWith(2, "acc-1", "11988887777", "Olá Beatriz!");
+
+    const conversation = await repo.getConversationByPhone("acc-1", "11999990000");
+    expect(conversation).not.toBeNull();
+    const messages = await repo.listMessages("acc-1", conversation!.id);
+    expect(messages).toHaveLength(1);
+    expect(messages[0].body).toBe("Olá Ana!");
+    expect(messages[0].direction).toBe("outbound");
+  });
+
+  it("reuses an existing conversation instead of creating a duplicate", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    const existing = await repo.insertConversation("acc-1", {
+      contactId: "contact-1",
+      contactName: "Ana",
+      contactPhone: "11999990000",
+    });
+
+    await sendBulkMessages(
+      repo,
+      provider,
+      "acc-1",
+      [{ id: "contact-1", name: "Ana", phone: "11999990000" }],
+      "Oi {{nome}}",
+      noWait,
+      noDelay,
+    );
+
+    const conversations = await repo.listConversations("acc-1");
+    expect(conversations).toHaveLength(1);
+    expect(conversations[0].id).toBe(existing.id);
+  });
+
+  it("continues sending to the remaining contacts when one send fails", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    vi.spyOn(provider, "sendMessage").mockImplementation(async (_accountId, toPhone) => {
+      if (toPhone === "11988887777") throw new Error("Falha no provedor");
+      return { providerMessageId: "msg-1" };
+    });
+
+    const result = await sendBulkMessages(
+      repo,
+      provider,
+      "acc-1",
+      [
+        { id: "contact-1", name: "Ana", phone: "11999990000" },
+        { id: "contact-2", name: "Beatriz", phone: "11988887777" },
+        { id: "contact-3", name: "Carla", phone: "11977776666" },
+      ],
+      "Oi {{nome}}",
+      noWait,
+      noDelay,
+    );
+
+    expect(result.sent).toEqual(["contact-1", "contact-3"]);
+    expect(result.failed).toEqual([{ contactId: "contact-2", error: "Falha no provedor" }]);
+  });
+
+  it("waits between sends but not after the last one", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    const waitSpy = vi.fn(async () => {});
+
+    await sendBulkMessages(
+      repo,
+      provider,
+      "acc-1",
+      [
+        { id: "contact-1", name: "Ana", phone: "11999990000" },
+        { id: "contact-2", name: "Beatriz", phone: "11988887777" },
+      ],
+      "Oi {{nome}}",
+      waitSpy,
+      () => 7000,
+    );
+
+    expect(waitSpy).toHaveBeenCalledTimes(1);
+    expect(waitSpy).toHaveBeenCalledWith(7000);
   });
 });
