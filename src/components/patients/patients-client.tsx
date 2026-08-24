@@ -29,6 +29,7 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
   const [editingPatient, setEditingPatient] = useState<Contact | null>(null);
   const [bulkMessageOpen, setBulkMessageOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   async function handleSearch(value: string) {
     setQuery(value);
@@ -70,11 +71,17 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
   function handleSaved(saved: Contact) {
     setPatients((prev) => {
       const exists = prev.some((p) => p.id === saved.id);
-      return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [...prev, saved].sort((a, b) => a.name.localeCompare(b.name));
+      const next = exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [...prev, saved];
+      return next.sort((a, b) => a.name.localeCompare(b.name));
     });
   }
 
   async function handleDelete(id: string) {
+    if (confirmingDeleteId !== id) {
+      setConfirmingDeleteId(id);
+      return;
+    }
+    setConfirmingDeleteId(null);
     setError(null);
     try {
       await deletePatientAction(id);
@@ -155,9 +162,20 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
                 <td className="p-2">{patient.email ?? "—"}</td>
                 <td className="p-2">{calculateAge(patient.birthDate)}</td>
                 <td className="p-2 text-right">
-                  <Button size="sm" variant="destructive" onClick={() => handleDelete(patient.id)}>
-                    Remover
-                  </Button>
+                  {confirmingDeleteId === patient.id ? (
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setConfirmingDeleteId(null)}>
+                        Cancelar
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDelete(patient.id)}>
+                        Confirmar exclusão
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="destructive" onClick={() => handleDelete(patient.id)}>
+                      Remover
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createPatientAction, updatePatientAction } from "@/app/(app)/pacientes/actions";
+import { buildContactInput } from "./build-contact-input";
 import type { Contact } from "@/modules/crm/types";
 
 const SEX_OPTIONS = [
@@ -67,18 +68,10 @@ export function PatientFormDialog({
 
   async function handleSubmit() {
     setError(null);
-    const input = {
-      name,
-      phone,
-      email: email || undefined,
-      birthDate: birthDate || undefined,
-      cpf: cpf || undefined,
-      sex: sex === "M" || sex === "F" ? sex : undefined,
-      guardianName: guardianName || undefined,
-      guardianPhone: guardianPhone || undefined,
-      guardianRelationship: guardianRelationship || undefined,
-      notes: notes || undefined,
-    };
+    const input = buildContactInput(
+      { name, phone, email, birthDate, cpf, sex, guardianName, guardianPhone, guardianRelationship, notes },
+      Boolean(editingPatient),
+    );
 
     try {
       const saved = editingPatient
