@@ -7,8 +7,13 @@ import * as scheduling from "@/modules/scheduling/service";
 import * as crm from "@/modules/crm/service";
 import type { Appointment } from "@/modules/scheduling/types";
 
-function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "");
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  // A local Brazilian number (DDD + number, no "55" country code) is 10
+  // or 11 digits — WhatsApp-originated contacts always store the "55"
+  // prefix, so without this the two never match on the same person.
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  return digits;
 }
 
 function getPublicRepos() {
