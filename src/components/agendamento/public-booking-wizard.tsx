@@ -40,6 +40,16 @@ function todayInputValue(): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+function availableSlotsForDate(selectedDate: string): string[] {
+  if (selectedDate !== todayInputValue()) return SLOTS;
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  return SLOTS.filter((s) => {
+    const [h, m] = s.split(":").map(Number);
+    return h * 60 + m > currentMinutes;
+  });
+}
+
 const WEEKDAY_LABELS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
 function generateDayStrip(days: number): { value: string; weekday: string; day: number }[] {
@@ -167,15 +177,17 @@ export function PublicBookingWizard({
 
     setSubmitting(true);
     try {
-      await createPublicBookingAction(accountId, {
+      const result = await createPublicBookingAction(accountId, {
         name: name.trim(),
         phone: phone.trim(),
         procedureId,
         startsAt: start,
       });
-      setConfirmed(true);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Erro ao criar agendamento");
+      if (result.ok) {
+        setConfirmed(true);
+      } else {
+        setSubmitError(result.error);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -276,7 +288,13 @@ export function PublicBookingWizard({
 
               <div className="space-y-1">
                 <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="(11) 99999-9999"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
               </div>
 
               <div className="space-y-1">
@@ -293,7 +311,7 @@ export function PublicBookingWizard({
               <div className="space-y-1">
                 <Label>Horário</Label>
                 <div className="flex flex-wrap gap-2">
-                  {SLOTS.map((s) => (
+                  {availableSlotsForDate(date).map((s) => (
                     <button
                       key={s}
                       type="button"

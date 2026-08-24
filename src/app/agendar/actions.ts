@@ -5,6 +5,11 @@ import { createSupabaseSchedulingRepository } from "@/modules/scheduling/reposit
 import { createSupabaseCrmRepository } from "@/modules/crm/repository.supabase";
 import * as scheduling from "@/modules/scheduling/service";
 import * as crm from "@/modules/crm/service";
+import type { Appointment } from "@/modules/scheduling/types";
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
 
 function getPublicRepos() {
   const supabase = createServiceRoleSupabaseClient();
@@ -30,20 +35,30 @@ export async function checkPublicConflictAction(
 export async function createPublicBookingAction(
   accountId: string,
   input: { name: string; phone: string; procedureId: string; startsAt: string },
-) {
+): Promise<{ ok: true; appointment: Appointment } | { ok: false; error: string }> {
   const { schedulingRepo, crmRepo } = getPublicRepos();
+  const phone = normalizePhone(input.phone);
 
-  let contact = await crm.findContactByPhone(crmRepo, accountId, input.phone);
-  if (!contact) {
-    contact = await crm.createContact(crmRepo, accountId, {
-      name: input.name,
-      phone: input.phone,
-    });
+  try {
+    let contact = await crm.findContactByPhone(crmRepo, accountId, phone);
+    if (!contact) {
+      contact = await crm.createContact(crmRepo, accountId, {
+        name: input.name,
+        phone,
+      });
+    }
+
+    const appointment = await scheduling.createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      accountId,
+      { contactId: contact.id, procedureId: input.procedureId, startsAt: input.startsAt },
+    );
+
+    return { ok: true, appointment };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Erro ao criar agendamento",
+    };
   }
-
-  return scheduling.createAppointment(
-    { scheduling: schedulingRepo, crm: crmRepo },
-    accountId,
-    { contactId: contact.id, procedureId: input.procedureId, startsAt: input.startsAt },
-  );
 }
