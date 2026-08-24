@@ -37,7 +37,7 @@ function PeriodFilter({
   onApplyCustom: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 print:hidden">
       <Button
         type="button"
         variant={preset === "week" ? "default" : "outline"}
@@ -187,7 +187,7 @@ export function DashboardClient({
         onApplyCustom={() => applySelection("custom", { kind: "custom", from: customFrom, to: customTo })}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Receita</CardTitle>
             <CardAction>
@@ -201,7 +201,7 @@ export function DashboardClient({
             <ChangeIndicator pct={overview.revenueChangePct} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Consultas concluídas</CardTitle>
             <CardAction>
@@ -215,7 +215,7 @@ export function DashboardClient({
             <ChangeIndicator pct={overview.appointmentsCompletedChangePct} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Não comparecimento</CardTitle>
             <CardAction>
@@ -231,7 +231,7 @@ export function DashboardClient({
             <ChangePointIndicator pp={overview.noShowRateChangePp} previousLabel={comparisonLabel(preset)} />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Novos contatos</CardTitle>
             <CardAction>
@@ -248,7 +248,7 @@ export function DashboardClient({
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 print:break-inside-avoid">
           <CardHeader>
             <CardTitle>Receita — últimos 6 meses</CardTitle>
             <p className="text-sm text-muted-foreground">Faturamento confirmado por mês</p>
@@ -279,7 +279,7 @@ export function DashboardClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="print:break-inside-avoid">
           <CardHeader>
             <CardTitle>Pipeline por estágio</CardTitle>
             <p className="text-sm text-muted-foreground">Contatos ativos</p>
@@ -301,7 +301,7 @@ export function DashboardClient({
         </Card>
       </div>
 
-      <Card>
+      <Card className="print:hidden">
         <CardHeader>
           <CardTitle>Próximos atendimentos</CardTitle>
           <p className="text-sm text-muted-foreground">Hoje</p>

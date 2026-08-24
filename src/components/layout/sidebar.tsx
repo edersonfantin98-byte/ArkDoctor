@@ -92,7 +92,7 @@ export function Sidebar({ userEmail, accountName }: { userEmail: string; account
     .join("");
 
   return (
-    <aside className="flex w-[232px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="flex w-[232px] shrink-0 flex-col bg-sidebar text-sidebar-foreground print:hidden">
       <div className="flex justify-center px-5 pt-6 pb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo/arkdoctor-mark.webp" alt="ArkDoctor" className="h-9 w-auto" />
