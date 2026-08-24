@@ -23,7 +23,8 @@ Hoje não existe nenhuma regra de impressão no projeto. Usar as variantes `prin
 
 - Sidebar (`src/components/layout/sidebar.tsx`, elemento `<aside>`): `print:hidden`.
 - Botão de ação no `PageHeader` do Dashboard (o atual `ExportReportButton`) e os controles interativos do seletor de período (botões Semana/Mês/Personalizado, inputs de data, botão "Aplicar" em `PeriodFilter`, dentro de `dashboard-client.tsx`): `print:hidden` — não fazem sentido numa página já impressa, já que o período foi escolhido antes de imprimir.
-- Cards de métricas e o card de "Pipeline por estágio"/"Próximos atendimentos": `print:break-inside-avoid` para reduzir cortes de card no meio entre páginas.
+- Card "Próximos atendimentos" (lista de paciente/procedimento/horário do dia): `print:hidden` — decisão confirmada com a usuária, o relatório não precisa desse nível de detalhe operacional; o espaço é ocupado pelo resumo financeiro (seção 4).
+- Cards de métricas e o card de "Pipeline por estágio": `print:break-inside-avoid` para reduzir cortes de card no meio entre páginas.
 
 ### 2. Cabeçalho só-de-impressão
 
@@ -34,7 +35,19 @@ Novo elemento, visível apenas na impressão (`hidden print:block`), mostrando:
 
 Como `DashboardClient` é quem sabe o período atual, esse cabeçalho é renderizado dentro dele (não em `page.tsx`), recebendo `accountName` como prop vinda de `DashboardPage` (que passa a buscar `accountName` da mesma forma que `AppLayout` já faz).
 
-### 3. Botão de exportação vira botão de impressão
+### 3. Resumo financeiro (só impressão)
+
+Decisão confirmada com a usuária: em vez do detalhe de paciente/procedimento do dia, o relatório traz receita e despesa vindas da tela Financeiro (`src/components/finance/finance-dashboard-client.tsx`), para o mesmo período selecionado.
+
+Descoberta importante: os dados já existem. `getDashboardOverview` (`src/modules/dashboard/service.ts:165`) já chama `deps.finance.getDashboardMetrics(...)` internamente para calcular `revenueTotal`/`revenueChangePct`, e essa chamada real (`finance.getDashboardMetrics` em `src/modules/finance/service.ts`) já retorna `expenseTotal`, `balance` e `revenueExpenseHistory` — só não estão no tipo `DashboardOverview` (`src/modules/dashboard/types.ts`), que descarta esses campos. Não é necessária nenhuma nova busca de dados nem nova query — só expor o que já é calculado.
+
+Mudanças:
+- `DashboardOverview` ganha `expenseTotal: number`, `balance: number`, `revenueExpenseHistory: { month: string; revenue: number; expense: number }[]`.
+- `DashboardDeps["finance"]["getDashboardMetrics"]` (o tipo do dep em `dashboard/service.ts`) passa a declarar esses 3 campos no retorno (hoje só declara `revenueTotal`/`revenueChangePct`, embora a implementação real já devolva mais).
+- `getDashboardOverview` passa esses 3 campos adiante no retorno.
+- `DashboardClient` ganha uma seção nova, visível só na impressão (`hidden print:block`), com dois cards (Despesa, Saldo — mesmo estilo dos cards de KPI já existentes) e o gráfico de barras "Receita vs. despesas" (mesmo componente/visual já usado em `finance-dashboard-client.tsx`, com `revenueExpenseHistory`). A tela normal do Dashboard não muda — esses dados só aparecem no relatório impresso.
+
+### 4. Botão de exportação vira botão de impressão
 
 `ExportReportButton` (mesmo arquivo, mesmo nome — o componente continua fazendo a mesma função de "gerar relatório", só muda o mecanismo):
 - Remove toda a lógica de montar CSV/Blob.
@@ -54,12 +67,14 @@ Como `DashboardClient` é quem sabe o período atual, esse cabeçalho é renderi
 - Geração de PDF real no servidor (Puppeteer, `@react-pdf`, etc.) — inviável no runtime Cloudflare Workers do projeto.
 - Paginação customizada / controle fino de quebra de página por seção.
 - Exportação em outros formatos (Excel, imagem, e-mail).
-- Customização do conteúdo do relatório (escolher quais cards aparecem) — sempre mostra tudo que a "Visão geral" já mostra.
+- Customização do conteúdo do relatório (escolher quais cards aparecem) — o conjunto fixo é: métricas da "Visão geral" (exceto "Próximos atendimentos") + resumo financeiro (Despesa, Saldo, Receita vs. despesas).
 - Envio do relatório por e-mail/WhatsApp — só impressão local / salvar como PDF pelo navegador.
 
 ## Decisões de Teste
 
-Mudança é majoritariamente CSS + trocar o corpo de uma função de clique por `window.print()` — sem lógica nova testável por Vitest. Verificação é manual: imprimir/pré-visualizar a tela e conferir que a sidebar e os controles somem, que o cabeçalho de impressão aparece, e que o conteúdo é legível.
+- `getDashboardOverview` (`src/modules/dashboard/service.test.ts`): passa a incluir `expenseTotal`, `balance` e `revenueExpenseHistory` no retorno, repassados sem transformação a partir do mock de `deps.finance.getDashboardMetrics`.
+
+Resto da mudança é CSS + trocar o corpo de uma função de clique por `window.print()` — sem lógica nova testável por Vitest. Verificação é manual: imprimir/pré-visualizar a tela e conferir que a sidebar, os controles e "Próximos atendimentos" somem, que o cabeçalho de impressão e o resumo financeiro aparecem, e que o conteúdo é legível.
 
 ## Decisões em Aberto
 
