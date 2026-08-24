@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -367,6 +367,63 @@ export function DashboardClient({
               </tbody>
             </table>
           )}
+        </CardContent>
+      </Card>
+
+      <div className="hidden print:grid print:grid-cols-3 print:gap-4">
+        <Card className="print:break-inside-avoid">
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Despesa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatCurrency(overview.expenseTotal)}</p>
+          </CardContent>
+        </Card>
+        <Card className="print:break-inside-avoid">
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Saldo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatCurrency(overview.balance)}</p>
+          </CardContent>
+        </Card>
+        <Card className="print:break-inside-avoid">
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">Procedimento mais vendido</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {overview.topProcedures.length === 0 ? (
+              <p className="text-3xl font-bold">—</p>
+            ) : (
+              <>
+                <p className="text-xl font-bold">{overview.topProcedures[0].procedureName}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatCurrency(overview.topProcedures[0].totalAmount)} · {overview.topProcedures[0].count} atendimento(s)
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="hidden print:block print:break-inside-avoid">
+        <CardHeader>
+          <CardTitle>Receita vs. despesas</CardTitle>
+          <p className="text-sm text-muted-foreground">Comparativo do período</p>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={overview.revenueExpenseHistory}>
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Legend formatter={(value) => (value === "revenue" ? "Receita" : "Despesa")} iconType="circle" />
+                <Bar dataKey="revenue" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
     </div>
