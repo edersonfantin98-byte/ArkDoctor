@@ -1,3 +1,5 @@
+import type { ProcedureSalesSummary } from "@/modules/finance/types";
+
 export type DashboardPeriodSelection =
   | { kind: "month" }
   | { kind: "week" }
@@ -6,6 +8,10 @@ export type DashboardPeriodSelection =
 export interface DashboardOverview {
   revenueTotal: number;
   revenueChangePct: number | null;
+  expenseTotal: number;
+  balance: number;
+  revenueExpenseHistory: { month: string; revenue: number; expense: number }[];
+  topProcedures: ProcedureSalesSummary[];
   appointmentsCompletedCount: number;
   appointmentsCompletedChangePct: number | null;
   noShowRatePct: number | null;

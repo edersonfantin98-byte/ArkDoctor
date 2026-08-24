@@ -1,3 +1,4 @@
+import type { ProcedureSalesSummary } from "@/modules/finance/types";
 import type { DashboardOverview, DashboardPeriodSelection } from "./types";
 
 interface DashboardDeps {
@@ -29,7 +30,14 @@ interface DashboardDeps {
       accountId: string,
       rawPeriod: unknown,
       procedures: { id: string; name: string }[],
-    ) => Promise<{ revenueTotal: number; revenueChangePct: number | null }>;
+    ) => Promise<{
+      revenueTotal: number;
+      revenueChangePct: number | null;
+      expenseTotal: number;
+      balance: number;
+      revenueExpenseHistory: { month: string; revenue: number; expense: number }[];
+      topProcedures: ProcedureSalesSummary[];
+    }>;
     listEntries: (
       accountId: string,
       range: { from: string; to: string },
@@ -189,6 +197,10 @@ export async function getDashboardOverview(
   return {
     revenueTotal: financeMetrics.revenueTotal,
     revenueChangePct: financeMetrics.revenueChangePct,
+    expenseTotal: financeMetrics.expenseTotal,
+    balance: financeMetrics.balance,
+    revenueExpenseHistory: financeMetrics.revenueExpenseHistory,
+    topProcedures: financeMetrics.topProcedures,
     appointmentsCompletedCount: current.completed,
     appointmentsCompletedChangePct,
     noShowRatePct: current.noShowRate,

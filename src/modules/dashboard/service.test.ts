@@ -79,6 +79,12 @@ describe("getDashboardOverview", () => {
         getDashboardMetrics: vi.fn().mockResolvedValue({
           revenueTotal: 38240,
           revenueChangePct: 12,
+          expenseTotal: 9100,
+          balance: 29140,
+          revenueExpenseHistory: [{ month: "Ago", revenue: 38240, expense: 9100 }],
+          topProcedures: [
+            { procedureId: "proc-1", procedureName: "Limpeza de pele", totalAmount: 5400, count: 12 },
+          ],
         }),
         listEntries: vi.fn().mockResolvedValue([]),
       },
@@ -93,6 +99,12 @@ describe("getDashboardOverview", () => {
       { stageId: "stage-2", stageName: "Agendado", stageKind: "normal", count: 2 },
     ]);
     expect(overview.revenueHistory).toHaveLength(6);
+    expect(overview.expenseTotal).toBe(9100);
+    expect(overview.balance).toBe(29140);
+    expect(overview.revenueExpenseHistory).toEqual([{ month: "Ago", revenue: 38240, expense: 9100 }]);
+    expect(overview.topProcedures).toEqual([
+      { procedureId: "proc-1", procedureName: "Limpeza de pele", totalAmount: 5400, count: 12 },
+    ]);
 
     // Monthly completed count: 6 this month, 4 last month => +50%
     expect(overview.appointmentsCompletedCount).toBe(6);
