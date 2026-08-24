@@ -15,6 +15,13 @@ export interface Contact {
   phone: string;
   origin: string | null;
   notes: string | null;
+  email: string | null;
+  birthDate: string | null;
+  cpf: string | null;
+  sex: "M" | "F" | null;
+  guardianName: string | null;
+  guardianPhone: string | null;
+  guardianRelationship: string | null;
   createdAt: string;
   updatedAt: string;
 }

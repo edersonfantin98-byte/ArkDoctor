@@ -17,17 +17,42 @@ export interface CrmRepository {
 
   insertContact(
     accountId: string,
-    input: { name: string; phone: string; origin?: string; notes?: string },
+    input: {
+      name: string;
+      phone: string;
+      origin?: string;
+      notes?: string;
+      email?: string;
+      birthDate?: string;
+      cpf?: string;
+      sex?: "M" | "F";
+      guardianName?: string;
+      guardianPhone?: string;
+      guardianRelationship?: string;
+    },
   ): Promise<Contact>;
   updateContact(
     accountId: string,
     contactId: string,
-    input: { name?: string; phone?: string; origin?: string | null; notes?: string | null },
+    input: {
+      name?: string;
+      phone?: string;
+      origin?: string | null;
+      notes?: string | null;
+      email?: string | null;
+      birthDate?: string | null;
+      cpf?: string | null;
+      sex?: "M" | "F" | null;
+      guardianName?: string | null;
+      guardianPhone?: string | null;
+      guardianRelationship?: string | null;
+    },
   ): Promise<Contact>;
   searchContacts(accountId: string, query: string): Promise<Contact[]>;
   findContactByPhone(accountId: string, phone: string): Promise<Contact | null>;
   deleteContact(accountId: string, contactId: string): Promise<void>;
   countNewContacts(accountId: string, sinceIso: string, untilIso?: string): Promise<number>;
+  listContacts(accountId: string): Promise<Contact[]>;
 
   insertDeal(accountId: string, contactId: string, stageId: string): Promise<Deal>;
   getDeal(accountId: string, dealId: string): Promise<Deal | null>;

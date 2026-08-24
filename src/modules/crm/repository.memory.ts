@@ -100,6 +100,13 @@ export function createInMemoryCrmRepository(): CrmRepository {
         phone: input.phone,
         origin: input.origin ?? null,
         notes: input.notes ?? null,
+        email: input.email ?? null,
+        birthDate: input.birthDate ?? null,
+        cpf: input.cpf ?? null,
+        sex: input.sex ?? null,
+        guardianName: input.guardianName ?? null,
+        guardianPhone: input.guardianPhone ?? null,
+        guardianRelationship: input.guardianRelationship ?? null,
         createdAt: now,
         updatedAt: now,
       };
@@ -116,6 +123,15 @@ export function createInMemoryCrmRepository(): CrmRepository {
         ...(input.phone !== undefined ? { phone: input.phone } : {}),
         ...(input.origin !== undefined ? { origin: input.origin } : {}),
         ...(input.notes !== undefined ? { notes: input.notes } : {}),
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.birthDate !== undefined ? { birthDate: input.birthDate } : {}),
+        ...(input.cpf !== undefined ? { cpf: input.cpf } : {}),
+        ...(input.sex !== undefined ? { sex: input.sex } : {}),
+        ...(input.guardianName !== undefined ? { guardianName: input.guardianName } : {}),
+        ...(input.guardianPhone !== undefined ? { guardianPhone: input.guardianPhone } : {}),
+        ...(input.guardianRelationship !== undefined
+          ? { guardianRelationship: input.guardianRelationship }
+          : {}),
         updatedAt: new Date().toISOString(),
       };
       contacts.set(contactId, updated);
@@ -159,6 +175,12 @@ export function createInMemoryCrmRepository(): CrmRepository {
           c.createdAt >= sinceIso &&
           (untilIso === undefined || c.createdAt < untilIso),
       ).length;
+    },
+
+    async listContacts(accountId) {
+      return [...contacts.values()]
+        .filter((c) => c.accountId === accountId)
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
 
     async insertDeal(accountId, contactId, stageId) {
