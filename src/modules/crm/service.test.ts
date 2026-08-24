@@ -43,6 +43,33 @@ describe("createContact", () => {
       createContact(repo, "acc-1", { name: "", phone: "11999990000" }),
     ).rejects.toThrow();
   });
+
+  it("accepts the optional patient fields and passes them through to the repository", async () => {
+    const repo = createInMemoryCrmRepository();
+
+    const contact = await createContact(repo, "acc-1", {
+      name: "Ana",
+      phone: "11999990000",
+      email: "ana@example.com",
+      birthDate: "1990-05-10",
+      cpf: "12345678900",
+      sex: "F",
+      guardianName: "Maria",
+      guardianPhone: "11988887777",
+      guardianRelationship: "mãe",
+    });
+
+    expect(contact.email).toBe("ana@example.com");
+    expect(contact.sex).toBe("F");
+    expect(contact.guardianRelationship).toBe("mãe");
+  });
+
+  it("rejects an invalid sex value", async () => {
+    const repo = createInMemoryCrmRepository();
+    await expect(
+      createContact(repo, "acc-1", { name: "Ana", phone: "11999990000", sex: "X" }),
+    ).rejects.toThrow();
+  });
 });
 
 describe("searchContacts", () => {
@@ -295,5 +322,18 @@ describe("findContactByPhone", () => {
 
     const notFound = await findContactByPhone(repo, "acc-1", "00000000000");
     expect(notFound).toBeNull();
+  });
+});
+
+describe("updateContact patient fields", () => {
+  it("updates and clears patient fields via null", async () => {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    const updated = await updateContact(repo, "acc-1", contact.id, { cpf: "12345678900" });
+    expect(updated.cpf).toBe("12345678900");
+
+    const cleared = await updateContact(repo, "acc-1", contact.id, { cpf: null });
+    expect(cleared.cpf).toBeNull();
   });
 });
