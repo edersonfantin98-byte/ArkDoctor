@@ -77,6 +77,11 @@ export async function checkConflictAction(startsAt: string, endsAt: string, excl
   return scheduling.checkConflict(schedulingRepo, accountId, { startsAt, endsAt, excludeAppointmentId });
 }
 
+export async function listOccupiedIntervalsAction(from: string, to: string) {
+  const { schedulingRepo, accountId } = await getReposAndAccount();
+  return scheduling.listOccupiedIntervals(schedulingRepo, accountId, { from, to });
+}
+
 export async function createProcedureAction(input: unknown) {
   const { schedulingRepo, accountId } = await getReposAndAccount();
   const procedure = await scheduling.createProcedure(schedulingRepo, accountId, input);

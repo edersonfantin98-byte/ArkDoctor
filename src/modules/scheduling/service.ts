@@ -62,6 +62,45 @@ export async function checkConflict(
   return { hasConflict: false, reason: null };
 }
 
+export interface OccupiedInterval {
+  startsAt: string;
+  endsAt: string;
+}
+
+export async function listOccupiedIntervals(
+  repo: SchedulingRepository,
+  accountId: string,
+  range: { from: string; to: string },
+): Promise<OccupiedInterval[]> {
+  const intervals: OccupiedInterval[] = [];
+
+  const appointments = await repo.listAppointmentsOverlapping(accountId, range.from, range.to);
+  for (const appointment of appointments) {
+    if (appointment.status === "cancelado") continue;
+    intervals.push({ startsAt: appointment.startsAt, endsAt: appointment.endsAt });
+  }
+
+  const blocks = await repo.listAvailabilityBlocksOverlapping(accountId, range.from, range.to);
+  for (const block of blocks) {
+    intervals.push({ startsAt: block.startsAt, endsAt: block.endsAt });
+  }
+
+  const rules = await repo.listAvailabilityRules(accountId);
+  const rangeStart = new Date(range.from);
+  const dayOfWeek = rangeStart.getDay();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const dayDate = `${rangeStart.getFullYear()}-${pad(rangeStart.getMonth() + 1)}-${pad(rangeStart.getDate())}`;
+  for (const rule of rules) {
+    if (rule.dayOfWeek !== dayOfWeek) continue;
+    intervals.push({
+      startsAt: new Date(`${dayDate}T${rule.startTime}:00`).toISOString(),
+      endsAt: new Date(`${dayDate}T${rule.endTime}:00`).toISOString(),
+    });
+  }
+
+  return intervals;
+}
+
 import { createProcedureInputSchema, updateProcedureInputSchema } from "./schemas";
 import type { Procedure } from "./types";
 

@@ -23,6 +23,7 @@ import {
   updateAppointmentTimeAction,
   updateAppointmentNotesAction,
   listProceduresAction,
+  checkConflictAction,
 } from "@/app/(app)/agenda/actions";
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
 import { getFinancialEntryByAppointmentAction } from "@/app/(app)/financeiro/actions";
@@ -58,6 +59,9 @@ export function AppointmentDialog({
   const [startsAt, setStartsAt] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
+  const [conflictReason, setConflictReason] = useState<string | null>(null);
+  const [conflictCheckError, setConflictCheckError] = useState<string | null>(null);
   const [revenueSuggestionOpen, setRevenueSuggestionOpen] = useState(false);
 
   async function handleStatusChange(status: AppointmentStatus) {
@@ -85,6 +89,56 @@ export function AppointmentDialog({
     }
     setError(null);
   }, [open, editingAppointment, slot]);
+
+  useEffect(() => {
+    if (!open || !startsAt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears a stale conflict result before the check can run (no procedure/duration resolved yet, or dialog closed)
+      setConflictReason(null);
+      return;
+    }
+
+    let durationMinutes: number | null = null;
+    if (editingAppointment) {
+      durationMinutes =
+        (new Date(editingAppointment.endsAt).getTime() -
+          new Date(editingAppointment.startsAt).getTime()) /
+        60_000;
+    } else {
+      const procedure = procedures.find((p) => p.id === procedureId);
+      durationMinutes = procedure?.defaultDurationMinutes ?? null;
+    }
+    if (durationMinutes === null) {
+      setConflictReason(null);
+      return;
+    }
+
+    const startsAtIso = new Date(startsAt).toISOString();
+    const endsAtIso = new Date(new Date(startsAtIso).getTime() + durationMinutes * 60_000).toISOString();
+
+    let cancelled = false;
+    setCheckingConflict(true);
+    setConflictCheckError(null);
+    checkConflictAction(startsAtIso, endsAtIso, editingAppointment?.id)
+      .then((result) => {
+        if (cancelled) return;
+        setConflictReason(result.hasConflict ? result.reason : null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setConflictReason(null);
+        setConflictCheckError(
+          err instanceof Error ? err.message : "Erro ao verificar disponibilidade",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingConflict(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, startsAt, procedureId, editingAppointment]);
 
   async function handleContactSearch(value: string) {
     setContactQuery(value);
@@ -134,6 +188,12 @@ export function AppointmentDialog({
         </DialogHeader>
         <div className="space-y-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {!checkingConflict && conflictReason && (
+            <p className="text-sm text-red-600">{conflictReason}</p>
+          )}
+          {!checkingConflict && conflictCheckError && (
+            <p className="text-sm text-red-600">{conflictCheckError}</p>
+          )}
 
           {!editingAppointment && (
             <div className="space-y-1">
@@ -235,7 +295,11 @@ export function AppointmentDialog({
             type="button"
             className="w-full"
             onClick={handleSubmit}
-            disabled={!editingAppointment && (!selectedContactId || !procedureId)}
+            disabled={
+              (!editingAppointment && (!selectedContactId || !procedureId)) ||
+              checkingConflict ||
+              !!conflictReason
+            }
           >
             Salvar
           </Button>

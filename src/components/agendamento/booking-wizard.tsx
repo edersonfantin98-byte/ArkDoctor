@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   checkConflictAction,
   createAppointmentAction,
+  listOccupiedIntervalsAction,
 } from "@/app/(app)/agenda/actions";
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
+import { isSlotBusy, dayRangeIso, type OccupiedInterval } from "./slot-availability";
 import { cn } from "@/lib/utils";
 import type { Contact } from "@/modules/crm/types";
 import type { Procedure } from "@/modules/scheduling/types";
@@ -105,6 +107,23 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
 
   const [date, setDate] = useState(todayInputValue());
   const [slot, setSlot] = useState<string | null>(null);
+
+  const [occupiedIntervals, setOccupiedIntervals] = useState<OccupiedInterval[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const { from, to } = dayRangeIso(date);
+    listOccupiedIntervalsAction(from, to)
+      .then((result) => {
+        if (!cancelled) setOccupiedIntervals(result);
+      })
+      .catch(() => {
+        if (!cancelled) setOccupiedIntervals([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
 
   const [checkingConflict, setCheckingConflict] = useState(false);
   const [conflictReason, setConflictReason] = useState<string | null>(null);
@@ -231,7 +250,10 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => setProcedureId(p.id)}
+                  onClick={() => {
+                    setProcedureId(p.id);
+                    setSlot(null);
+                  }}
                   className={cn(
                     "flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors",
                     procedureId === p.id
@@ -312,21 +334,32 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
               <div className="space-y-1">
                 <Label>Horário</Label>
                 <div className="flex flex-wrap gap-2">
-                  {SLOTS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={cn(
-                        "rounded border px-2 py-1 text-sm",
-                        slot === s
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:bg-muted",
-                      )}
-                      onClick={() => setSlot(s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {SLOTS.map((s) => {
+                    const busy = isSlotBusy(
+                      date,
+                      s,
+                      selectedProcedure?.defaultDurationMinutes ?? SLOT_INTERVAL_MINUTES,
+                      occupiedIntervals,
+                    );
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        disabled={busy}
+                        className={cn(
+                          "rounded border px-2 py-1 text-sm",
+                          busy
+                            ? "cursor-not-allowed border-border text-muted-foreground opacity-50 line-through"
+                            : slot === s
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:bg-muted",
+                        )}
+                        onClick={() => setSlot(s)}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

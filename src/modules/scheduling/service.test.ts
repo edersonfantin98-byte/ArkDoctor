@@ -488,3 +488,126 @@ describe("availability rules", () => {
     ).rejects.toThrow();
   });
 });
+
+import { listOccupiedIntervals } from "./service";
+
+describe("listOccupiedIntervals", () => {
+  it("includes a non-cancelled appointment overlapping the range", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const procedure = await repo.insertProcedure("acc-1", {
+      name: "Consulta",
+      defaultPrice: 100,
+      defaultDurationMinutes: 30,
+    });
+    await repo.insertAppointment("acc-1", {
+      contactId: "contact-1",
+      procedureId: procedure.id,
+      dealId: null,
+      startsAt: "2026-09-01T10:00:00.000Z",
+      endsAt: "2026-09-01T10:30:00.000Z",
+      notes: null,
+    });
+
+    const intervals = await listOccupiedIntervals(repo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(intervals).toContainEqual({
+      startsAt: "2026-09-01T10:00:00.000Z",
+      endsAt: "2026-09-01T10:30:00.000Z",
+    });
+  });
+
+  it("excludes a cancelled appointment", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const procedure = await repo.insertProcedure("acc-1", {
+      name: "Consulta",
+      defaultPrice: 100,
+      defaultDurationMinutes: 30,
+    });
+    const appointment = await repo.insertAppointment("acc-1", {
+      contactId: "contact-1",
+      procedureId: procedure.id,
+      dealId: null,
+      startsAt: "2026-09-01T10:00:00.000Z",
+      endsAt: "2026-09-01T10:30:00.000Z",
+      notes: null,
+    });
+    await repo.updateAppointmentStatus("acc-1", appointment.id, "cancelado");
+
+    const intervals = await listOccupiedIntervals(repo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(intervals).toHaveLength(0);
+  });
+
+  it("includes a one-off availability block", async () => {
+    const repo = createInMemorySchedulingRepository();
+    await repo.insertAvailabilityBlock("acc-1", {
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-01T13:00:00.000Z",
+      reason: "Almoço",
+    });
+
+    const intervals = await listOccupiedIntervals(repo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(intervals).toContainEqual({
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-01T13:00:00.000Z",
+    });
+  });
+
+  it("includes a recurring rule on the matching weekday", async () => {
+    const repo = createInMemorySchedulingRepository();
+    // 2026-09-01 is a Tuesday (day 2).
+    await repo.insertAvailabilityRule("acc-1", {
+      dayOfWeek: 2,
+      startTime: "12:00",
+      endTime: "13:00",
+      reason: "Almoço",
+    });
+
+    const intervals = await listOccupiedIntervals(repo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(intervals).toContainEqual({
+      startsAt: "2026-09-01T12:00:00.000Z",
+      endsAt: "2026-09-01T13:00:00.000Z",
+    });
+  });
+
+  it("excludes a recurring rule on a different weekday", async () => {
+    const repo = createInMemorySchedulingRepository();
+    // Rule is for Wednesday (day 3); the requested range is Tuesday.
+    await repo.insertAvailabilityRule("acc-1", {
+      dayOfWeek: 3,
+      startTime: "12:00",
+      endTime: "13:00",
+      reason: "Almoço",
+    });
+
+    const intervals = await listOccupiedIntervals(repo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+
+    expect(intervals).toHaveLength(0);
+  });
+
+  it("returns an empty list for a day with nothing scheduled or blocked", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const intervals = await listOccupiedIntervals(repo, "acc-1", {
+      from: "2026-09-01T00:00:00.000Z",
+      to: "2026-09-02T00:00:00.000Z",
+    });
+    expect(intervals).toEqual([]);
+  });
+});
