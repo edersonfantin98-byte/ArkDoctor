@@ -29,6 +29,15 @@ export async function checkPublicConflictAction(
   return scheduling.checkConflict(schedulingRepo, accountId, { startsAt, endsAt });
 }
 
+export async function listPublicOccupiedIntervalsAction(
+  accountId: string,
+  from: string,
+  to: string,
+) {
+  const { schedulingRepo } = getPublicRepos();
+  return scheduling.listOccupiedIntervals(schedulingRepo, accountId, { from, to });
+}
+
 export async function createPublicBookingAction(
   accountId: string,
   input: { name: string; phone: string; procedureId: string; startsAt: string },
