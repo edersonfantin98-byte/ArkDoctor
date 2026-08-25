@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -66,7 +66,8 @@ export function PatientFormDialog({
     setError(null);
   }, [open, editingPatient]);
 
-  async function handleSubmit() {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
     const input = buildContactInput(
       { name, phone, email, birthDate, cpf, sex, guardianName, guardianPhone, guardianRelationship, notes },
@@ -90,7 +91,7 @@ export function PatientFormDialog({
         <DialogHeader>
           <DialogTitle>{editingPatient ? "Editar paciente" : "Novo paciente"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="space-y-1">
@@ -176,14 +177,13 @@ export function PatientFormDialog({
           </div>
 
           <Button
-            type="button"
+            type="submit"
             className="w-full"
-            onClick={handleSubmit}
             disabled={!name.trim() || !phone.trim()}
           >
             Salvar
           </Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
