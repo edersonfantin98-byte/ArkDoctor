@@ -92,6 +92,7 @@ export function AppointmentDialog({
 
   useEffect(() => {
     if (!open || !startsAt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears a stale conflict result before the check can run (no procedure/duration resolved yet, or dialog closed)
       setConflictReason(null);
       return;
     }

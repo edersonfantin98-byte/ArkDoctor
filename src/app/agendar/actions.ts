@@ -34,6 +34,17 @@ export async function listPublicOccupiedIntervalsAction(
   from: string,
   to: string,
 ) {
+  const fromMs = new Date(from).getTime();
+  const toMs = new Date(to).getTime();
+  if (
+    !Number.isFinite(fromMs) ||
+    !Number.isFinite(toMs) ||
+    toMs <= fromMs ||
+    toMs - fromMs > 24 * 60 * 60 * 1000
+  ) {
+    throw new Error("Intervalo inválido");
+  }
+
   const { schedulingRepo } = getPublicRepos();
   return scheduling.listOccupiedIntervals(schedulingRepo, accountId, { from, to });
 }

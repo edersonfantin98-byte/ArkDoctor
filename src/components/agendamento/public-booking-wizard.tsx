@@ -118,9 +118,13 @@ export function PublicBookingWizard({
   useEffect(() => {
     let cancelled = false;
     const { from, to } = dayRangeIso(date);
-    listPublicOccupiedIntervalsAction(accountId, from, to).then((result) => {
-      if (!cancelled) setOccupiedIntervals(result);
-    });
+    listPublicOccupiedIntervalsAction(accountId, from, to)
+      .then((result) => {
+        if (!cancelled) setOccupiedIntervals(result);
+      })
+      .catch(() => {
+        if (!cancelled) setOccupiedIntervals([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -258,7 +262,10 @@ export function PublicBookingWizard({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => setProcedureId(p.id)}
+                  onClick={() => {
+                    setProcedureId(p.id);
+                    setSlot(null);
+                  }}
                   className={cn(
                     "flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors",
                     procedureId === p.id
