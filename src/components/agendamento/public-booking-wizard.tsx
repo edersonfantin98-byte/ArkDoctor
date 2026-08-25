@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { checkPublicConflictAction, createPublicBookingAction } from "@/app/agendar/actions";
+import { checkPublicConflictAction, createPublicBookingAction, listPublicOccupiedIntervalsAction } from "@/app/agendar/actions";
+import { isSlotBusy, dayRangeIso, type OccupiedInterval } from "./slot-availability";
 import { cn } from "@/lib/utils";
 import type { Procedure } from "@/modules/scheduling/types";
 import { formatCurrency } from "@/lib/format";
@@ -111,6 +112,19 @@ export function PublicBookingWizard({
 
   const [date, setDate] = useState(todayInputValue());
   const [slot, setSlot] = useState<string | null>(null);
+
+  const [occupiedIntervals, setOccupiedIntervals] = useState<OccupiedInterval[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const { from, to } = dayRangeIso(date);
+    listPublicOccupiedIntervalsAction(accountId, from, to).then((result) => {
+      if (!cancelled) setOccupiedIntervals(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId, date]);
 
   const [checkingConflict, setCheckingConflict] = useState(false);
   const [conflictReason, setConflictReason] = useState<string | null>(null);
@@ -311,21 +325,32 @@ export function PublicBookingWizard({
               <div className="space-y-1">
                 <Label>Horário</Label>
                 <div className="flex flex-wrap gap-2">
-                  {availableSlotsForDate(date).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={cn(
-                        "rounded border px-2 py-1 text-sm",
-                        slot === s
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:bg-muted",
-                      )}
-                      onClick={() => setSlot(s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {availableSlotsForDate(date).map((s) => {
+                    const busy = isSlotBusy(
+                      date,
+                      s,
+                      selectedProcedure?.defaultDurationMinutes ?? SLOT_INTERVAL_MINUTES,
+                      occupiedIntervals,
+                    );
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        disabled={busy}
+                        className={cn(
+                          "rounded border px-2 py-1 text-sm",
+                          busy
+                            ? "cursor-not-allowed border-border text-muted-foreground opacity-50 line-through"
+                            : slot === s
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:bg-muted",
+                        )}
+                        onClick={() => setSlot(s)}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
