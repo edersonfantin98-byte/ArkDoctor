@@ -21,7 +21,9 @@ function buildCsp(nonce: string) {
   ].join("; ");
 }
 
-export async function proxy(request: NextRequest) {
+export const runtime = "experimental-edge";
+
+export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const csp = buildCsp(nonce);
 

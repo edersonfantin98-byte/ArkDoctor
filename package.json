@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pages:build": "opennextjs-cloudflare build",
-    "deploy": "opennextjs-cloudflare build && wrangler pages deploy .open-next/assets"
+    "deploy": "opennextjs-cloudflare build && wrangler deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
