@@ -1,3 +1,7 @@
+// DESATIVADO — este provider não está ligado ao app. Mantido no repositório
+// para uso futuro. Para religar a Evolution API, veja
+// docs/ops/whatsapp-provider-evolution.md.
+
 import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import type { ConnectionStatus, WhatsappConnection } from "./types";

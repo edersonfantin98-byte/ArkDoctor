@@ -26,8 +26,6 @@ import {
   resetUnreadCountAction,
   saveUazapiConfigAction,
   getUazapiQrCodeAction,
-  saveEvolutionConfigAction,
-  getEvolutionQrCodeAction,
   getWhatsappConnectionAction,
 } from "@/app/(app)/whatsapp/actions";
 import type { Conversation, Message } from "@/modules/whatsapp/types";
@@ -140,10 +138,10 @@ function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline">Configurar Uazapi</Button>} />
+      <DialogTrigger render={<Button variant="outline">Configurar WhatsApp</Button>} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Configurar Uazapi</DialogTitle>
+          <DialogTitle>Configurar WhatsApp</DialogTitle>
         </DialogHeader>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="space-y-2">
@@ -158,64 +156,6 @@ function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
             onChange={(e) => setToken(e.target.value)}
           />
           <Button onClick={handleSave} disabled={saving || !subdomain.trim() || !token.trim()}>
-            Salvar
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EvolutionConfigDialog({ onSaved }: { onSaved: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [baseUrl, setBaseUrl] = useState("");
-  const [instanceName, setInstanceName] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function handleSave() {
-    setError(null);
-    setSaving(true);
-    try {
-      await saveEvolutionConfigAction(baseUrl.trim(), instanceName.trim(), apiKey.trim());
-      setOpen(false);
-      onSaved();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar configuração");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline">Configurar Evolution API</Button>} />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Configurar Evolution API</DialogTitle>
-        </DialogHeader>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="space-y-2">
-          <Input
-            placeholder="URL do servidor (ex: https://evolution.seudominio.com)"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-          />
-          <Input
-            placeholder="Nome da instância"
-            value={instanceName}
-            onChange={(e) => setInstanceName(e.target.value)}
-          />
-          <Input
-            placeholder="API key"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-          <Button
-            onClick={handleSave}
-            disabled={saving || !baseUrl.trim() || !instanceName.trim() || !apiKey.trim()}
-          >
             Salvar
           </Button>
         </div>
@@ -247,8 +187,6 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     setConnection(conn);
     if (status === "connecting" && conn?.provider === "uazapi") {
       setQrCode(await getUazapiQrCodeAction());
-    } else if (status === "connecting" && conn?.provider === "evolution") {
-      setQrCode(await getEvolutionQrCodeAction());
     } else {
       setQrCode(null);
     }
@@ -260,7 +198,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   }, [refreshConnection]);
 
   useEffect(() => {
-    const isRealProvider = connection?.provider === "uazapi" || connection?.provider === "evolution";
+    const isRealProvider = connection?.provider === "uazapi";
     if (!isRealProvider || connection?.status !== "connecting") return;
     const interval = setInterval(refreshConnection, 3000);
     return () => clearInterval(interval);
@@ -356,13 +294,12 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
             variant="outline"
             size="sm"
             disabled={togglingConnection || !connection?.isConfigured}
-            title={!connection?.isConfigured ? "Configure a Uazapi antes de conectar" : undefined}
+            title={!connection?.isConfigured ? "Configure o WhatsApp antes de conectar" : undefined}
             onClick={handleToggleConnection}
           >
             {connection?.status === "connected" ? "Desconectar" : "Conectar"}
           </Button>
           <UazapiConfigDialog onSaved={refreshConnection} />
-          <EvolutionConfigDialog onSaved={refreshConnection} />
         </div>
         <NewConversationDialog onCreated={handleConversationCreated} />
       </div>
