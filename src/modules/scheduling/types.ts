@@ -22,6 +22,7 @@ export interface Appointment {
   contactId: string;
   procedureId: string;
   dealId: string | null;
+  treatmentId: string | null;
   startsAt: string;
   endsAt: string;
   status: AppointmentStatus;

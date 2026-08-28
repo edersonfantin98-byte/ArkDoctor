@@ -78,6 +78,7 @@ export function createInMemorySchedulingRepository(): SchedulingRepository {
         contactId: input.contactId,
         procedureId: input.procedureId,
         dealId: input.dealId,
+        treatmentId: input.treatmentId ?? null,
         startsAt: input.startsAt,
         endsAt: input.endsAt,
         status: "agendado",
@@ -127,6 +128,40 @@ export function createInMemorySchedulingRepository(): SchedulingRepository {
       const updated: Appointment = { ...appointment, notes, updatedAt: new Date().toISOString() };
       appointments.set(appointmentId, updated);
       return updated;
+    },
+
+    async updateAppointmentTreatment(accountId, appointmentId, treatmentId) {
+      const appointment = appointments.get(appointmentId);
+      if (!appointment || appointment.accountId !== accountId) {
+        throw new Error("Appointment not found");
+      }
+      const updated: Appointment = {
+        ...appointment,
+        treatmentId,
+        updatedAt: new Date().toISOString(),
+      };
+      appointments.set(appointmentId, updated);
+      return updated;
+    },
+
+    async countConcludedAppointmentsByTreatment(accountId, treatmentId) {
+      return [...appointments.values()].filter(
+        (a) =>
+          a.accountId === accountId &&
+          a.treatmentId === treatmentId &&
+          a.status === "concluido",
+      ).length;
+    },
+
+    async listConcludedAppointmentsByTreatment(accountId, treatmentId) {
+      return [...appointments.values()]
+        .filter(
+          (a) =>
+            a.accountId === accountId &&
+            a.treatmentId === treatmentId &&
+            a.status === "concluido",
+        )
+        .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     },
 
     async listAppointmentsInRange(accountId, from, to) {

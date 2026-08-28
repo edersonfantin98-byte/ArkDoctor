@@ -53,6 +53,7 @@ function toAppointment(row: Database["public"]["Tables"]["appointments"]["Row"])
     contactId: row.contact_id,
     procedureId: row.procedure_id,
     dealId: row.deal_id,
+    treatmentId: row.treatment_id,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
     status: row.status,
@@ -168,6 +169,7 @@ export function createSupabaseSchedulingRepository(
           contact_id: input.contactId,
           procedure_id: input.procedureId,
           deal_id: input.dealId,
+          treatment_id: input.treatmentId ?? null,
           starts_at: input.startsAt,
           ends_at: input.endsAt,
           notes: input.notes,
@@ -223,6 +225,41 @@ export function createSupabaseSchedulingRepository(
         .single();
       if (error) throwDbError(error);
       return toAppointment(data);
+    },
+
+    async updateAppointmentTreatment(accountId, appointmentId, treatmentId) {
+      const { data, error } = await supabase
+        .from("appointments")
+        .update({ treatment_id: treatmentId, updated_at: new Date().toISOString() })
+        .eq("account_id", accountId)
+        .eq("id", appointmentId)
+        .select("*")
+        .single();
+      if (error) throwDbError(error);
+      return toAppointment(data);
+    },
+
+    async countConcludedAppointmentsByTreatment(accountId, treatmentId) {
+      const { count, error } = await supabase
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", accountId)
+        .eq("treatment_id", treatmentId)
+        .eq("status", "concluido");
+      if (error) throwDbError(error);
+      return count ?? 0;
+    },
+
+    async listConcludedAppointmentsByTreatment(accountId, treatmentId) {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("treatment_id", treatmentId)
+        .eq("status", "concluido")
+        .order("starts_at", { ascending: true });
+      if (error) throwDbError(error);
+      return data.map(toAppointment);
     },
 
     async listAppointmentsInRange(accountId, from, to) {
