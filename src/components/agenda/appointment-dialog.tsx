@@ -24,14 +24,18 @@ import {
   updateAppointmentNotesAction,
   listProceduresAction,
   checkConflictAction,
+  listTreatmentsForContactAction,
+  linkAppointmentToTreatmentAction,
 } from "@/app/(app)/agenda/actions";
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
 import { getFinancialEntryByAppointmentAction } from "@/app/(app)/financeiro/actions";
 import { AppointmentStatusMenu } from "./appointment-status-menu";
 import { RevenueSuggestionDialog } from "./revenue-suggestion-dialog";
+import { TreatmentLinkSuggestionDialog } from "./treatment-link-suggestion-dialog";
 import type { AppointmentWithDetails, AppointmentStatus } from "@/modules/scheduling/types";
 import type { Contact } from "@/modules/crm/types";
 import type { Procedure } from "@/modules/scheduling/types";
+import type { Treatment } from "@/modules/treatments/types";
 
 function toLocalInputValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -63,11 +67,24 @@ export function AppointmentDialog({
   const [conflictReason, setConflictReason] = useState<string | null>(null);
   const [conflictCheckError, setConflictCheckError] = useState<string | null>(null);
   const [revenueSuggestionOpen, setRevenueSuggestionOpen] = useState(false);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const [treatmentId, setTreatmentId] = useState<string>("__none__");
+  const [treatmentSuggestionOpen, setTreatmentSuggestionOpen] = useState(false);
+  const [treatmentSuggestionPending, setTreatmentSuggestionPending] = useState(false);
 
   async function handleStatusChange(status: AppointmentStatus) {
     if (status !== "concluido" || !editingAppointment) return;
     const existing = await getFinancialEntryByAppointmentAction(editingAppointment.id);
-    if (!existing) setRevenueSuggestionOpen(true);
+
+    const active = treatments.filter((t) => t.status === "em_andamento");
+    const shouldSuggestTreatment = !editingAppointment.treatmentId && active.length === 1;
+
+    if (!existing) {
+      setRevenueSuggestionOpen(true);
+      if (shouldSuggestTreatment) setTreatmentSuggestionPending(true);
+    } else if (shouldSuggestTreatment) {
+      setTreatmentSuggestionOpen(true);
+    }
   }
 
   useEffect(() => {
@@ -81,6 +98,9 @@ export function AppointmentDialog({
       setProcedureId(editingAppointment.procedureId);
       setStartsAt(toLocalInputValue(new Date(editingAppointment.startsAt)));
       setNotes(editingAppointment.notes ?? "");
+      setTreatments([]);
+      listTreatmentsForContactAction(editingAppointment.contactId).then(setTreatments);
+      setTreatmentId(editingAppointment.treatmentId ?? "__none__");
     } else if (slot) {
       setSelectedContactId(null);
       setContactQuery("");
@@ -274,6 +294,50 @@ export function AppointmentDialog({
               </div>
 
               <div className="space-y-1">
+                <Label htmlFor="treatment">Tratamento</Label>
+                <Select
+                  value={treatmentId}
+                  onValueChange={async (value) => {
+                    const next = value ?? "__none__";
+                    const previous = treatmentId;
+                    setTreatmentId(next);
+                    setError(null);
+                    try {
+                      await linkAppointmentToTreatmentAction(
+                        editingAppointment.id,
+                        next === "__none__" ? null : next,
+                      );
+                      onSaved();
+                    } catch (err) {
+                      setTreatmentId(previous);
+                      setError(err instanceof Error ? err.message : "Erro ao vincular tratamento");
+                    }
+                  }}
+                  items={[
+                    { value: "__none__", label: "— Nenhum —" },
+                    ...treatments.map((t) => ({
+                      value: t.id,
+                      label: `${t.status === "em_andamento" ? "" : "(concluído) "}Início ${t.startedOn} — ${t.woundTypes}`,
+                    })),
+                  ]}
+                >
+                  <SelectTrigger id="treatment">
+                    <SelectValue placeholder="— Nenhum —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Nenhum —</SelectItem>
+                    {[...treatments]
+                      .sort((a, b) => (a.status === b.status ? 0 : a.status === "em_andamento" ? -1 : 1))
+                      .map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {`${t.status === "em_andamento" ? "" : "(concluído) "}Início ${t.startedOn} — ${t.woundTypes}`}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
                 <Label htmlFor="notes">Notas</Label>
                 <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
                 <Button
@@ -310,9 +374,27 @@ export function AppointmentDialog({
       <RevenueSuggestionDialog
         key={editingAppointment.id}
         open={revenueSuggestionOpen}
-        onOpenChange={setRevenueSuggestionOpen}
+        onOpenChange={(o) => {
+          setRevenueSuggestionOpen(o);
+          if (!o && treatmentSuggestionPending) {
+            setTreatmentSuggestionPending(false);
+            setTreatmentSuggestionOpen(true);
+          }
+        }}
         appointment={editingAppointment}
         onCreated={onSaved}
+      />
+    )}
+    {editingAppointment && treatments.filter((t) => t.status === "em_andamento").length === 1 && (
+      <TreatmentLinkSuggestionDialog
+        open={treatmentSuggestionOpen}
+        onOpenChange={setTreatmentSuggestionOpen}
+        appointmentId={editingAppointment.id}
+        treatment={treatments.filter((t) => t.status === "em_andamento")[0]}
+        onLinked={() => {
+          setTreatmentId(treatments.filter((t) => t.status === "em_andamento")[0].id);
+          onSaved();
+        }}
       />
     )}
     </>

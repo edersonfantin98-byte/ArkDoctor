@@ -45,16 +45,22 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          professional_council_id: string | null
+          professional_name: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          professional_council_id?: string | null
+          professional_name?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          professional_council_id?: string | null
+          professional_name?: string | null
         }
         Relationships: []
       }
@@ -70,6 +76,7 @@ export type Database = {
           procedure_id: string
           starts_at: string
           status: Database["public"]["Enums"]["appointment_status"]
+          treatment_id: string | null
           updated_at: string
         }
         Insert: {
@@ -83,6 +90,7 @@ export type Database = {
           procedure_id: string
           starts_at: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          treatment_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -96,6 +104,7 @@ export type Database = {
           procedure_id?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["appointment_status"]
+          treatment_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -125,6 +134,13 @@ export type Database = {
             columns: ["procedure_id"]
             isOneToOne: false
             referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
             referencedColumns: ["id"]
           },
         ]
@@ -473,6 +489,120 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_photos: {
+        Row: {
+          account_id: string
+          bytes: number
+          caption: string | null
+          created_at: string
+          id: string
+          storage_path: string
+          taken_on: string | null
+          treatment_id: string
+        }
+        Insert: {
+          account_id: string
+          bytes: number
+          caption?: string | null
+          created_at?: string
+          id?: string
+          storage_path: string
+          taken_on?: string | null
+          treatment_id: string
+        }
+        Update: {
+          account_id?: string
+          bytes?: number
+          caption?: string | null
+          created_at?: string
+          id?: string
+          storage_path?: string
+          taken_on?: string | null
+          treatment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_photos_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_photos_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatments: {
+        Row: {
+          account_id: string
+          contact_id: string
+          created_at: string
+          discharged_on: string | null
+          id: string
+          outcome: string | null
+          patient_perception: string | null
+          professional_assessment: string | null
+          started_on: string
+          status: string
+          treatment_type: string | null
+          updated_at: string
+          wound_details: string | null
+          wound_types: string
+        }
+        Insert: {
+          account_id: string
+          contact_id: string
+          created_at?: string
+          discharged_on?: string | null
+          id?: string
+          outcome?: string | null
+          patient_perception?: string | null
+          professional_assessment?: string | null
+          started_on: string
+          status?: string
+          treatment_type?: string | null
+          updated_at?: string
+          wound_details?: string | null
+          wound_types: string
+        }
+        Update: {
+          account_id?: string
+          contact_id?: string
+          created_at?: string
+          discharged_on?: string | null
+          id?: string
+          outcome?: string | null
+          patient_perception?: string | null
+          professional_assessment?: string | null
+          started_on?: string
+          status?: string
+          treatment_type?: string | null
+          updated_at?: string
+          wound_details?: string | null
+          wound_types?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
         ]

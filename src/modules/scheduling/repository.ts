@@ -28,6 +28,7 @@ export interface SchedulingRepository {
       contactId: string;
       procedureId: string;
       dealId: string | null;
+      treatmentId?: string | null;
       startsAt: string;
       endsAt: string;
       notes: string | null;
@@ -50,6 +51,19 @@ export interface SchedulingRepository {
     appointmentId: string,
     notes: string | null,
   ): Promise<Appointment>;
+  updateAppointmentTreatment(
+    accountId: string,
+    appointmentId: string,
+    treatmentId: string | null,
+  ): Promise<Appointment>;
+  countConcludedAppointmentsByTreatment(
+    accountId: string,
+    treatmentId: string,
+  ): Promise<number>;
+  listConcludedAppointmentsByTreatment(
+    accountId: string,
+    treatmentId: string,
+  ): Promise<Appointment[]>;
   listAppointmentsInRange(
     accountId: string,
     from: string,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createInMemorySchedulingRepository } from "./repository.memory";
-import { checkConflict } from "./service";
+import { createInMemoryTreatmentsRepository } from "@/modules/treatments/repository.memory";
+import { checkConflict, linkAppointmentToTreatment, updateAppointmentStatus } from "./service";
 
 describe("checkConflict", () => {
   async function setupProcedure(repo: ReturnType<typeof createInMemorySchedulingRepository>) {
@@ -315,7 +316,6 @@ describe("createAppointment", () => {
 import {
   cancelAppointment,
   updateAppointmentNotes,
-  updateAppointmentStatus,
   updateAppointmentTime,
 } from "./service";
 
@@ -609,5 +609,70 @@ describe("listOccupiedIntervals", () => {
       to: "2026-09-02T00:00:00.000Z",
     });
     expect(intervals).toEqual([]);
+  });
+});
+
+describe("treatment link", () => {
+  async function seed() {
+    const scheduling = createInMemorySchedulingRepository();
+    const treatments = createInMemoryTreatmentsRepository();
+    const procedure = await scheduling.insertProcedure("acc-1", {
+      name: "Curativo", defaultPrice: 0, defaultDurationMinutes: 30,
+    });
+    const treatment = await treatments.insertTreatment("acc-1", {
+      contactId: "contact-1", woundTypes: "úlcera", woundDetails: null,
+      treatmentType: null, startedOn: "2026-08-01",
+      professionalAssessment: null, patientPerception: null,
+    });
+    return { scheduling, treatments, procedure, treatment };
+  }
+
+  it("insertAppointment defaults treatmentId to null and accepts an explicit value", async () => {
+    const { scheduling, procedure } = await seed();
+    const a = await scheduling.insertAppointment("acc-1", {
+      contactId: "contact-1", procedureId: procedure.id, dealId: null,
+      startsAt: "2026-08-03T14:00:00.000Z", endsAt: "2026-08-03T14:30:00.000Z", notes: null,
+    });
+    expect(a.treatmentId).toBeNull();
+
+    const b = await scheduling.insertAppointment("acc-1", {
+      contactId: "contact-1", procedureId: procedure.id, dealId: null, treatmentId: "t-x",
+      startsAt: "2026-08-04T14:00:00.000Z", endsAt: "2026-08-04T14:30:00.000Z", notes: null,
+    });
+    expect(b.treatmentId).toBe("t-x");
+  });
+
+  it("counts and lists only concluded appointments for a treatment, scoped by account", async () => {
+    const { scheduling, procedure, treatment } = await seed();
+    const mk = async (day: string) =>
+      scheduling.insertAppointment("acc-1", {
+        contactId: "contact-1", procedureId: procedure.id, dealId: null, treatmentId: treatment.id,
+        startsAt: `2026-08-${day}T14:00:00.000Z`, endsAt: `2026-08-${day}T14:30:00.000Z`, notes: null,
+      });
+    const a1 = await mk("05");
+    const a2 = await mk("03");
+    await mk("10"); // stays 'agendado'
+    await scheduling.updateAppointmentStatus("acc-1", a1.id, "concluido");
+    await scheduling.updateAppointmentStatus("acc-1", a2.id, "concluido");
+
+    expect(await scheduling.countConcludedAppointmentsByTreatment("acc-1", treatment.id)).toBe(2);
+    expect(await scheduling.countConcludedAppointmentsByTreatment("acc-2", treatment.id)).toBe(0);
+    const list = await scheduling.listConcludedAppointmentsByTreatment("acc-1", treatment.id);
+    expect(list.map((a) => a.id)).toEqual([a2.id, a1.id]); // starts_at asc
+  });
+
+  it("linkAppointmentToTreatment rejects a treatment from a different contact", async () => {
+    const { scheduling, treatments, procedure, treatment } = await seed();
+    const appt = await scheduling.insertAppointment("acc-1", {
+      contactId: "contact-2", procedureId: procedure.id, dealId: null,
+      startsAt: "2026-08-03T14:00:00.000Z", endsAt: "2026-08-03T14:30:00.000Z", notes: null,
+    });
+    await expect(
+      linkAppointmentToTreatment(scheduling, treatments, "acc-1", appt.id, treatment.id),
+    ).rejects.toThrow();
+
+    // unlink (null) always allowed
+    const unlinked = await linkAppointmentToTreatment(scheduling, treatments, "acc-1", appt.id, null);
+    expect(unlinked.treatmentId).toBeNull();
   });
 });

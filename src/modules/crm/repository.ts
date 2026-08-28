@@ -53,6 +53,7 @@ export interface CrmRepository {
   deleteContact(accountId: string, contactId: string): Promise<void>;
   countNewContacts(accountId: string, sinceIso: string, untilIso?: string): Promise<number>;
   listContacts(accountId: string): Promise<Contact[]>;
+  getContact(accountId: string, contactId: string): Promise<Contact | null>;
 
   insertDeal(accountId: string, contactId: string, stageId: string): Promise<Deal>;
   getDeal(accountId: string, dealId: string): Promise<Deal | null>;

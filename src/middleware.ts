@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/pipeline", "/financeiro", "/agenda", "/dashboard", "/whatsapp", "/agendamento", "/procedimentos"];
+const PROTECTED_PREFIXES = ["/pipeline", "/financeiro", "/agenda", "/dashboard", "/whatsapp", "/agendamento", "/procedimentos", "/configuracoes"];
 
 function buildCsp(nonce: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -15,7 +15,7 @@ function buildCsp(nonce: string) {
     "default-src 'self'",
     scriptSrc,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    `img-src 'self' data: ${supabaseUrl}`,
     `connect-src 'self' ${supabaseUrl}`,
     "frame-ancestors 'none'",
   ].join("; ");

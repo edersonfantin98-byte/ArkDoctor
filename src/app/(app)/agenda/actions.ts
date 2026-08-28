@@ -5,7 +5,9 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAccountId } from "@/lib/supabase/account";
 import { createSupabaseSchedulingRepository } from "@/modules/scheduling/repository.supabase";
 import { createSupabaseCrmRepository } from "@/modules/crm/repository.supabase";
+import { createSupabaseTreatmentsRepository } from "@/modules/treatments/repository.supabase";
 import * as scheduling from "@/modules/scheduling/service";
+import * as treatments from "@/modules/treatments/service";
 import type { AppointmentStatus } from "@/modules/scheduling/types";
 
 async function getReposAndAccount() {
@@ -13,7 +15,8 @@ async function getReposAndAccount() {
   const accountId = await getCurrentAccountId(supabase);
   const schedulingRepo = createSupabaseSchedulingRepository(supabase);
   const crmRepo = createSupabaseCrmRepository(supabase);
-  return { schedulingRepo, crmRepo, accountId };
+  const treatmentsRepo = createSupabaseTreatmentsRepository(supabase);
+  return { schedulingRepo, crmRepo, treatmentsRepo, accountId };
 }
 
 export async function createAppointmentAction(input: unknown) {
@@ -144,4 +147,25 @@ export async function deleteAvailabilityRuleAction(id: string) {
 export async function listAvailabilityRulesAction() {
   const { schedulingRepo, accountId } = await getReposAndAccount();
   return scheduling.listAvailabilityRules(schedulingRepo, accountId);
+}
+
+export async function listTreatmentsForContactAction(contactId: string) {
+  const { treatmentsRepo, accountId } = await getReposAndAccount();
+  return treatments.listTreatmentsForContact(treatmentsRepo, accountId, contactId);
+}
+
+export async function linkAppointmentToTreatmentAction(
+  appointmentId: string,
+  treatmentId: string | null,
+) {
+  const { schedulingRepo, treatmentsRepo, accountId } = await getReposAndAccount();
+  const appointment = await scheduling.linkAppointmentToTreatment(
+    schedulingRepo,
+    treatmentsRepo,
+    accountId,
+    appointmentId,
+    treatmentId,
+  );
+  revalidatePath("/agenda");
+  return appointment;
 }

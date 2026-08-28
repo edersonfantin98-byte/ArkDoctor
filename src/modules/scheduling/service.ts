@@ -1,4 +1,5 @@
 import type { SchedulingRepository } from "./repository";
+import type { TreatmentsRepository } from "@/modules/treatments/repository";
 import { parseOrThrow } from "@/lib/zod-error";
 
 export interface ConflictCheckInput {
@@ -230,6 +231,27 @@ export async function updateAppointmentNotes(
   notes: string | null,
 ): Promise<Appointment> {
   return repo.updateAppointmentNotes(accountId, appointmentId, notes);
+}
+
+export async function linkAppointmentToTreatment(
+  schedulingRepo: SchedulingRepository,
+  treatmentsRepo: TreatmentsRepository,
+  accountId: string,
+  appointmentId: string,
+  treatmentId: string | null,
+): Promise<Appointment> {
+  const appointment = await schedulingRepo.getAppointment(accountId, appointmentId);
+  if (!appointment) throw new Error("Agendamento não encontrado");
+
+  if (treatmentId !== null) {
+    const treatment = await treatmentsRepo.getTreatment(accountId, treatmentId);
+    if (!treatment) throw new Error("Tratamento não encontrado");
+    if (treatment.contactId !== appointment.contactId) {
+      throw new Error("O tratamento pertence a outro paciente");
+    }
+  }
+
+  return schedulingRepo.updateAppointmentTreatment(accountId, appointmentId, treatmentId);
 }
 
 export async function cancelAppointment(
