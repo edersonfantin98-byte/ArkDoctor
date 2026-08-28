@@ -8,6 +8,7 @@ import { createSupabaseWhatsappRepository } from "@/modules/whatsapp/repository.
 import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import * as crm from "@/modules/crm/service";
 import { sendBulkMessages } from "@/modules/whatsapp/service";
+import { createSupabaseTreatmentsRepository } from "@/modules/treatments/repository.supabase";
 
 async function getCrmRepoAndAccount() {
   const supabase = await createServerSupabaseClient();
@@ -41,7 +42,19 @@ export async function updatePatientAction(id: string, input: unknown) {
 }
 
 export async function deletePatientAction(id: string) {
-  const { repo, accountId } = await getCrmRepoAndAccount();
+  const { repo, accountId, supabase } = await getCrmRepoAndAccount();
+
+  const treatmentsRepo = createSupabaseTreatmentsRepository(supabase);
+  const treatmentsForContact = await treatmentsRepo.listTreatmentsForContact(accountId, id);
+  const paths: string[] = [];
+  for (const t of treatmentsForContact) {
+    const photos = await treatmentsRepo.listPhotos(accountId, t.id);
+    for (const p of photos) paths.push(p.storagePath);
+  }
+  if (paths.length > 0) {
+    await supabase.storage.from("treatment-photos").remove(paths);
+  }
+
   await crm.deleteContact(repo, accountId, id);
   revalidatePath("/pacientes");
 }
