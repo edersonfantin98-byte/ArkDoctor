@@ -263,6 +263,17 @@ export function createSupabaseCrmRepository(
       return data.map(toContact);
     },
 
+    async getContact(accountId, contactId) {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("id", contactId)
+        .maybeSingle();
+      if (error) throwDbError(error);
+      return data ? toContact(data) : null;
+    },
+
     async insertDeal(accountId, contactId, stageId) {
       const { data, error } = await supabase
         .from("deals")

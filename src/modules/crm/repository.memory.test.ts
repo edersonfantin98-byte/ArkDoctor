@@ -163,4 +163,14 @@ describe("createInMemoryCrmRepository", () => {
     const result = await repo.listContacts("acc-1");
     expect(result.map((c) => c.name)).toEqual(["Ana", "Carla"]);
   });
+
+  describe("getContact", () => {
+    it("returns a contact by id, scoped to the account", async () => {
+      const repo = createInMemoryCrmRepository();
+      const created = await repo.insertContact("acc-1", { name: "Ana", phone: "+5511999999999" });
+      expect((await repo.getContact("acc-1", created.id))?.id).toBe(created.id);
+      expect(await repo.getContact("acc-2", created.id)).toBeNull();
+      expect(await repo.getContact("acc-1", "missing")).toBeNull();
+    });
+  });
 });

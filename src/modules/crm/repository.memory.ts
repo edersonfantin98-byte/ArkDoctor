@@ -183,6 +183,11 @@ export function createInMemoryCrmRepository(): CrmRepository {
         .sort((a, b) => a.name.localeCompare(b.name));
     },
 
+    async getContact(accountId, contactId) {
+      const contact = contacts.get(contactId);
+      return contact && contact.accountId === accountId ? contact : null;
+    },
+
     async insertDeal(accountId, contactId, stageId) {
       const id = crypto.randomUUID();
       const deal: Deal = {
