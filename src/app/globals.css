@@ -419,3 +419,7 @@
     @apply font-sans;
   }
 }
+
+@page {
+  margin: 16mm;
+}
