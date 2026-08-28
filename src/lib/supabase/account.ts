@@ -32,3 +32,20 @@ export async function getCurrentAccountName(
 
   return data.name;
 }
+
+export async function getAccountProfessionalIdentity(
+  supabase: SupabaseClient<Database>,
+  accountId: string,
+): Promise<{ name: string; professionalName: string | null; councilId: string | null }> {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("name, professional_name, professional_council_id")
+    .eq("id", accountId)
+    .single();
+  if (error) throw error;
+  return {
+    name: data.name,
+    professionalName: data.professional_name,
+    councilId: data.professional_council_id,
+  };
+}

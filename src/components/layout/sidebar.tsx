@@ -12,6 +12,7 @@ import {
   ClipboardList,
   LogOut,
   Users,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +31,7 @@ const clinicaModules = [
   { label: "Pacientes", href: "/pacientes", icon: Users, enabled: true },
   { label: "Procedimentos", href: "/procedimentos", icon: ClipboardList, enabled: true },
   { label: "Agendamento", href: "/agendamento", icon: CalendarPlus, enabled: true },
+  { label: "Configurações", href: "/configuracoes", icon: Settings, enabled: true },
 ];
 
 function NavGroup({
