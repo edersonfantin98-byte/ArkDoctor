@@ -52,7 +52,11 @@ export async function deletePatientAction(id: string) {
     for (const p of photos) paths.push(p.storagePath);
   }
   if (paths.length > 0) {
-    await supabase.storage.from("treatment-photos").remove(paths);
+    const { error } = await supabase.storage.from("treatment-photos").remove(paths);
+    if (error) {
+      console.error("[pacientes/actions] storage remove", error);
+      throw new Error("Não foi possível remover as fotos do armazenamento. Tente novamente.");
+    }
   }
 
   await crm.deleteContact(repo, accountId, id);

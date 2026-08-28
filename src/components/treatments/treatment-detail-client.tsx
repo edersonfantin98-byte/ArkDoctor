@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ConcludeTreatmentDialog } from "./conclude-treatment-dialog";
 import { TreatmentPhotos } from "./treatment-photos";
-import { updateTreatmentAction } from "@/app/(app)/pacientes/[id]/actions";
+import { deleteTreatmentAction, updateTreatmentAction } from "@/app/(app)/pacientes/[id]/actions";
 import type { Treatment, TreatmentSession } from "@/modules/treatments/types";
 
 const OUTCOME_LABELS: Record<string, string> = {
@@ -46,8 +47,23 @@ export function TreatmentDetailClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [concludeOpen, setConcludeOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
 
   const isDone = treatment.status === "concluido";
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteTreatmentAction(treatment.id);
+      router.push(`/pacientes/${contactId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir tratamento");
+      setDeleting(false);
+    }
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -123,7 +139,7 @@ export function TreatmentDetailClient({
           <Label htmlFor="perception">Percepção do paciente</Label>
           <Textarea id="perception" value={perception} onChange={(e) => setPerception(e.target.value)} />
         </div>
-        <div className="flex gap-2 sm:col-span-2">
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
           <Button type="button" onClick={handleSave} disabled={saving}>
             {saving ? "Salvando…" : "Salvar"}
           </Button>
@@ -132,7 +148,42 @@ export function TreatmentDetailClient({
               Concluir tratamento
             </Button>
           )}
+          <Button
+            type="button"
+            variant="outline"
+            className="ml-auto text-red-600"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={deleting}
+          >
+            Excluir tratamento
+          </Button>
         </div>
+        {confirmingDelete && (
+          <div className="space-y-2 rounded-md border border-red-200 p-3 sm:col-span-2">
+            <p className="text-sm text-red-600">
+              {sessionCount} sessões deixarão de estar vinculadas. Esta ação não pode ser
+              desfeita.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Excluindo…" : "Confirmar exclusão"}
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="space-y-2">

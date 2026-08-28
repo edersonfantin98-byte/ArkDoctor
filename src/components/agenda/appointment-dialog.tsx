@@ -70,14 +70,19 @@ export function AppointmentDialog({
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [treatmentId, setTreatmentId] = useState<string>("__none__");
   const [treatmentSuggestionOpen, setTreatmentSuggestionOpen] = useState(false);
+  const [treatmentSuggestionPending, setTreatmentSuggestionPending] = useState(false);
 
   async function handleStatusChange(status: AppointmentStatus) {
     if (status !== "concluido" || !editingAppointment) return;
     const existing = await getFinancialEntryByAppointmentAction(editingAppointment.id);
-    if (!existing) setRevenueSuggestionOpen(true);
 
     const active = treatments.filter((t) => t.status === "em_andamento");
-    if (!editingAppointment.treatmentId && active.length === 1) {
+    const shouldSuggestTreatment = !editingAppointment.treatmentId && active.length === 1;
+
+    if (!existing) {
+      setRevenueSuggestionOpen(true);
+      if (shouldSuggestTreatment) setTreatmentSuggestionPending(true);
+    } else if (shouldSuggestTreatment) {
       setTreatmentSuggestionOpen(true);
     }
   }
@@ -93,6 +98,7 @@ export function AppointmentDialog({
       setProcedureId(editingAppointment.procedureId);
       setStartsAt(toLocalInputValue(new Date(editingAppointment.startsAt)));
       setNotes(editingAppointment.notes ?? "");
+      setTreatments([]);
       listTreatmentsForContactAction(editingAppointment.contactId).then(setTreatments);
       setTreatmentId(editingAppointment.treatmentId ?? "__none__");
     } else if (slot) {
@@ -293,12 +299,19 @@ export function AppointmentDialog({
                   value={treatmentId}
                   onValueChange={async (value) => {
                     const next = value ?? "__none__";
+                    const previous = treatmentId;
                     setTreatmentId(next);
-                    await linkAppointmentToTreatmentAction(
-                      editingAppointment.id,
-                      next === "__none__" ? null : next,
-                    );
-                    onSaved();
+                    setError(null);
+                    try {
+                      await linkAppointmentToTreatmentAction(
+                        editingAppointment.id,
+                        next === "__none__" ? null : next,
+                      );
+                      onSaved();
+                    } catch (err) {
+                      setTreatmentId(previous);
+                      setError(err instanceof Error ? err.message : "Erro ao vincular tratamento");
+                    }
                   }}
                   items={[
                     { value: "__none__", label: "— Nenhum —" },
@@ -361,7 +374,13 @@ export function AppointmentDialog({
       <RevenueSuggestionDialog
         key={editingAppointment.id}
         open={revenueSuggestionOpen}
-        onOpenChange={setRevenueSuggestionOpen}
+        onOpenChange={(o) => {
+          setRevenueSuggestionOpen(o);
+          if (!o && treatmentSuggestionPending) {
+            setTreatmentSuggestionPending(false);
+            setTreatmentSuggestionOpen(true);
+          }
+        }}
         appointment={editingAppointment}
         onCreated={onSaved}
       />

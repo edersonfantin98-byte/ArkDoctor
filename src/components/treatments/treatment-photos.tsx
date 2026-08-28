@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { prepareTreatmentPhoto } from "./prepare-photo";
 import {
@@ -20,9 +20,41 @@ export function TreatmentPhotos({
   initialPhotos: Photo[];
 }) {
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
+  const [meta, setMeta] = useState<Record<string, { caption: string; takenOn: string }>>(() =>
+    Object.fromEntries(
+      initialPhotos.map((p) => [p.id, { caption: p.caption ?? "", takenOn: p.takenOn ?? "" }]),
+    ),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep per-photo edit state in sync as photos are added/removed, preserving in-progress edits
+    setMeta((prev) =>
+      Object.fromEntries(
+        photos.map((p) => [
+          p.id,
+          prev[p.id] ?? { caption: p.caption ?? "", takenOn: p.takenOn ?? "" },
+        ]),
+      ),
+    );
+  }, [photos]);
+
+  async function saveMeta(id: string, patch: Partial<{ caption: string; takenOn: string }>) {
+    const current = meta[id] ?? { caption: "", takenOn: "" };
+    const nextMeta = { ...current, ...patch };
+    setMeta((prev) => ({ ...prev, [id]: nextMeta }));
+    setError(null);
+    const caption = nextMeta.caption.trim() || null;
+    const takenOn = nextMeta.takenOn || null;
+    try {
+      await updatePhotoMetaAction(id, { caption, takenOn });
+      setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, caption, takenOn } : p)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao salvar legenda");
+    }
+  }
 
   async function refresh() {
     setPhotos(await listTreatmentPhotosAction(treatmentId));
@@ -97,24 +129,14 @@ export function TreatmentPhotos({
                   defaultValue={p.caption ?? ""}
                   placeholder="Legenda"
                   className="w-full rounded border px-1 py-0.5"
-                  onBlur={(e) =>
-                    updatePhotoMetaAction(p.id, {
-                      caption: e.target.value.trim() || null,
-                      takenOn: p.takenOn,
-                    })
-                  }
+                  onBlur={(e) => void saveMeta(p.id, { caption: e.target.value })}
                 />
                 <div className="flex items-center justify-between gap-1">
                   <input
                     type="date"
                     defaultValue={p.takenOn ?? ""}
                     className="rounded border px-1 py-0.5"
-                    onBlur={(e) =>
-                      updatePhotoMetaAction(p.id, {
-                        caption: p.caption,
-                        takenOn: e.target.value || null,
-                      })
-                    }
+                    onBlur={(e) => void saveMeta(p.id, { takenOn: e.target.value })}
                   />
                   <button
                     type="button"

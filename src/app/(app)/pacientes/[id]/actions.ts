@@ -81,7 +81,13 @@ export async function deleteTreatmentAction(treatmentId: string) {
   const treatment = await ownedTreatment(c, treatmentId);
   const photos = await c.treatmentsRepo.listPhotos(c.accountId, treatmentId);
   if (photos.length > 0) {
-    await c.supabase.storage.from(BUCKET).remove(photos.map((p) => p.storagePath));
+    const { error } = await c.supabase.storage
+      .from(BUCKET)
+      .remove(photos.map((p) => p.storagePath));
+    if (error) {
+      console.error("[pacientes/[id]/actions] storage remove", error);
+      throw new Error("Não foi possível remover as fotos do armazenamento. Tente novamente.");
+    }
   }
   await treatments.deleteTreatment(c.treatmentsRepo, c.accountId, treatmentId);
   revalidatePath(`/pacientes/${treatment.contactId}`);
