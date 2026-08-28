@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listPatientsAction, searchPatientsAction, deletePatientAction } from "@/app/(app)/pacientes/actions";
@@ -60,11 +61,6 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
 
   function openNewPatientForm() {
     setEditingPatient(null);
-    setFormOpen(true);
-  }
-
-  function openEditPatientForm(patient: Contact) {
-    setEditingPatient(patient);
     setFormOpen(true);
   }
 
@@ -155,8 +151,10 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
                     onChange={() => toggleSelected(patient.id)}
                   />
                 </td>
-                <td className="cursor-pointer p-2" onClick={() => openEditPatientForm(patient)}>
-                  {patient.name}
+                <td className="p-2">
+                  <Link href={`/pacientes/${patient.id}`} className="hover:underline">
+                    {patient.name}
+                  </Link>
                 </td>
                 <td className="p-2">{patient.phone}</td>
                 <td className="p-2">{patient.email ?? "—"}</td>
