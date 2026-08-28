@@ -1,7 +1,7 @@
 # ArkDoctor — Tratamento + Relatório Clínico — Design Doc
 
 Status: em design
-Última atualização: 2026-08-27
+Última atualização: 2026-08-28
 
 ## Contexto
 
@@ -37,7 +37,7 @@ Respostas da profissional (via intermediário), que fixam o design:
 
 ### Decisões sobre fotos (brainstorming)
 
-- **Uma versão só por foto**, comprimida no navegador **antes do upload**: alvo ~800px no lado maior / ~150 KB, com **compressão iterativa** (reduz qualidade em passos até ficar abaixo do teto). Piso de segurança: não abaixo de ~1000px / qualidade 50%; se ainda passar, aceita se < 400 KB, senão recusa com aviso.
+- **Uma versão só por foto**, comprimida no navegador **antes do upload**: alvo ~800px no lado maior / ~150 KB, com **compressão iterativa** (a lib reduz a qualidade em passos até ficar abaixo do teto de tamanho). Piso de segurança: qualidade não abaixo de ~50%. Se mesmo assim o resultado passar de **400 KB**, recusa com aviso (não sobe nada).
 - **Conversão HEIC→JPEG no navegador** (iPhone) antes de comprimir.
 - O arquivo original **nunca sobe** — só o resultado comprimido.
 - Uma foto de ~800px/~150 KB é nítida o suficiente para o relatório impresso e para arquivo. Com isso, o custo de armazenamento é baixo (~1,6 MB por tratamento de 15 sessões) e **não há rotina de "baixar tudo e limpar"** — o botão de remover fotos existe só para caso pontual (privacidade, liberar espaço).
@@ -141,9 +141,9 @@ Acesso de leitura na aplicação: **signed URLs de curta duração** (ex.: 1 h) 
 Mesmo padrão das tabelas existentes (`0004_scheduling.sql`): `enable row level security` + policy `for all to authenticated` com
 `account_id in (select account_id from account_users where user_id = auth.uid())` em `using` e `with check`.
 
-### Identidade profissional na conta (ver Decisões em Aberto #2)
+### Identidade profissional na conta
 
-O relatório precisa identificar a profissional (nome + registro no conselho). Proposta:
+Confirmado (2026-08-28): entra na Feature 1. O relatório precisa identificar a profissional (nome + registro no conselho). A migração `0011` inclui:
 
 ```sql
 alter table accounts
@@ -151,7 +151,7 @@ alter table accounts
   add column professional_council_id text;   -- ex.: "COREN-SP 123456"
 ```
 
-Ambos nullable. Se ausentes, o relatório usa só `accounts.name` e mantém a linha de assinatura manual.
+Ambos nullable — a profissional preenche em `/configuracoes` (ver UI). Enquanto vazios, o relatório usa só `accounts.name` e mantém a linha de assinatura manual.
 
 ### Valores derivados (nunca armazenados)
 
@@ -188,6 +188,7 @@ export interface Treatment {
 
 export interface TreatmentPhoto {
   id: string;
+  accountId: string;
   treatmentId: string;
   storagePath: string;
   bytes: number;
@@ -251,7 +252,7 @@ A contagem e a lista de sessões **não** ficam neste repositório — pertencem
 - `createTreatment(repo, accountId, rawInput)` — valida com Zod, insere.
 - `updateTreatment(repo, accountId, id, rawInput)` — valida, atualiza campos editáveis.
 - `concludeTreatment(repo, accountId, id, rawInput)` — exige `outcome` válido e `dischargedOn`; rejeita se já `concluido`.
-- `assembleReport(treatmentsRepo, schedulingRepo, storage, accountRepo, accountId, treatmentId)` — compõe `TreatmentReport`: busca o tratamento, `schedulingRepo.countConcludedAppointmentsByTreatment` + `listConcludedAppointmentsByTreatment`, `listPhotos` + gera signed URLs, dados do contato e identidade profissional da conta. Calcula `generatedAt`.
+- `assembleReport(input)` — recebe as partes já buscadas pela server action (o `Treatment`; a contagem + a lista de sessões concluídas vindas de `scheduling`; as fotos com signed URLs; os dados do contato de `crm`; a identidade profissional da conta como `{ clinicName, professionalName, councilId }`). O serviço só valida a coerência e monta o `TreatmentReport`, calculando `generatedAt`. A identidade profissional é lida por um helper novo em `src/lib/supabase/account.ts` — `getAccountProfessionalIdentity(supabase, accountId)` → `{ name, professionalName, councilId }` (não há módulo `accounts`; hoje já existe `getCurrentAccountName` ali).
 
 ### `schemas.ts`
 
@@ -281,7 +282,11 @@ Novo `src/app/(app)/pacientes/[id]/actions.ts`:
 - `uploadTreatmentPhotoAction(treatmentId, formData)` — recebe o Blob **já comprimido**; revalida no servidor: `type` começa com `image/`, `size <= 400 KB`; grava em `treatment-photos/{accountId}/{treatmentId}/{uuid}.jpg` com o client autenticado; insere `treatment_photos` com `bytes`.
 - `deleteTreatmentPhotoAction(photoId)` — remove objeto do Storage + linha.
 - `updatePhotoMetaAction(photoId, { caption, takenOn })`.
-- `getPhotoStorageUsageAction()` → `{ bytes: number }` (via `sumPhotoBytes`).
+
+Novo `src/app/(app)/configuracoes/actions.ts`:
+
+- `getClinicSettingsAction()` → `{ name, professionalName, councilId, storageBytes }` (identidade + `sumPhotoBytes`).
+- `updateProfessionalIdentityAction({ professionalName, councilId })` → grava em `accounts`, `revalidatePath("/configuracoes", "page")`.
 
 Novo `src/app/(app)/agenda/actions.ts` (adicionar):
 
@@ -305,7 +310,7 @@ Conteúdo da página:
 
 - Cabeçalho: tipos de ferida, tipo de tratamento, data de início, status.
 - Campos editáveis (inline ou diálogo): tipos de ferida, detalhes, tipo de tratamento, avaliação da profissional, percepção do paciente. Botão "Salvar".
-- **"Concluir tratamento"** → diálogo com `outcome` (rádio: cicatrização / alta / abandono / encaminhamento) + `dischargedOn` (default hoje). Depois de concluído, some o botão e aparece a data + desfecho; ainda editável via "Reabrir" (opcional — ver Decisões em Aberto? não: manter simples, sem reabrir; correção só por suporte).
+- **"Concluir tratamento"** → diálogo com `outcome` (rádio: cicatrização / alta / abandono / encaminhamento) + `dischargedOn` (default hoje). Depois de concluído, some o botão e aparecem a data de alta + o desfecho. Não há "Reabrir" pela UI — corrigir um tratamento concluído por engano é feito via suporte/banco (ver Fora de Escopo).
 - **Sessões**: contador ("8 sessões realizadas") + lista dos agendamentos `concluido` vinculados (data + trecho das notas), cada linha com link para abrir na Agenda. Somente leitura.
 - **Fotos**: grade de miniaturas (signed URLs). Botão "Adicionar foto" dispara o pipeline de compressão (ver abaixo) e o upload. Cada foto tem legenda + data editáveis e botão remover.
 - **"Imprimir relatório"** → navega para `/pacientes/[id]/tratamentos/[treatmentId]/relatorio`.
@@ -333,9 +338,16 @@ No ramo `editingAppointment` (contato/procedimento já não são editáveis ali 
 - Novo `<Select>` "Tratamento" listando os tratamentos daquele paciente (`listTreatmentsForContactAction`), ativos primeiro, incluindo a opção "— Nenhum —". Valor = `treatment_id` atual. `onChange` → `linkAppointmentToTreatmentAction`.
 - Em `handleStatusChange`: quando o status vira `concluido`, o paciente tem **exatamente um** tratamento `em_andamento` e o agendamento ainda **não** está vinculado, abrir um diálogo curto "Vincular esta sessão ao tratamento em andamento?" (espelha `RevenueSuggestionDialog`: componente novo `TreatmentLinkSuggestionDialog`). A sugestão de receita e a de vínculo podem aparecer em sequência.
 
+### `/configuracoes` — nova página de configurações da clínica
+
+Server component + form. Conteúdo:
+
+- **Identidade profissional**: campos "Nome da profissional" (`professional_name`) e "Registro no conselho" (`professional_council_id`, placeholder "COREN-SP 123456"). Botão "Salvar" → `updateProfessionalIdentityAction`. Nota curta: "Usado no cabeçalho e rodapé do relatório clínico."
+- **Armazenamento de fotos**: barra de uso "Fotos: X MB de 1 GB" a partir de `storageBytes`. Fica em vermelho acima de 80%. Não bloqueia upload (a profissional gerencia).
+
 ### Menu
 
-Sem item novo no menu lateral — tratamentos são acessados pelo paciente. O **indicador de armazenamento** e os **campos de identidade profissional** vão numa página nova `/configuracoes` (grupo "Clínica" no `sidebar.tsx`), se a Decisão em Aberto #2 for aprovada. Caso contrário, o indicador vai no topo da tela `/pacientes`.
+Sem item novo no menu lateral para tratamentos — são acessados pelo paciente. Item novo **"Configurações"** no `sidebar.tsx` (fim da lista) apontando para `/configuracoes`.
 
 ## Pipeline de Compressão de Fotos (cliente)
 
@@ -376,6 +388,7 @@ Comportamento externo, seguindo o padrão do projeto (`repository.memory` espelh
   - `createTreatment` persiste todos os campos; `woundTypes` vazio é rejeitado.
   - `concludeTreatment` exige `outcome` válido e `dischargedOn`; seta `status = 'concluido'`; rejeita segunda conclusão.
   - `assembleReport`: `sessionCount` conta só agendamentos `concluido` vinculados àquele tratamento (escopo por `accountId`); `sessions` vem ordenado por data; duração = `(dischargedOn ?? hoje) − startedOn`; tratamento em andamento não quebra o cálculo.
+  - `sumPhotoBytes` soma só as fotos da conta (escopo por `accountId`), inclusive com fotos de outra conta presentes.
 - **`scheduling` (repo + serviço)**
   - `insertAppointment` aceita e persiste `treatmentId`; omitido → `null`.
   - `updateAppointmentTreatment` altera o vínculo; `countConcludedAppointmentsByTreatment` e `listConcludedAppointmentsByTreatment` filtram por status e por tratamento, escopados por conta.
@@ -398,5 +411,8 @@ Comportamento externo, seguindo o padrão do projeto (`repository.memory` espelh
 ## Decisões em Aberto
 
 1. **Medidas da ferida ao longo do tempo** — confirmar com a profissional se quer registrar (hoje: fora de escopo). Se sim, vira uma tabela `treatment_measurements` (data + dimensões) e um mini-gráfico/tabela no relatório — incremento isolado, não altera o resto do design.
-2. **Identidade profissional na conta** (`professional_name`, `professional_council_id`) + página `/configuracoes` para esses campos e para o indicador de armazenamento — confirmar se entra agora. O relatório precisa identificar a profissional; sem os campos, usa só `accounts.name` e mantém a linha de assinatura manual.
-3. **Feature 2 (assinatura eletrônica dos termos)**: plataforma externa (ZapSign/Autentique/Clicksign) vs. construir no app vs. comparar plataformas primeiro. Recomendação atual: plataforma externa, pela exigência de risco jurídico mínimo. Tratada em doc separado.
+2. **Feature 2 (assinatura eletrônica dos termos)**: plataforma externa (ZapSign/Autentique/Clicksign) vs. construir no app vs. comparar plataformas primeiro. Recomendação atual: plataforma externa, pela exigência de risco jurídico mínimo. Tratada em doc separado.
+
+## Decisões Fechadas depois do brainstorming
+
+- **2026-08-28 — Identidade profissional na conta entra na Feature 1.** `accounts.professional_name` + `accounts.professional_council_id` na migração `0011`; página `/configuracoes` para editá-los e para o indicador de armazenamento; item "Configurações" no menu. Campos nullable — enquanto vazios, o relatório usa só `accounts.name`.
