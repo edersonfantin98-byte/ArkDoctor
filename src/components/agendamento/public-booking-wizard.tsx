@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,23 @@ import { isSlotBusy, dayRangeIso, type OccupiedInterval } from "./slot-availabil
 import { cn } from "@/lib/utils";
 import type { Procedure } from "@/modules/scheduling/types";
 import { formatCurrency } from "@/lib/format";
+
+type TurnstileOptions = {
+  sitekey: string;
+  callback: (token: string) => void;
+  "error-callback"?: () => void;
+  "expired-callback"?: () => void;
+};
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (el: HTMLElement, options: TurnstileOptions) => string;
+      remove: (widgetId: string) => void;
+      reset: (widgetId?: string) => void;
+    };
+  }
+}
 
 type Step = "procedure" | "datetime" | "confirm";
 
@@ -99,9 +116,11 @@ function DayStrip({
 export function PublicBookingWizard({
   accountId,
   procedures,
+  turnstileSiteKey,
 }: {
   accountId: string;
   procedures: Procedure[];
+  turnstileSiteKey: string;
 }) {
   const [step, setStep] = useState<Step>("procedure");
 
@@ -137,6 +156,41 @@ export function PublicBookingWizard({
   const [conflictCheckError, setConflictCheckError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!turnstileSiteKey || step !== "confirm" || confirmed) return;
+
+    let cancelled = false;
+    function render() {
+      if (cancelled) return;
+      const el = turnstileRef.current;
+      if (!el || !window.turnstile) {
+        window.setTimeout(render, 200);
+        return;
+      }
+      if (turnstileWidgetId.current) return;
+      turnstileWidgetId.current = window.turnstile.render(el, {
+        sitekey: turnstileSiteKey,
+        callback: (token) => setTurnstileToken(token),
+        "error-callback": () => setTurnstileToken(null),
+        "expired-callback": () => setTurnstileToken(null),
+      });
+    }
+    render();
+
+    return () => {
+      cancelled = true;
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+      }
+      turnstileWidgetId.current = null;
+      setTurnstileToken(null);
+    };
+  }, [turnstileSiteKey, step, confirmed]);
 
   const selectedProcedure = procedures.find((p) => p.id === procedureId) ?? null;
 
@@ -200,11 +254,16 @@ export function PublicBookingWizard({
         phone: phone.trim(),
         procedureId,
         startsAt: start,
+        turnstileToken,
       });
       if (result.ok) {
         setConfirmed(true);
       } else {
         setSubmitError(result.error);
+        if (turnstileWidgetId.current && window.turnstile) {
+          window.turnstile.reset(turnstileWidgetId.current);
+          setTurnstileToken(null);
+        }
       }
     } finally {
       setSubmitting(false);
@@ -390,6 +449,7 @@ export function PublicBookingWizard({
               {!checkingConflict && conflictCheckError && (
                 <p className="text-sm text-red-600">{conflictCheckError}</p>
               )}
+              {turnstileSiteKey && <div ref={turnstileRef} className="min-h-[65px]" />}
               <Button type="button" variant="outline" onClick={() => setStep("datetime")}>
                 Voltar
               </Button>
@@ -430,7 +490,13 @@ export function PublicBookingWizard({
                 <Button
                   type="button"
                   className="w-full"
-                  disabled={submitting || checkingConflict || !!conflictReason || !!conflictCheckError}
+                  disabled={
+                    submitting ||
+                    checkingConflict ||
+                    !!conflictReason ||
+                    !!conflictCheckError ||
+                    (!!turnstileSiteKey && !turnstileToken)
+                  }
                   onClick={handleConfirm}
                 >
                   Confirmar agendamento

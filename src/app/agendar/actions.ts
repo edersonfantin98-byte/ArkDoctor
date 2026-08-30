@@ -6,6 +6,8 @@ import { createSupabaseCrmRepository } from "@/modules/crm/repository.supabase";
 import * as scheduling from "@/modules/scheduling/service";
 import * as crm from "@/modules/crm/service";
 import type { Appointment } from "@/modules/scheduling/types";
+import { verifyTurnstileToken } from "@/lib/turnstile";
+import { withinBookingRateLimit } from "@/lib/rate-limit";
 import { normalizePhone } from "./phone";
 
 function getPublicRepos() {
@@ -51,8 +53,28 @@ export async function listPublicOccupiedIntervalsAction(
 
 export async function createPublicBookingAction(
   accountId: string,
-  input: { name: string; phone: string; procedureId: string; startsAt: string },
+  input: {
+    name: string;
+    phone: string;
+    procedureId: string;
+    startsAt: string;
+    turnstileToken: string | null;
+  },
 ): Promise<{ ok: true; appointment: Appointment } | { ok: false; error: string }> {
+  if (!(await withinBookingRateLimit())) {
+    return {
+      ok: false,
+      error: "Muitas tentativas. Aguarde um minuto e tente novamente.",
+    };
+  }
+
+  if (!(await verifyTurnstileToken(input.turnstileToken))) {
+    return {
+      ok: false,
+      error: "Falha na verificação de segurança. Recarregue a página e tente novamente.",
+    };
+  }
+
   const { schedulingRepo, crmRepo } = getPublicRepos();
   const phone = normalizePhone(input.phone);
 

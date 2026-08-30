@@ -1,31 +1,36 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/pipeline", "/financeiro", "/agenda", "/dashboard", "/whatsapp", "/agendamento", "/procedimentos", "/configuracoes"];
+const PROTECTED_PREFIXES = ["/pipeline", "/financeiro", "/agenda", "/dashboard", "/whatsapp", "/agendamento", "/procedimentos", "/configuracoes", "/pacientes"];
 
-function buildCsp(nonce: string) {
+// Cloudflare Turnstile (bot check on the public /agendar booking form) loads a
+// script and an iframe from this origin. Only relaxed for that route.
+const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
+function buildCsp(nonce: string, allowTurnstile: boolean) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   // React's dev-mode debugging features (e.g. reconstructing stack traces) use eval();
   // it never runs eval() in production, so this stays scoped to development.
-  const scriptSrc =
-    process.env.NODE_ENV === "development"
-      ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
-      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`;
-  return [
+  const devEval = process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
+  const turnstileScript = allowTurnstile ? ` ${TURNSTILE_ORIGIN}` : "";
+  const directives = [
     "default-src 'self'",
-    scriptSrc,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devEval}${turnstileScript}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: ${supabaseUrl}`,
-    `connect-src 'self' ${supabaseUrl}`,
+    `connect-src 'self' ${supabaseUrl}${allowTurnstile ? ` ${TURNSTILE_ORIGIN}` : ""}`,
     "frame-ancestors 'none'",
-  ].join("; ");
+  ];
+  if (allowTurnstile) directives.push(`frame-src ${TURNSTILE_ORIGIN}`);
+  return directives.join("; ");
 }
 
 export const runtime = "experimental-edge";
 
 export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = buildCsp(nonce);
+  const allowTurnstile = request.nextUrl.pathname.startsWith("/agendar");
+  const csp = buildCsp(nonce, allowTurnstile);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

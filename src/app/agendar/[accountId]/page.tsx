@@ -1,6 +1,8 @@
+import { headers } from "next/headers";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase/service-role";
 import { getCurrentAccountName } from "@/lib/supabase/account";
 import { listPublicProceduresAction } from "@/app/agendar/actions";
+import { turnstileSiteKey } from "@/lib/turnstile";
 import { PublicBookingWizard } from "@/components/agendamento/public-booking-wizard";
 
 export default async function PublicBookingPage({
@@ -10,6 +12,8 @@ export default async function PublicBookingPage({
 }) {
   const { accountId } = await params;
   const supabase = createServiceRoleSupabaseClient();
+  const siteKey = turnstileSiteKey();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   let accountName: string;
   try {
@@ -26,11 +30,22 @@ export default async function PublicBookingPage({
 
   return (
     <div className="mx-auto max-w-3xl p-6">
+      {siteKey && (
+        <script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          async
+          nonce={nonce}
+        />
+      )}
       <div className="mb-6 space-y-1.5 text-center">
         <h1 className="text-2xl font-bold tracking-tight">{accountName}</h1>
         <p className="text-sm text-muted-foreground">Escolha o procedimento, o dia e o horário.</p>
       </div>
-      <PublicBookingWizard accountId={accountId} procedures={procedures} />
+      <PublicBookingWizard
+        accountId={accountId}
+        procedures={procedures}
+        turnstileSiteKey={siteKey}
+      />
     </div>
   );
 }
