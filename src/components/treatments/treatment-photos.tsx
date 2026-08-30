@@ -27,6 +27,7 @@ export function TreatmentPhotos({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -79,6 +80,7 @@ export function TreatmentPhotos({
 
   async function handleDelete(id: string) {
     setError(null);
+    setConfirmingDeleteId(null);
     try {
       await deleteTreatmentPhotoAction(id);
       setPhotos((prev) => prev.filter((p) => p.id !== id));
@@ -111,7 +113,7 @@ export function TreatmentPhotos({
           }}
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {photos.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhuma foto.</p>
       ) : (
@@ -138,13 +140,32 @@ export function TreatmentPhotos({
                     className="rounded border px-1 py-0.5"
                     onBlur={(e) => void saveMeta(p.id, { takenOn: e.target.value })}
                   />
-                  <button
-                    type="button"
-                    className="text-red-600 hover:underline"
-                    onClick={() => handleDelete(p.id)}
-                  >
-                    remover
-                  </button>
+                  {confirmingDeleteId === p.id ? (
+                    <span className="flex gap-2">
+                      <button
+                        type="button"
+                        className="text-red-600 hover:underline"
+                        onClick={() => handleDelete(p.id)}
+                      >
+                        confirmar
+                      </button>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:underline"
+                        onClick={() => setConfirmingDeleteId(null)}
+                      >
+                        cancelar
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-red-600 hover:underline"
+                      onClick={() => setConfirmingDeleteId(p.id)}
+                    >
+                      remover
+                    </button>
+                  )}
                 </div>
               </figcaption>
             </figure>

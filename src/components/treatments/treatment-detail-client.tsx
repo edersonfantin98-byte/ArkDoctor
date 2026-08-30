@@ -25,6 +25,10 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function sessionsLabel(count: number): string {
+  return `${count} ${count === 1 ? "sessão realizada" : "sessões realizadas"}`;
+}
+
 export function TreatmentDetailClient({
   contactId,
   treatment: initialTreatment,
@@ -108,7 +112,7 @@ export function TreatmentDetailClient({
         </Link>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       <section className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
@@ -161,8 +165,10 @@ export function TreatmentDetailClient({
         {confirmingDelete && (
           <div className="space-y-2 rounded-md border border-red-200 p-3 sm:col-span-2">
             <p className="text-sm text-red-600">
-              {sessionCount} sessões deixarão de estar vinculadas. Esta ação não pode ser
-              desfeita.
+              {sessionCount === 1
+                ? "1 sessão deixará de estar vinculada."
+                : `${sessionCount} sessões deixarão de estar vinculadas.`}{" "}
+              Esta ação não pode ser desfeita.
             </p>
             <div className="flex gap-2">
               <Button
@@ -187,7 +193,7 @@ export function TreatmentDetailClient({
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold">{sessionCount} sessões realizadas</h2>
+        <h2 className="text-sm font-semibold">{sessionsLabel(sessionCount)}</h2>
         {sessions.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma sessão concluída vinculada.</p>
         ) : (
