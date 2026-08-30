@@ -5,6 +5,7 @@ import {
   concludeTreatment,
   createTreatment,
   formatDurationLabel,
+  localDate,
 } from "./service";
 import type { AssembleReportInput } from "./types";
 
@@ -63,6 +64,14 @@ describe("formatDurationLabel", () => {
     expect(formatDurationLabel("2026-08-01", "2026-08-04")).toBe("3 dias");
     expect(formatDurationLabel("2026-08-01", "2026-08-08")).toBe("1 semana");
     expect(formatDurationLabel("2026-08-01", "2026-09-12")).toBe("6 semanas");
+  });
+});
+
+describe("localDate", () => {
+  it("resolves the date in Cuiabá (UTC-4), not UTC", () => {
+    // 01:00 UTC on the 21st is still 21:00 on the 20th in Cuiabá
+    expect(localDate("2026-08-21T01:00:00.000Z")).toBe("2026-08-20");
+    expect(localDate("2026-08-21T12:00:00.000Z")).toBe("2026-08-21");
   });
 });
 

@@ -82,8 +82,21 @@ export function formatDurationLabel(startedOn: string, endOn: string): string {
   return `${weeks} ${weeks === 1 ? "semana" : "semanas"}`;
 }
 
+// Clínica em Cuiabá (UTC-4, sem horário de verão). O servidor roda em UTC, então
+// `now` pode já ter virado o dia — derivamos a data no fuso local para a duração.
+const CLINIC_TIME_ZONE = "America/Cuiaba";
+
+export function localDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: CLINIC_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
 export function assembleReport(input: AssembleReportInput): TreatmentReport {
-  const endOn = input.treatment.dischargedOn ?? input.now.slice(0, 10);
+  const endOn = input.treatment.dischargedOn ?? localDate(input.now);
   return {
     treatment: input.treatment,
     contact: input.contact,
