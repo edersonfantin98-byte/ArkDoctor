@@ -41,6 +41,7 @@ export function ConsentCards({
   const [signing, setSigning] = useState<Doc | null>(null);
   const [linkFor, setLinkFor] = useState<{ doc: Doc; url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   async function refresh() {
     setConsents(await listConsentsAction(contactId));
@@ -64,6 +65,7 @@ export function ConsentCards({
 
   async function handleDelete(id: string) {
     setError(null);
+    setConfirmingDeleteId(null);
     const prev = consents;
     setConsents((rows) => rows.filter((c) => c.id !== id));
     try {
@@ -95,7 +97,7 @@ export function ConsentCards({
           para que apareçam no documento.
         </p>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       <ul className="divide-y rounded-lg border">
         {docs.map((doc) => {
@@ -122,13 +124,32 @@ export function ConsentCards({
                     >
                       Ver PDF
                     </button>
-                    <button
-                      type="button"
-                      className="text-sm text-red-600 hover:underline"
-                      onClick={() => handleDelete(latest.id)}
-                    >
-                      Excluir
-                    </button>
+                    {confirmingDeleteId === latest.id ? (
+                      <span className="flex gap-2">
+                        <button
+                          type="button"
+                          className="text-sm text-red-600 hover:underline"
+                          onClick={() => handleDelete(latest.id)}
+                        >
+                          confirmar
+                        </button>
+                        <button
+                          type="button"
+                          className="text-sm text-muted-foreground hover:underline"
+                          onClick={() => setConfirmingDeleteId(null)}
+                        >
+                          cancelar
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-sm text-red-600 hover:underline"
+                        onClick={() => setConfirmingDeleteId(latest.id)}
+                      >
+                        Excluir
+                      </button>
+                    )}
                   </>
                 )}
                 <Button type="button" size="sm" variant="outline" onClick={() => handleLink(doc)}>

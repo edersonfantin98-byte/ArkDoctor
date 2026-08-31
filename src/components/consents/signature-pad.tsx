@@ -19,10 +19,23 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { className?: string 
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const ratio = Math.max(window.devicePixelRatio || 1, 1);
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      canvas.getContext("2d")?.scale(ratio, ratio);
+      function resizeCanvas() {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d")?.scale(ratio, ratio);
+      }
+
+      resizeCanvas();
+
+      function onResize() {
+        resizeCanvas();
+        padRef.current?.clear();
+      }
+      window.addEventListener("resize", onResize);
+      window.addEventListener("orientationchange", onResize);
 
       void import("signature_pad").then(({ default: Lib }) => {
         if (disposed || !canvasRef.current) return;
@@ -31,6 +44,8 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { className?: string 
 
       return () => {
         disposed = true;
+        window.removeEventListener("resize", onResize);
+        window.removeEventListener("orientationchange", onResize);
         padRef.current?.off();
         padRef.current = null;
       };

@@ -47,8 +47,14 @@ export async function submitPublicConsentAction(
       signerName,
       signedVia: "link",
     });
-  } catch {
-    await supabase.storage.from(CONSENT_BUCKET).remove([path]);
+  } catch (err) {
+    console.error("[assinar/actions] recordConsent", err);
+    const { error: rollbackError } = await supabase.storage
+      .from(CONSENT_BUCKET)
+      .remove([path]);
+    if (rollbackError) {
+      console.error("[assinar/actions] recordConsent rollback", rollbackError);
+    }
     return { ok: false, error: "Não foi possível registrar a assinatura. Tente novamente." };
   }
 
