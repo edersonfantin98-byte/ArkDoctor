@@ -9,14 +9,14 @@ binding = "ASSETS"
 
 # Per-IP rate limit for the public booking form (/agendar). 5 booking
 # submissions per minute per IP; reads are not counted.
-[[ratelimit]]
+[[ratelimits]]
 name = "BOOKING_RATE_LIMIT"
 namespace_id = "1001"
 simple = { limit = 5, period = 60 }
 
 # Per-IP rate limit for the public consent-signing route (/assinar). 5
 # submissions per minute per IP.
-[[ratelimit]]
+[[ratelimits]]
 name = "CONSENT_SIGN_RATE_LIMIT"
 namespace_id = "1002"
 simple = { limit = 5, period = 60 }
