@@ -48,3 +48,6 @@ next-env.d.ts
 
 # worktrees
 .worktrees/
+
+# superpowers SDD scratch (ledger, briefs, review packages)
+.superpowers/
