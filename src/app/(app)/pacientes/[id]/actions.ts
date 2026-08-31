@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   getAccountProfessionalIdentity,
@@ -13,9 +14,17 @@ import * as treatments from "@/modules/treatments/service";
 import { assembleReport } from "@/modules/treatments/service";
 import { MAX_OUTPUT_BYTES } from "@/components/treatments/prepare-photo";
 import type { TreatmentSession } from "@/modules/treatments/types";
+import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
+import * as consents from "@/modules/consents/service";
+import { CONSENT_KINDS, type ConsentKind } from "@/modules/consents/schemas";
+import { renderTemplate, formatBrDate } from "@/modules/consents/templates";
+import { signConsentToken } from "@/modules/consents/token";
 
 const BUCKET = "treatment-photos";
 const SIGNED_URL_TTL = 3600;
+const CONSENT_BUCKET = "signed-consents";
+const CONSENT_LINK_TTL_SECONDS = 48 * 60 * 60;
+const MAX_CONSENT_PDF_BYTES = 2 * 1024 * 1024;
 
 async function ctx() {
   const supabase = await createServerSupabaseClient();
@@ -197,4 +206,129 @@ export async function getTreatmentReportDataAction(treatmentId: string) {
     photos: photos.map((p) => ({ url: p.url, caption: p.caption, takenOn: p.takenOn })),
     now: new Date().toISOString(),
   });
+}
+
+function assertConsentKind(kind: string): asserts kind is ConsentKind {
+  if (!CONSENT_KINDS.includes(kind as ConsentKind)) throw new Error("Documento inválido.");
+}
+
+export async function listConsentsAction(contactId: string) {
+  const c = await ctx();
+  const repo = createSupabaseConsentsRepository(c.supabase);
+  const rows = await consents.listConsentsForContact(repo, c.accountId, contactId);
+  if (rows.length === 0) return [];
+  const { data, error } = await c.supabase.storage
+    .from(CONSENT_BUCKET)
+    .createSignedUrls(rows.map((r) => r.storagePath), SIGNED_URL_TTL);
+  if (error) throw new Error("Não foi possível carregar os documentos.");
+  return rows.map((r, i) => ({
+    id: r.id,
+    kind: r.kind,
+    signerName: r.signerName,
+    signedAt: r.signedAt,
+    url: data[i]?.signedUrl ?? "",
+  }));
+}
+
+export async function uploadConsentAction(contactId: string, kind: string, formData: FormData) {
+  assertConsentKind(kind);
+  const c = await ctx();
+  const contact = await c.crmRepo.getContact(c.accountId, contactId);
+  if (!contact) throw new Error("Paciente não encontrado");
+
+  const file = formData.get("file");
+  if (!(file instanceof Blob)) throw new Error("Arquivo inválido.");
+  if (file.type !== "application/pdf") throw new Error("O arquivo não é um PDF.");
+  if (file.size > MAX_CONSENT_PDF_BYTES) throw new Error("O documento excede o tamanho permitido.");
+  const signerName = (formData.get("signerName") as string | null)?.trim();
+  if (!signerName) throw new Error("Informe o nome de quem assina.");
+
+  const repo = createSupabaseConsentsRepository(c.supabase);
+  const path = `${c.accountId}/${contactId}/${kind}-${Date.now()}.pdf`;
+  const { error: uploadError } = await c.supabase.storage
+    .from(CONSENT_BUCKET)
+    .upload(path, file, { contentType: "application/pdf", upsert: false });
+  if (uploadError) {
+    console.error("[pacientes/[id]/actions] consent upload", uploadError);
+    throw new Error("Não foi possível salvar o documento. Tente novamente.");
+  }
+  try {
+    await consents.recordConsent(repo, c.accountId, {
+      contactId,
+      kind,
+      storagePath: path,
+      signerName,
+      signedVia: "inline",
+    });
+  } catch (err) {
+    await c.supabase.storage.from(CONSENT_BUCKET).remove([path]);
+    throw err;
+  }
+  revalidatePath(`/pacientes/${contactId}/documentos`);
+}
+
+export async function deleteConsentAction(consentId: string) {
+  const c = await ctx();
+  const repo = createSupabaseConsentsRepository(c.supabase);
+  const row = await consents.getConsent(repo, c.accountId, consentId);
+  if (!row) throw new Error("Documento não encontrado");
+  await c.supabase.storage.from(CONSENT_BUCKET).remove([row.storagePath]);
+  await consents.deleteConsent(repo, c.accountId, consentId);
+  revalidatePath(`/pacientes/${row.contactId}/documentos`);
+}
+
+export async function createConsentLinkAction(contactId: string, kind: string) {
+  assertConsentKind(kind);
+  const c = await ctx();
+  const contact = await c.crmRepo.getContact(c.accountId, contactId);
+  if (!contact) throw new Error("Paciente não encontrado");
+  const token = await signConsentToken(
+    { accountId: c.accountId, contactId, kind },
+    CONSENT_LINK_TTL_SECONDS,
+  );
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("host") ?? "";
+  return { url: `${proto}://${host}/assinar/${token}` };
+}
+
+export async function getConsentPageDataAction(contactId: string) {
+  const c = await ctx();
+  const [contact, identity, consentRows] = await Promise.all([
+    c.crmRepo.getContact(c.accountId, contactId),
+    getAccountProfessionalIdentity(c.supabase, c.accountId),
+    listConsentsAction(contactId),
+  ]);
+  if (!contact) throw new Error("Paciente não encontrado");
+
+  const templateCtx = {
+    pacienteNome: contact.name,
+    pacienteCpf: contact.cpf,
+    pacienteNascimento: contact.birthDate,
+    clinicaNome: identity.name,
+    profissionalNome: identity.professionalName,
+    profissionalConselho: identity.councilId,
+    data: formatBrDate(new Date()),
+  };
+
+  const docs = CONSENT_KINDS.map((kind) => {
+    const t = renderTemplate(kind, templateCtx);
+    return { kind, title: t.title, paragraphs: t.paragraphs };
+  });
+
+  const headerLines = [
+    identity.name,
+    identity.professionalName
+      ? `${identity.professionalName}${identity.councilId ? ` - ${identity.councilId}` : ""}`
+      : null,
+    `Paciente: ${contact.name}`,
+  ].filter((l): l is string => Boolean(l));
+
+  return {
+    patientName: contact.name,
+    professionalMissing: !identity.professionalName,
+    headerLines,
+    docs,
+    consents: consentRows,
+  };
 }
