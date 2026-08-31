@@ -24,3 +24,23 @@ export async function withinBookingRateLimit(): Promise<boolean> {
   const { success } = await limiter.limit({ key: ip });
   return success;
 }
+
+/**
+ * Per-IP rate limit for the public consent-signing route (/assinar), backed by
+ * the CONSENT_SIGN_RATE_LIMIT Workers binding (see wrangler.toml). Fails open
+ * when the binding is unavailable (e.g. `next dev`).
+ */
+export async function withinConsentSignRateLimit(): Promise<boolean> {
+  let limiter: RateLimiter | undefined;
+  try {
+    limiter = (getCloudflareContext().env as Record<string, unknown>)
+      .CONSENT_SIGN_RATE_LIMIT as RateLimiter | undefined;
+  } catch {
+    return true;
+  }
+  if (!limiter) return true;
+
+  const ip = (await headers()).get("cf-connecting-ip") ?? "unknown";
+  const { success } = await limiter.limit({ key: ip });
+  return success;
+}
