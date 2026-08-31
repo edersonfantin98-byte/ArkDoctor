@@ -144,7 +144,7 @@ export function ConsentCards({
       </ul>
 
       <Dialog open={signing !== null} onOpenChange={(open) => !open && setSigning(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{signing?.title}</DialogTitle>
           </DialogHeader>
@@ -196,16 +196,28 @@ export function ConsentCards({
 
 function QrCode({ url }: { url: string }) {
   const [src, setSrc] = useState("");
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    void import("qrcode").then(async (QR) => {
-      const dataUrl = await QR.toDataURL(url, { margin: 1, width: 200 });
-      if (!cancelled) setSrc(dataUrl);
-    });
+    void import("qrcode")
+      .then(async (QR) => {
+        const dataUrl = await QR.toDataURL(url, { margin: 1, width: 200 });
+        if (!cancelled) setSrc(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
     return () => {
       cancelled = true;
     };
   }, [url]);
+  if (failed) {
+    return (
+      <p className="mx-auto text-center text-xs text-muted-foreground">
+        Não foi possível gerar o QR. Copie o link abaixo.
+      </p>
+    );
+  }
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- data: URL do QR gerado no cliente
     <img
