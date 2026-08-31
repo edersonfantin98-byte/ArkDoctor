@@ -9,6 +9,7 @@ import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import * as crm from "@/modules/crm/service";
 import { sendBulkMessages } from "@/modules/whatsapp/service";
 import { createSupabaseTreatmentsRepository } from "@/modules/treatments/repository.supabase";
+import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
 
 async function getCrmRepoAndAccount() {
   const supabase = await createServerSupabaseClient();
@@ -56,6 +57,18 @@ export async function deletePatientAction(id: string) {
     if (error) {
       console.error("[pacientes/actions] storage remove", error);
       throw new Error("Não foi possível remover as fotos do armazenamento. Tente novamente.");
+    }
+  }
+
+  const consentsRepo = createSupabaseConsentsRepository(supabase);
+  const consentRows = await consentsRepo.listConsentsForContact(accountId, id);
+  if (consentRows.length > 0) {
+    const { error } = await supabase.storage
+      .from("signed-consents")
+      .remove(consentRows.map((r) => r.storagePath));
+    if (error) {
+      console.error("[pacientes/actions] consent storage remove", error);
+      throw new Error("Não foi possível remover os documentos do armazenamento. Tente novamente.");
     }
   }
 
