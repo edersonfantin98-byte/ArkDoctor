@@ -493,6 +493,57 @@ export type Database = {
           },
         ]
       }
+      signed_consents: {
+        Row: {
+          account_id: string
+          contact_id: string
+          created_at: string
+          id: string
+          kind: string
+          signed_at: string
+          signed_via: string
+          signer_name: string
+          storage_path: string
+        }
+        Insert: {
+          account_id: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          signed_at?: string
+          signed_via: string
+          signer_name: string
+          storage_path: string
+        }
+        Update: {
+          account_id?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          signed_at?: string
+          signed_via?: string
+          signer_name?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signed_consents_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signed_consents_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       treatment_photos: {
         Row: {
           account_id: string
