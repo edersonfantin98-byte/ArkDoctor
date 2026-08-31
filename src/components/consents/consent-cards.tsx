@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   Dialog,
@@ -11,13 +12,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatBrDate } from "@/modules/consents/templates";
 import type { ConsentKind } from "@/modules/consents/schemas";
-import { ConsentSignForm } from "./consent-sign-form";
 import {
   createConsentLinkAction,
   deleteConsentAction,
   listConsentsAction,
   uploadConsentAction,
 } from "@/app/(app)/pacientes/[id]/actions";
+
+const ConsentSignForm = dynamic(
+  () => import("./consent-sign-form").then((m) => m.ConsentSignForm),
+  { ssr: false },
+);
 
 type ConsentRow = Awaited<ReturnType<typeof listConsentsAction>>[number];
 type Doc = { kind: ConsentKind; title: string; paragraphs: string[] };

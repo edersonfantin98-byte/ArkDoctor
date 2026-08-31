@@ -1,8 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ConsentSignForm } from "./consent-sign-form";
+import dynamic from "next/dynamic";
 import { submitPublicConsentAction } from "@/app/assinar/actions";
+
+const ConsentSignForm = dynamic(
+  () => import("./consent-sign-form").then((m) => m.ConsentSignForm),
+  { ssr: false },
+);
 
 export function PublicConsentForm(props: {
   token: string;
