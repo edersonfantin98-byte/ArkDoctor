@@ -199,6 +199,9 @@ function QrCode({ url }: { url: string }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reinicia a tentativa (failed/src) quando a prop url muda
+    setFailed(false);
+    setSrc("");
     void import("qrcode")
       .then(async (QR) => {
         const dataUrl = await QR.toDataURL(url, { margin: 1, width: 200 });
