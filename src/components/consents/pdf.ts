@@ -36,6 +36,7 @@ export function layoutParagraphs(
 }
 
 export function paginate(lines: string[], linesPerPage: number): string[][] {
+  if (linesPerPage < 1) throw new RangeError("linesPerPage deve ser >= 1");
   const pages: string[][] = [];
   for (let i = 0; i < lines.length; i += linesPerPage) {
     pages.push(lines.slice(i, i + linesPerPage));
@@ -57,6 +58,9 @@ const PAGE_HEIGHT = 841.89;
 const MARGIN = 56;
 const BODY_SIZE = 11;
 const LINE_HEIGHT = 16;
+// faixa reservada no rodapé da última página p/ a assinatura (imagem + linha + texto + folga)
+const SIG_BAND_HEIGHT = 130;
+const MAX_SIG_HEIGHT = 90;
 
 export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Array> {
   const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
@@ -68,10 +72,44 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
   const measure = (s: string) => font.widthOfTextAtSize(s, BODY_SIZE);
   const bodyLines = layoutParagraphs(input.paragraphs, contentWidth, measure);
 
-  // primeira página reserva espaço p/ título + cabeçalho; usamos um cálculo
-  // conservador de linhas por página e deixamos a última página com a assinatura.
-  const linesPerPage = Math.floor((PAGE_HEIGHT - MARGIN * 2 - 120) / LINE_HEIGHT);
-  const pages = paginate(bodyLines, Math.max(linesPerPage, 1));
+  // Altura ocupada por título + cabeçalho — só existe na 1ª página.
+  const headerHeight = 26 + input.headerLines.length * 13 + 12;
+  const fullPageLines = Math.max(
+    1,
+    Math.floor((PAGE_HEIGHT - MARGIN * 2) / LINE_HEIGHT),
+  );
+  // A 1ª página tem menos espaço de corpo por causa do título/cabeçalho.
+  const firstPageLines = Math.max(
+    1,
+    Math.floor((PAGE_HEIGHT - MARGIN * 2 - headerHeight) / LINE_HEIGHT),
+  );
+  const sigBandLines = Math.ceil(SIG_BAND_HEIGHT / LINE_HEIGHT);
+
+  // 1ª fatia com orçamento reduzido; o resto do corpo em páginas cheias.
+  const firstSlice = bodyLines.slice(0, firstPageLines);
+  const restLines = bodyLines.slice(firstPageLines);
+  const pages: string[][] =
+    restLines.length > 0
+      ? [firstSlice, ...paginate(restLines, fullPageLines)]
+      : [firstSlice];
+  if (pages.length === 0) pages.push([]);
+
+  // Reserva a faixa da assinatura na última página; se o corpo não couber com a
+  // faixa reservada, transborda para páginas extras. Objetivo: a imagem e o texto
+  // da assinatura nunca escrevem sobre uma linha de corpo.
+  const lastIndex = pages.length - 1;
+  const lastPageRoom = Math.max(
+    (lastIndex === 0 ? firstPageLines : fullPageLines) - sigBandLines,
+    0,
+  );
+  if (pages[lastIndex].length > lastPageRoom) {
+    const overflow = pages[lastIndex].slice(lastPageRoom);
+    pages[lastIndex] = pages[lastIndex].slice(0, lastPageRoom);
+    const extraRoom = Math.max(fullPageLines - sigBandLines, 1);
+    for (let i = 0; i < overflow.length; i += extraRoom) {
+      pages.push(overflow.slice(i, i + extraRoom));
+    }
+  }
 
   pages.forEach((pageLines, pageIndex) => {
     const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
@@ -97,7 +135,7 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
   const last = doc.getPage(doc.getPageCount() - 1);
   const png = await doc.embedPng(input.signatureDataUrl);
   const sigWidth = 180;
-  const sigHeight = (png.height / png.width) * sigWidth;
+  const sigHeight = Math.min((png.height / png.width) * sigWidth, MAX_SIG_HEIGHT);
   last.drawImage(png, { x: MARGIN, y: MARGIN + 24, width: sigWidth, height: sigHeight });
   last.drawLine({
     start: { x: MARGIN, y: MARGIN + 20 },

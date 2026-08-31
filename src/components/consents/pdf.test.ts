@@ -31,4 +31,9 @@ describe("paginate", () => {
   it("chunks lines into pages", () => {
     expect(paginate(["a", "b", "c", "d", "e"], 2)).toEqual([["a", "b"], ["c", "d"], ["e"]]);
   });
+
+  it("throws when linesPerPage is below 1", () => {
+    expect(() => paginate(["a"], 0)).toThrow(RangeError);
+    expect(() => paginate(["a"], -3)).toThrow(RangeError);
+  });
 });
