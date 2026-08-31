@@ -31,9 +31,17 @@ export function PatientDetailClient({
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Dados do paciente</h2>
-          <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            Editar dados
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/pacientes/${patient.id}/documentos`}
+              className="inline-flex h-7 items-center rounded-md border px-2.5 text-[0.8rem] font-medium hover:bg-muted/40"
+            >
+              Documentos
+            </Link>
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              Editar dados
+            </Button>
+          </div>
         </div>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
           <div><dt className="text-muted-foreground">Telefone</dt><dd>{patient.phone}</dd></div>
