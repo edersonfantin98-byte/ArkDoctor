@@ -51,6 +51,7 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
           url: `${appUrl}/api/whatsapp/webhook/${accountId}?secret=${config.webhookSecret}`,
           events: ["messages"],
           excludeMessages: ["wasSentByApi"],
+          enabled: true,
         }),
       }).catch(() => {});
 
