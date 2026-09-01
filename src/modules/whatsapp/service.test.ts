@@ -251,10 +251,11 @@ describe("isValidWebhookSecret", () => {
 describe("parseWebhookPayload", () => {
   it("parses the real Uazapi messages envelope", () => {
     const result = parseWebhookPayload({
-      event: "messages",
-      instance: "inst-1",
-      data: {
-        sender: "5511999999999@s.whatsapp.net",
+      EventType: "messages",
+      instanceName: "inst-1",
+      message: {
+        sender: "257208528953502@lid",
+        sender_pn: "5511999999999@s.whatsapp.net",
         senderName: "Carla Souza",
         text: "Oi, gostaria de agendar",
         fromMe: false,
@@ -268,18 +269,31 @@ describe("parseWebhookPayload", () => {
     });
   });
 
+  it("falls back to sender when sender_pn is absent", () => {
+    const result = parseWebhookPayload({
+      EventType: "messages",
+      message: {
+        sender: "5511999999999@s.whatsapp.net",
+        text: "Oi",
+        fromMe: false,
+        isGroup: false,
+      },
+    });
+    expect(result).toEqual({ fromPhone: "5511999999999", fromName: undefined, body: "Oi" });
+  });
+
   it("ignores messages sent by the API itself", () => {
     const result = parseWebhookPayload({
-      event: "messages",
-      data: { sender: "5511999999999@s.whatsapp.net", text: "oi", fromMe: true, isGroup: false },
+      EventType: "messages",
+      message: { sender: "5511999999999@s.whatsapp.net", text: "oi", fromMe: true, isGroup: false },
     });
     expect(result).toBeNull();
   });
 
   it("ignores group messages", () => {
     const result = parseWebhookPayload({
-      event: "messages",
-      data: { sender: "123@g.us", text: "oi", fromMe: false, isGroup: true },
+      EventType: "messages",
+      message: { sender: "123@g.us", text: "oi", fromMe: false, isGroup: true },
     });
     expect(result).toBeNull();
   });

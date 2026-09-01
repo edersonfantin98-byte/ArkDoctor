@@ -184,16 +184,18 @@ export function parseWebhookPayload(
   if (typeof body !== "object" || body === null) return null;
   const payload = body as Record<string, unknown>;
 
-  if (payload.event === "messages") {
-    const data = payload.data;
-    if (typeof data !== "object" || data === null) return null;
-    const eventData = data as Record<string, unknown>;
-    if (eventData.fromMe === true || eventData.isGroup === true) return null;
-    if (typeof eventData.sender !== "string" || typeof eventData.text !== "string") return null;
+  if (payload.EventType === "messages") {
+    const message = payload.message;
+    if (typeof message !== "object" || message === null) return null;
+    const messageData = message as Record<string, unknown>;
+    if (messageData.fromMe === true || messageData.isGroup === true) return null;
+    const senderJid =
+      typeof messageData.sender_pn === "string" ? messageData.sender_pn : messageData.sender;
+    if (typeof senderJid !== "string" || typeof messageData.text !== "string") return null;
     return {
-      fromPhone: normalizeWhatsappJid(eventData.sender),
-      fromName: typeof eventData.senderName === "string" ? eventData.senderName : undefined,
-      body: eventData.text,
+      fromPhone: normalizeWhatsappJid(senderJid),
+      fromName: typeof messageData.senderName === "string" ? messageData.senderName : undefined,
+      body: messageData.text,
     };
   }
 
