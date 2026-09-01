@@ -50,10 +50,10 @@ export async function getConnectionStatusAction() {
 }
 
 export async function connectWhatsappAction(): Promise<{ error: string | null }> {
-  const { repo, accountId } = await getRepoAndAccount();
-  const connection = await repo.getConnection(accountId);
-  const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
   try {
+    const { repo, accountId } = await getRepoAndAccount();
+    const connection = await repo.getConnection(accountId);
+    const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
     await whatsapp.connectWhatsapp(provider, accountId);
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Erro ao conectar com o WhatsApp" };
