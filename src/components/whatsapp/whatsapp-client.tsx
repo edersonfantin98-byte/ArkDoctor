@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
+  listConversationsAction,
   getConversationMessagesAction,
   logMessageAction,
   startConversationAction,
@@ -231,6 +232,15 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     }
   }
 
+  const fetchMessages = useCallback(async (conversationId: string) => {
+    const data = await getConversationMessagesAction(conversationId);
+    setMessages(data);
+    await resetUnreadCountAction(conversationId);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
+    );
+  }, []);
+
   useEffect(() => {
     if (!selectedConversationId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- clears stale messages before fetching the new conversation
@@ -242,14 +252,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     setMessagesError(null);
     (async () => {
       try {
-        const data = await getConversationMessagesAction(selectedConversationId);
-        if (cancelled) return;
-        setMessages(data);
-        await resetUnreadCountAction(selectedConversationId);
-        if (cancelled) return;
-        setConversations((prev) =>
-          prev.map((c) => (c.id === selectedConversationId ? { ...c, unreadCount: 0 } : c)),
-        );
+        await fetchMessages(selectedConversationId);
       } catch (err) {
         if (!cancelled) {
           setMessagesError(err instanceof Error ? err.message : "Erro ao carregar mensagens");
@@ -261,7 +264,24 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     return () => {
       cancelled = true;
     };
-  }, [selectedConversationId]);
+  }, [selectedConversationId, fetchMessages]);
+
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    const interval = setInterval(() => {
+      fetchMessages(selectedConversationId).catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedConversationId, fetchMessages]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      listConversationsAction()
+        .then(setConversations)
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSend() {
     if (!selectedConversationId || !draft.trim() || sending) return;
