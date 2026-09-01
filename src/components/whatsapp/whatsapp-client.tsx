@@ -212,7 +212,11 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
       if (connection?.status === "connected") {
         await disconnectWhatsappAction();
       } else {
-        await connectWhatsappAction();
+        const result = await connectWhatsappAction();
+        if (result.error) {
+          setConnectionError(result.error);
+          return;
+        }
       }
       await refreshConnection();
     } catch (err) {
