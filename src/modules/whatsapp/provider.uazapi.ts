@@ -32,6 +32,11 @@ function baseUrl(subdomain: string): string {
   return `https://${subdomain}.uazapi.com`;
 }
 
+function mapUazapiStatus(rawStatus: string | undefined): ConnectionStatus {
+  if (!rawStatus || rawStatus === "hibernated") return "disconnected";
+  return rawStatus as ConnectionStatus;
+}
+
 export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
   return {
     async connect(accountId) {
@@ -62,8 +67,16 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
       }
       const data = await response.json();
 
-      await repo.upsertConnectionStatus(accountId, "connecting", null);
-      await repo.updateConnectionQrCode(accountId, data.qrcode ?? data.qrCode ?? null);
+      const mapped = mapUazapiStatus(data.instance?.status);
+      await repo.upsertConnectionStatus(
+        accountId,
+        mapped,
+        mapped === "connected" ? new Date().toISOString() : null,
+      );
+      await repo.updateConnectionQrCode(
+        accountId,
+        mapped === "connected" ? null : data.instance?.qrcode || data.instance?.qrCode || null,
+      );
     },
 
     async disconnect(accountId) {
@@ -90,8 +103,7 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
       });
       if (!response.ok) return "disconnected";
       const data = await response.json();
-      const rawStatus: string = data.status ?? "disconnected";
-      const mapped: ConnectionStatus = rawStatus === "hibernated" ? "disconnected" : (rawStatus as ConnectionStatus);
+      const mapped = mapUazapiStatus(data.instance?.status);
 
       await repo.upsertConnectionStatus(
         accountId,

@@ -54,7 +54,10 @@ describe("UazapiProvider", () => {
     await seedConfig(repo);
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({ qrcode: "data:image/png;base64,abc" }),
+      json: async () => ({
+        connected: false,
+        instance: { status: "connecting", qrcode: "data:image/png;base64,abc" },
+      }),
     });
 
     const provider = createUazapiProvider(repo);
@@ -72,6 +75,26 @@ describe("UazapiProvider", () => {
     expect(connection?.status).toBe("connecting");
   });
 
+  it("marks the connection as connected when the instance is already connected", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        connected: true,
+        instance: { status: "connected", qrcode: "" },
+        response: "Already connected",
+      }),
+    });
+
+    const provider = createUazapiProvider(repo);
+    await provider.connect("acc-1");
+
+    const connection = await repo.getConnection("acc-1");
+    expect(connection?.status).toBe("connected");
+    expect(connection?.qrCode).toBeNull();
+  });
+
   it("still connects and produces a QR code when webhook registration fails at the transport level", async () => {
     const repo = createInMemoryWhatsappRepository();
     await seedConfig(repo);
@@ -79,7 +102,10 @@ describe("UazapiProvider", () => {
       if (url.endsWith("/webhook")) return Promise.reject(new Error("getaddrinfo ENOTFOUND"));
       return Promise.resolve({
         ok: true,
-        json: async () => ({ qrcode: "data:image/png;base64,abc" }),
+        json: async () => ({
+          connected: false,
+          instance: { status: "connecting", qrcode: "data:image/png;base64,abc" },
+        }),
       });
     });
 
@@ -94,12 +120,29 @@ describe("UazapiProvider", () => {
   it("maps the hibernated status to disconnected", async () => {
     const repo = createInMemoryWhatsappRepository();
     await seedConfig(repo);
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ status: "hibernated" }) });
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ instance: { status: "hibernated" } }),
+    });
 
     const provider = createUazapiProvider(repo);
     const status = await provider.getConnectionStatus("acc-1");
 
     expect(status).toBe("disconnected");
+  });
+
+  it("reads the connected status from the nested instance object", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ instance: { status: "connected" }, status: { connected: true } }),
+    });
+
+    const provider = createUazapiProvider(repo);
+    const status = await provider.getConnectionStatus("acc-1");
+
+    expect(status).toBe("connected");
   });
 
   it("sends a text message and returns the providerMessageId from the response", async () => {
