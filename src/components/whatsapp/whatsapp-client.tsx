@@ -178,6 +178,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [connection, setConnection] = useState<WhatsappConnectionSummary>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [togglingConnection, setTogglingConnection] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const refreshConnection = useCallback(async () => {
     const [conn, status] = await Promise.all([
@@ -206,6 +207,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
 
   async function handleToggleConnection() {
     setTogglingConnection(true);
+    setConnectionError(null);
     try {
       if (connection?.status === "connected") {
         await disconnectWhatsappAction();
@@ -213,6 +215,8 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
         await connectWhatsappAction();
       }
       await refreshConnection();
+    } catch (err) {
+      setConnectionError(err instanceof Error ? err.message : "Erro ao conectar com o WhatsApp");
     } finally {
       setTogglingConnection(false);
     }
@@ -303,6 +307,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
         </div>
         <NewConversationDialog onCreated={handleConversationCreated} />
       </div>
+      {connectionError && <p className="text-sm text-red-600">{connectionError}</p>}
       {qrCode && (
         <div className="flex flex-col items-center gap-2 rounded-xl border p-4">
           <p className="text-sm text-muted-foreground">

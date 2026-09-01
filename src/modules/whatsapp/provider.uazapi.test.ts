@@ -35,6 +35,20 @@ describe("UazapiProvider", () => {
     await expect(provider.connect("acc-1")).rejects.toThrow();
   });
 
+  it("includes the response status and body when connect fails", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await seedConfig(repo);
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => "Invalid token",
+    });
+
+    const provider = createUazapiProvider(repo);
+    await expect(provider.connect("acc-1")).rejects.toThrow(/401/);
+    await expect(provider.connect("acc-1")).rejects.toThrow(/Invalid token/);
+  });
+
   it("saves the QR code and sets status to connecting on connect", async () => {
     const repo = createInMemoryWhatsappRepository();
     await seedConfig(repo);

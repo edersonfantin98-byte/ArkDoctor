@@ -54,7 +54,10 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
         headers: { "Content-Type": "application/json", token: config.token },
         body: JSON.stringify({}),
       });
-      if (!response.ok) throw new Error("Falha ao conectar com a Uazapi");
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`Falha ao conectar com a Uazapi (${response.status}): ${detail}`);
+      }
       const data = await response.json();
 
       await repo.upsertConnectionStatus(accountId, "connecting", null);
