@@ -56,7 +56,9 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
       });
       if (!response.ok) {
         const detail = await response.text().catch(() => "");
-        throw new Error(`Falha ao conectar com a Uazapi (${response.status}): ${detail}`);
+        throw new Error(
+          `Falha ao conectar com a Uazapi (${response.status}) em ${response.url}: ${detail}`,
+        );
       }
       const data = await response.json();
 
