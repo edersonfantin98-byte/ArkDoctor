@@ -181,11 +181,16 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const refreshConnection = useCallback(async () => {
-    const [conn, status] = await Promise.all([
-      getWhatsappConnectionAction(),
-      getConnectionStatusAction(),
-    ]);
+    const conn = await getWhatsappConnectionAction();
     setConnection(conn);
+
+    let status: string | null = null;
+    try {
+      status = await getConnectionStatusAction();
+    } catch {
+      // status check contacts the Uazapi API and may fail independently of the saved config
+    }
+
     if (status === "connecting" && conn?.provider === "uazapi") {
       setQrCode(await getUazapiQrCodeAction());
     } else {
