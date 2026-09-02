@@ -277,13 +277,18 @@ export async function deleteConsentAction(consentId: string) {
   revalidatePath(`/pacientes/${row.contactId}/documentos`);
 }
 
-export async function createConsentLinkAction(contactId: string, kind: string) {
+export async function createConsentLinkAction(
+  contactId: string,
+  kind: string,
+  extra?: { tipoFerida?: string },
+) {
   assertConsentKind(kind);
   const c = await ctx();
   const contact = await c.crmRepo.getContact(c.accountId, contactId);
   if (!contact) throw new Error("Paciente não encontrado");
+  const tipoFerida = extra?.tipoFerida?.trim();
   const token = await signConsentToken(
-    { accountId: c.accountId, contactId, kind },
+    { accountId: c.accountId, contactId, kind, ...(tipoFerida ? { tipoFerida } : {}) },
     CONSENT_LINK_TTL_SECONDS,
   );
   const h = await headers();
@@ -305,6 +310,7 @@ export async function getConsentPageDataAction(contactId: string) {
     pacienteNome: contact.name,
     pacienteCpf: contact.cpf,
     pacienteNascimento: contact.birthDate,
+    pacienteTelefone: contact.phone ?? null,
     clinicaNome: identity.name,
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,
@@ -313,21 +319,12 @@ export async function getConsentPageDataAction(contactId: string) {
 
   const docs = CONSENT_KINDS.map((kind) => {
     const t = renderTemplate(kind, templateCtx);
-    return { kind, title: t.title, paragraphs: t.paragraphs };
+    return { kind, title: t.title, blocks: t.blocks };
   });
-
-  const headerLines = [
-    identity.name,
-    identity.professionalName
-      ? `${identity.professionalName}${identity.councilId ? ` - ${identity.councilId}` : ""}`
-      : null,
-    `Paciente: ${contact.name}`,
-  ].filter((l): l is string => Boolean(l));
 
   return {
     patientName: contact.name,
     professionalMissing: !identity.professionalName,
-    headerLines,
     docs,
     consents: consentRows,
   };

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatBrDate } from "@/modules/consents/templates";
+import type { Block } from "@/modules/consents/templates";
 import type { ConsentKind } from "@/modules/consents/schemas";
 import {
   createConsentLinkAction,
@@ -25,26 +26,28 @@ const ConsentSignForm = dynamic(
 );
 
 type ConsentRow = Awaited<ReturnType<typeof listConsentsAction>>[number];
-type Doc = { kind: ConsentKind; title: string; paragraphs: string[] };
+type Doc = { kind: ConsentKind; title: string; blocks: Block[] };
 
 export function ConsentCards({
   contactId,
   patientName,
   professionalMissing,
-  headerLines,
   docs,
   initialConsents,
 }: {
   contactId: string;
   patientName: string;
   professionalMissing: boolean;
-  headerLines: string[];
   docs: Doc[];
   initialConsents: ConsentRow[];
 }) {
   const [consents, setConsents] = useState<ConsentRow[]>(initialConsents);
   const [signing, setSigning] = useState<Doc | null>(null);
-  const [linkFor, setLinkFor] = useState<{ doc: Doc; url: string } | null>(null);
+  const [linkState, setLinkState] = useState<
+    | { doc: Doc; phase: "form"; tipoFerida: string }
+    | { doc: Doc; phase: "done"; url: string }
+    | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
@@ -83,9 +86,23 @@ export function ConsentCards({
 
   async function handleLink(doc: Doc) {
     setError(null);
+    if (doc.kind === "tcle") {
+      setLinkState({ doc, phase: "form", tipoFerida: "" });
+      return;
+    }
     try {
       const { url } = await createConsentLinkAction(contactId, doc.kind);
-      setLinkFor({ doc, url });
+      setLinkState({ doc, phase: "done", url });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao gerar link");
+    }
+  }
+
+  async function generateTcleLink(doc: Doc, tipoFerida: string) {
+    setError(null);
+    try {
+      const { url } = await createConsentLinkAction(contactId, doc.kind, { tipoFerida });
+      setLinkState({ doc, phase: "done", url });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar link");
     }
@@ -176,9 +193,9 @@ export function ConsentCards({
           </DialogHeader>
           {signing && (
             <ConsentSignForm
+              kind={signing.kind}
               documentTitle={signing.title}
-              headerLines={headerLines}
-              paragraphs={signing.paragraphs}
+              blocks={signing.blocks}
               defaultSignerName={patientName}
               submitLabel="Confirmar assinatura"
               onComplete={({ pdfBytes, signerName }) =>
@@ -193,19 +210,40 @@ export function ConsentCards({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={linkFor !== null} onOpenChange={(open) => !open && setLinkFor(null)}>
+      <Dialog open={linkState !== null} onOpenChange={(open) => !open && setLinkState(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {linkFor ? `Link para ${linkFor.doc.title}` : ""}
+              {linkState ? `Link para ${linkState.doc.title}` : ""}
             </DialogTitle>
           </DialogHeader>
-          {linkFor && (
+          {linkState?.phase === "form" && (
             <div className="space-y-3">
-              <QrCode url={linkFor.url} />
+              <label className="block text-sm">
+                <span className="text-muted-foreground">Tipo de ferida</span>
+                <input
+                  value={linkState.tipoFerida}
+                  onChange={(e) =>
+                    setLinkState({ ...linkState, tipoFerida: e.target.value })
+                  }
+                  className="mt-1 w-full rounded border px-2 py-1"
+                />
+              </label>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => generateTcleLink(linkState.doc, linkState.tipoFerida)}
+              >
+                Gerar link
+              </Button>
+            </div>
+          )}
+          {linkState?.phase === "done" && (
+            <div className="space-y-3">
+              <QrCode url={linkState.url} />
               <input
                 readOnly
-                value={linkFor.url}
+                value={linkState.url}
                 onFocus={(e) => e.currentTarget.select()}
                 className="w-full rounded border px-2 py-1 text-xs"
               />
