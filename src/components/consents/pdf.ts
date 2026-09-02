@@ -1,4 +1,6 @@
 import type { PDFFont } from "pdf-lib";
+import type { Block } from "@/modules/consents/templates";
+import { LETTERHEAD } from "./letterhead";
 
 export function wrapLine(
   text: string,
@@ -22,32 +24,108 @@ export function wrapLine(
   return lines.length > 0 ? lines : [""];
 }
 
-export function layoutParagraphs(
-  paragraphs: string[],
-  maxWidth: number,
-  measure: (s: string) => number,
-): string[] {
-  const out: string[] = [];
-  paragraphs.forEach((paragraph, index) => {
-    if (index > 0) out.push("");
-    out.push(...wrapLine(paragraph, maxWidth, measure));
-  });
-  return out;
+export interface Geom {
+  contentWidth: number;
+  bodySize: number;
+  lineHeight: number;
+  usableHeight: number;
 }
 
-export function paginate(lines: string[], linesPerPage: number): string[][] {
-  if (linesPerPage < 1) throw new RangeError("linesPerPage deve ser >= 1");
-  const pages: string[][] = [];
-  for (let i = 0; i < lines.length; i += linesPerPage) {
-    pages.push(lines.slice(i, i + linesPerPage));
+export type Prim =
+  | { kind: "text"; text: string; size: number; bold: boolean }
+  | { kind: "checkbox"; text: string; checked: boolean }
+  | { kind: "space"; h: number }
+  | { kind: "sig"; who: "electronic" | "blank"; label: string; h: number };
+
+const HEADING_EXTRA = 3; // pt acima do bodySize para heading
+const PARA_GAP = 6;
+const FIELD_GAP = 4;
+const HEADING_GAP_BEFORE = 12;
+const HEADING_GAP_AFTER = 4;
+const SIG_HEIGHT = 78; // gap de topo + imagem/linha + rótulo, atômico
+const FIELD_RULE = " ____________________________";
+
+function primHeight(prim: Prim, geom: Geom): number {
+  switch (prim.kind) {
+    case "text":
+    case "checkbox":
+      return geom.lineHeight;
+    case "space":
+      return prim.h;
+    case "sig":
+      return prim.h;
+  }
+}
+
+export function measureBlock(block: Block, geom: Geom): Prim[] {
+  const measureAt = (size: number) => (s: string) => s.length * size * 0.5;
+
+  if (block.type === "heading") {
+    return [
+      { kind: "space", h: HEADING_GAP_BEFORE },
+      ...wrapLine(block.text, geom.contentWidth, measureAt(geom.bodySize + HEADING_EXTRA)).map(
+        (t): Prim => ({ kind: "text", text: t, size: geom.bodySize + HEADING_EXTRA, bold: true }),
+      ),
+      { kind: "space", h: HEADING_GAP_AFTER },
+    ];
+  }
+
+  if (block.type === "paragraph") {
+    return [
+      ...wrapLine(block.text, geom.contentWidth, measureAt(geom.bodySize)).map(
+        (t): Prim => ({ kind: "text", text: t, size: geom.bodySize, bold: false }),
+      ),
+      { kind: "space", h: PARA_GAP },
+    ];
+  }
+
+  if (block.type === "field") {
+    const line = block.value != null ? `${block.label}: ${block.value}` : `${block.label}:${FIELD_RULE}`;
+    return [
+      ...wrapLine(line, geom.contentWidth, measureAt(geom.bodySize)).map(
+        (t): Prim => ({ kind: "text", text: t, size: geom.bodySize, bold: false }),
+      ),
+      { kind: "space", h: FIELD_GAP },
+    ];
+  }
+
+  if (block.type === "checkbox") {
+    return [
+      { kind: "checkbox", text: block.label, checked: block.checked },
+      { kind: "space", h: FIELD_GAP },
+    ];
+  }
+
+  // signature — um único prim atômico
+  return [{ kind: "sig", who: block.who, label: block.label, h: SIG_HEIGHT }];
+}
+
+export function layoutBlocks(blocks: Block[], geom: Geom, firstPageReserve: number): Prim[][] {
+  const pages: Prim[][] = [[]];
+  let used = firstPageReserve;
+
+  const pushPrim = (prim: Prim) => {
+    const h = primHeight(prim, geom);
+    const cur = pages[pages.length - 1];
+    // só pagina se a página atual já tem conteúdo (nunca cria página vazia)
+    if (used + h > geom.usableHeight && cur.length > 0) {
+      pages.push([]);
+      used = 0;
+      if (prim.kind === "space") return; // descarta o gap no topo da nova página
+    }
+    pages[pages.length - 1].push(prim);
+    used += h;
+  };
+
+  for (const block of blocks) {
+    for (const prim of measureBlock(block, geom)) pushPrim(prim);
   }
   return pages;
 }
 
 export interface ConsentPdfInput {
-  documentTitle: string;
-  headerLines: string[];
-  paragraphs: string[];
+  title: string;
+  blocks: Block[];
   signatureDataUrl: string; // PNG data URL
   signerName: string;
   signedAtLabel: string;
@@ -56,11 +134,11 @@ export interface ConsentPdfInput {
 const PAGE_WIDTH = 595.28; // A4 pt
 const PAGE_HEIGHT = 841.89;
 const MARGIN = 56;
-const BODY_SIZE = 11;
-const LINE_HEIGHT = 16;
-// faixa reservada no rodapé da última página p/ a assinatura (imagem + linha + texto + folga)
-const SIG_BAND_HEIGHT = 130;
-const MAX_SIG_HEIGHT = 90;
+const HEADER_H = 64; // faixa do timbre no topo
+const FOOTER_H = 34; // faixa do rodapé
+const BODY_SIZE = 10.5;
+const LINE_HEIGHT = 15;
+const TITLE_SIZE = 15;
 
 export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Array> {
   const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
@@ -68,88 +146,143 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  const contentWidth = PAGE_WIDTH - MARGIN * 2;
-  const measure = (s: string) => font.widthOfTextAtSize(s, BODY_SIZE);
-  const bodyLines = layoutParagraphs(input.paragraphs, contentWidth, measure);
-
-  // Altura ocupada por título + cabeçalho — só existe na 1ª página.
-  const headerHeight = 26 + input.headerLines.length * 13 + 12;
-  const fullPageLines = Math.max(
-    1,
-    Math.floor((PAGE_HEIGHT - MARGIN * 2) / LINE_HEIGHT),
-  );
-  // A 1ª página tem menos espaço de corpo por causa do título/cabeçalho.
-  const firstPageLines = Math.max(
-    1,
-    Math.floor((PAGE_HEIGHT - MARGIN * 2 - headerHeight) / LINE_HEIGHT),
-  );
-  const sigBandLines = Math.ceil(SIG_BAND_HEIGHT / LINE_HEIGHT);
-
-  // 1ª fatia com orçamento reduzido; o resto do corpo em páginas cheias.
-  const firstSlice = bodyLines.slice(0, firstPageLines);
-  const restLines = bodyLines.slice(firstPageLines);
-  const pages: string[][] =
-    restLines.length > 0
-      ? [firstSlice, ...paginate(restLines, fullPageLines)]
-      : [firstSlice];
-  if (pages.length === 0) pages.push([]);
-
-  // Reserva a faixa da assinatura na última página; se o corpo não couber com a
-  // faixa reservada, transborda para páginas extras. Objetivo: a imagem e o texto
-  // da assinatura nunca escrevem sobre uma linha de corpo.
-  const lastIndex = pages.length - 1;
-  const lastPageRoom = Math.max(
-    (lastIndex === 0 ? firstPageLines : fullPageLines) - sigBandLines,
-    0,
-  );
-  if (pages[lastIndex].length > lastPageRoom) {
-    const overflow = pages[lastIndex].slice(lastPageRoom);
-    pages[lastIndex] = pages[lastIndex].slice(0, lastPageRoom);
-    const extraRoom = Math.max(fullPageLines - sigBandLines, 1);
-    for (let i = 0; i < overflow.length; i += extraRoom) {
-      pages.push(overflow.slice(i, i + extraRoom));
+  let logo: Awaited<ReturnType<typeof doc.embedPng>> | null = null;
+  if (LETTERHEAD.logoPngBase64) {
+    try {
+      logo = await doc.embedPng(`data:image/png;base64,${LETTERHEAD.logoPngBase64}`);
+    } catch {
+      logo = null;
     }
   }
 
-  pages.forEach((pageLines, pageIndex) => {
+  const contentWidth = PAGE_WIDTH - MARGIN * 2;
+  const geom: Geom = {
+    contentWidth,
+    bodySize: BODY_SIZE,
+    lineHeight: LINE_HEIGHT,
+    usableHeight: PAGE_HEIGHT - MARGIN * 2 - HEADER_H - FOOTER_H,
+  };
+
+  // reserva na 1ª página para o título do documento
+  const titleLines = wrapLine(input.title, contentWidth, (s) => bold.widthOfTextAtSize(s, TITLE_SIZE));
+  const firstPageReserve = titleLines.length * (TITLE_SIZE + 4) + 12;
+
+  const pages = layoutBlocks(input.blocks, geom, firstPageReserve);
+
+  const drawFrame = () => {
     const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    let y = PAGE_HEIGHT - MARGIN;
+    // timbre
+    if (logo) {
+      const w = 150;
+      const h = (logo.height / logo.width) * w;
+      page.drawImage(logo, { x: MARGIN, y: PAGE_HEIGHT - MARGIN - h, width: w, height: Math.min(h, HEADER_H) });
+    } else {
+      page.drawText(LETTERHEAD.empresaRazaoSocial, {
+        x: MARGIN,
+        y: PAGE_HEIGHT - MARGIN - 12,
+        size: 11,
+        font: bold,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+    }
+    page.drawLine({
+      start: { x: MARGIN, y: PAGE_HEIGHT - MARGIN - HEADER_H + 8 },
+      end: { x: PAGE_WIDTH - MARGIN, y: PAGE_HEIGHT - MARGIN - HEADER_H + 8 },
+      thickness: 0.5,
+      color: rgb(0.75, 0.75, 0.75),
+    });
+    // rodapé
+    page.drawText(LETTERHEAD.footer, {
+      x: MARGIN,
+      y: MARGIN - 4,
+      size: 7.5,
+      font,
+      color: rgb(0.45, 0.45, 0.45),
+    });
+    return page;
+  };
 
-    if (pageIndex === 0) {
-      page.drawText(input.documentTitle, { x: MARGIN, y, size: 15, font: bold });
-      y -= 26;
-      for (const line of input.headerLines) {
-        page.drawText(line, { x: MARGIN, y, size: 9, font, color: rgb(0.3, 0.3, 0.3) });
-        y -= 13;
+  let page = drawFrame();
+  let y = PAGE_HEIGHT - MARGIN - HEADER_H;
+
+  // título só na 1ª página
+  for (const line of titleLines) {
+    page.drawText(line, { x: MARGIN, y: y - TITLE_SIZE, size: TITLE_SIZE, font: bold });
+    y -= TITLE_SIZE + 4;
+  }
+  y -= 12;
+
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+    const pagePrims = pages[pageIndex];
+    if (pageIndex > 0) {
+      page = drawFrame();
+      y = PAGE_HEIGHT - MARGIN - HEADER_H;
+    }
+    for (const prim of pagePrims) {
+      if (prim.kind === "space") {
+        y -= prim.h;
+      } else if (prim.kind === "text") {
+        page.drawText(prim.text, {
+          x: MARGIN,
+          y: y - prim.size,
+          size: prim.size,
+          font: prim.bold ? bold : font,
+        });
+        y -= LINE_HEIGHT;
+      } else if (prim.kind === "checkbox") {
+        const box = 9;
+        const top = y - BODY_SIZE;
+        page.drawRectangle({
+          x: MARGIN,
+          y: top,
+          width: box,
+          height: box,
+          borderColor: rgb(0.2, 0.2, 0.2),
+          borderWidth: 0.8,
+        });
+        if (prim.checked) {
+          page.drawLine({ start: { x: MARGIN + 1.5, y: top + 4 }, end: { x: MARGIN + 3.5, y: top + 1.5 }, thickness: 1, color: rgb(0.1, 0.1, 0.1) });
+          page.drawLine({ start: { x: MARGIN + 3.5, y: top + 1.5 }, end: { x: MARGIN + 7.5, y: top + 7.5 }, thickness: 1, color: rgb(0.1, 0.1, 0.1) });
+        }
+        page.drawText(prim.text, { x: MARGIN + box + 6, y: y - BODY_SIZE, size: BODY_SIZE, font });
+        y -= LINE_HEIGHT;
+      } else {
+        // sig
+        y -= 16; // gap de topo do bloco
+        if (prim.who === "electronic" && input.signatureDataUrl) {
+          try {
+            const png = await doc.embedPng(input.signatureDataUrl);
+            const w = 170;
+            const h = Math.min((png.height / png.width) * w, 44);
+            page.drawImage(png, { x: MARGIN, y: y - h, width: w, height: h });
+            y -= h + 2;
+          } catch {
+            y -= 20;
+          }
+        } else {
+          y -= 24;
+        }
+        page.drawLine({
+          start: { x: MARGIN, y },
+          end: { x: MARGIN + 280, y },
+          thickness: 0.5,
+          color: rgb(0.2, 0.2, 0.2),
+        });
+        y -= 12;
+        page.drawText(prim.label, { x: MARGIN, y: y - 8, size: 8, font, color: rgb(0.3, 0.3, 0.3) });
+        if (prim.who === "electronic") {
+          y -= 20;
+          page.drawText(
+            `Assinado eletronicamente por ${input.signerName} em ${input.signedAtLabel}`,
+            { x: MARGIN, y: y - 8, size: 7.5, font, color: rgb(0.35, 0.35, 0.35) },
+          );
+        }
+        y -= 14;
       }
-      y -= 12;
     }
-
-    for (const line of pageLines) {
-      page.drawText(line, { x: MARGIN, y, size: BODY_SIZE, font });
-      y -= LINE_HEIGHT;
-    }
-  });
-
-  // assinatura no rodapé da última página
-  const last = doc.getPage(doc.getPageCount() - 1);
-  const png = await doc.embedPng(input.signatureDataUrl);
-  const sigWidth = 180;
-  const sigHeight = Math.min((png.height / png.width) * sigWidth, MAX_SIG_HEIGHT);
-  last.drawImage(png, { x: MARGIN, y: MARGIN + 24, width: sigWidth, height: sigHeight });
-  last.drawLine({
-    start: { x: MARGIN, y: MARGIN + 20 },
-    end: { x: MARGIN + 260, y: MARGIN + 20 },
-    thickness: 0.5,
-    color: rgb(0.2, 0.2, 0.2),
-  });
-  last.drawText(
-    `Assinado eletronicamente por ${input.signerName} em ${input.signedAtLabel}`,
-    { x: MARGIN, y: MARGIN + 6, size: 8, font, color: rgb(0.3, 0.3, 0.3) },
-  );
+  }
 
   return doc.save();
 }
 
-// re-export do tipo para consumidores que só querem a medida
 export type { PDFFont };
