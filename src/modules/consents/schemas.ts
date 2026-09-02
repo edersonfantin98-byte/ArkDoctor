@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const CONSENT_KINDS = ["tcle", "imagem", "lgpd"] as const;
+export const CONSENT_KINDS = ["tcle", "imagem", "laser"] as const;
 export type ConsentKind = (typeof CONSENT_KINDS)[number];
 export type SignedVia = "inline" | "link";
 

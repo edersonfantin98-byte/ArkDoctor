@@ -1,39 +1,118 @@
 import { describe, it, expect } from "vitest";
-import { wrapLine, layoutParagraphs, paginate } from "./pdf";
+import { wrapLine, measureBlock, layoutBlocks, type Geom } from "./pdf";
+import type { Block } from "@/modules/consents/templates";
 
-// medida fake: 1 unidade por caractere
-const measure = (s: string) => s.length;
+const measure = (s: string) => s.length; // 1 unidade por caractere
 
 describe("wrapLine", () => {
-  it("wraps on word boundaries at maxWidth", () => {
+  it("quebra em limites de palavra no maxWidth", () => {
     expect(wrapLine("aaa bbb ccc", 7, measure)).toEqual(["aaa bbb", "ccc"]);
   });
-
-  it("keeps a single over-long word on its own line", () => {
-    expect(wrapLine("supercalifragilistic word", 5, measure)).toEqual([
-      "supercalifragilistic",
-      "word",
-    ]);
+  it("mantém palavra longa sozinha na linha", () => {
+    expect(wrapLine("supercalifragilistic word", 5, measure)).toEqual(["supercalifragilistic", "word"]);
   });
-
-  it("returns a single blank line for empty input", () => {
+  it("string vazia vira uma linha em branco", () => {
     expect(wrapLine("", 5, measure)).toEqual([""]);
   });
 });
 
-describe("layoutParagraphs", () => {
-  it("flattens paragraphs with a blank separator between them", () => {
-    expect(layoutParagraphs(["ab cd", "ef"], 5, measure)).toEqual(["ab cd", "", "ef"]);
+describe("measureBlock", () => {
+  const g: Geom = {
+    contentWidth: 100,
+    bodySize: 10,
+    lineHeight: 14,
+    usableHeight: 700,
+    measure: (s, size) => s.length * size * 0.5,
+  };
+
+  it("field com valor: 'Label: valor'", () => {
+    const prims = measureBlock({ type: "field", label: "Nome", value: "Maria" }, g);
+    expect(prims.some((p) => p.kind === "text" && p.text.includes("Nome: Maria"))).toBe(true);
+  });
+
+  it("field sem valor: 'Label:' seguido de régua de sublinhados", () => {
+    const prims = measureBlock({ type: "field", label: "Endereço", value: null }, g);
+    // Ajuste (Pre-flight Ruling 1): a régua de sublinhados mede ~190 com este Geom
+    // e quebra em vários prims de texto; juntamos todos e checamos o padrão.
+    const joined = prims
+      .filter((p): p is Extract<typeof p, { kind: "text" }> => p.kind === "text")
+      .map((p) => p.text)
+      .join(" ");
+    expect(joined).toMatch(/Endereço:\s*_+/);
+  });
+
+  it("checkbox: um prim kind=checkbox com o estado", () => {
+    const prims = measureBlock({ type: "checkbox", label: "Autorizo.", checked: true }, g);
+    expect(prims.filter((p) => p.kind === "checkbox")).toEqual([
+      { kind: "checkbox", text: "Autorizo.", checked: true },
+    ]);
+  });
+
+  it("signature: um único prim atômico kind=sig com altura embutida", () => {
+    const prims = measureBlock({ type: "signature", who: "electronic", label: "Assinatura" }, g);
+    expect(prims).toHaveLength(1);
+    expect(prims[0]).toMatchObject({ kind: "sig", who: "electronic", label: "Assinatura" });
+    expect((prims[0] as { h: number }).h).toBeGreaterThan(g.lineHeight);
+  });
+
+  it("heading: prim de texto bold", () => {
+    const prims = measureBlock({ type: "heading", text: "Título" }, g);
+    expect(prims.some((p) => p.kind === "text" && "bold" in p && p.bold)).toBe(true);
   });
 });
 
-describe("paginate", () => {
-  it("chunks lines into pages", () => {
-    expect(paginate(["a", "b", "c", "d", "e"], 2)).toEqual([["a", "b"], ["c", "d"], ["e"]]);
+describe("layoutBlocks", () => {
+  it("quebra em páginas quando a altura acumulada passa de usableHeight", () => {
+    const blocks: Block[] = [
+      { type: "paragraph", text: "a" },
+      { type: "paragraph", text: "b" },
+      { type: "paragraph", text: "c" },
+    ];
+    // usableHeight 10, cada parágrafo ~ lineHeight(1) + space; força >1 página
+    const g: Geom = {
+      contentWidth: 40,
+      bodySize: 1,
+      lineHeight: 4,
+      usableHeight: 9,
+      measure: (s, size) => s.length * size * 0.5,
+    };
+    const pages = layoutBlocks(blocks, g, 0);
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.flat().filter((p) => p.kind === "text" && p.text === "a")).toHaveLength(1);
   });
 
-  it("throws when linesPerPage is below 1", () => {
-    expect(() => paginate(["a"], 0)).toThrow(RangeError);
-    expect(() => paginate(["a"], -3)).toThrow(RangeError);
+  it("nunca divide um bloco signature entre páginas", () => {
+    const blocks: Block[] = [
+      { type: "paragraph", text: "x" },
+      { type: "paragraph", text: "y" },
+      { type: "signature", who: "electronic", label: "Assinatura" },
+    ];
+    const g: Geom = {
+      contentWidth: 40,
+      bodySize: 1,
+      lineHeight: 4,
+      usableHeight: 12,
+      measure: (s, size) => s.length * size * 0.5,
+    };
+    const pages = layoutBlocks(blocks, g, 0);
+    const sigPage = pages.find((page) => page.some((p) => p.kind === "sig"));
+    expect(sigPage).toBeDefined();
+    // o prim sig aparece exatamente uma vez, numa única página
+    expect(pages.flat().filter((p) => p.kind === "sig")).toHaveLength(1);
+  });
+
+  it("firstPageReserve reduz o espaço da primeira página", () => {
+    const blocks: Block[] = [{ type: "paragraph", text: "a" }, { type: "paragraph", text: "b" }];
+    const g: Geom = {
+      contentWidth: 40,
+      bodySize: 1,
+      lineHeight: 4,
+      usableHeight: 20,
+      measure: (s, size) => s.length * size * 0.5,
+    };
+    const semReserva = layoutBlocks(blocks, g, 0);
+    const comReserva = layoutBlocks(blocks, g, 18);
+    expect(semReserva).toHaveLength(1);
+    expect(comReserva.length).toBeGreaterThan(1);
   });
 });

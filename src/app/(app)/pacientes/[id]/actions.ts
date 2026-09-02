@@ -305,6 +305,7 @@ export async function getConsentPageDataAction(contactId: string) {
     pacienteNome: contact.name,
     pacienteCpf: contact.cpf,
     pacienteNascimento: contact.birthDate,
+    pacienteTelefone: contact.phone ?? null,
     clinicaNome: identity.name,
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,
@@ -313,21 +314,12 @@ export async function getConsentPageDataAction(contactId: string) {
 
   const docs = CONSENT_KINDS.map((kind) => {
     const t = renderTemplate(kind, templateCtx);
-    return { kind, title: t.title, paragraphs: t.paragraphs };
+    return { kind, title: t.title, blocks: t.blocks };
   });
-
-  const headerLines = [
-    identity.name,
-    identity.professionalName
-      ? `${identity.professionalName}${identity.councilId ? ` - ${identity.councilId}` : ""}`
-      : null,
-    `Paciente: ${contact.name}`,
-  ].filter((l): l is string => Boolean(l));
 
   return {
     patientName: contact.name,
     professionalMissing: !identity.professionalName,
-    headerLines,
     docs,
     consents: consentRows,
   };

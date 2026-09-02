@@ -57,28 +57,21 @@ export default async function PublicConsentPage({
     pacienteNome: patientName,
     pacienteCpf: null,
     pacienteNascimento: null,
+    pacienteTelefone: null,
     clinicaNome: identity.name,
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,
     data: formatBrDate(new Date()),
   });
 
-  const headerLines = [
-    identity.name,
-    identity.professionalName
-      ? `${identity.professionalName}${identity.councilId ? ` - ${identity.councilId}` : ""}`
-      : null,
-    `Paciente: ${patientName}`,
-  ].filter((l): l is string => Boolean(l));
-
   return (
     <div className="mx-auto max-w-2xl p-6">
       <h1 className="mb-4 text-xl font-bold">{t.title}</h1>
       <PublicConsentForm
         token={token}
+        kind={kind}
         documentTitle={t.title}
-        headerLines={headerLines}
-        paragraphs={t.paragraphs}
+        blocks={t.blocks}
         defaultSignerName={patientName}
       />
     </div>
