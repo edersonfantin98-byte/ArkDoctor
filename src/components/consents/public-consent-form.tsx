@@ -16,7 +16,6 @@ export function PublicConsentForm(props: {
   kind: ConsentKind;
   documentTitle: string;
   blocks: Block[];
-  tipoFerida?: string;
   defaultSignerName: string;
 }) {
   const [done, setDone] = useState(false);
@@ -34,7 +33,6 @@ export function PublicConsentForm(props: {
       kind={props.kind}
       documentTitle={props.documentTitle}
       blocks={props.blocks}
-      tipoFerida={props.tipoFerida}
       defaultSignerName={props.defaultSignerName}
       submitLabel="Confirmar assinatura"
       onComplete={async ({ pdfBytes, signerName }) => {

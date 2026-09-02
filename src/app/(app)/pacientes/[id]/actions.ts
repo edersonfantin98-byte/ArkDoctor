@@ -277,18 +277,13 @@ export async function deleteConsentAction(consentId: string) {
   revalidatePath(`/pacientes/${row.contactId}/documentos`);
 }
 
-export async function createConsentLinkAction(
-  contactId: string,
-  kind: string,
-  extra?: { tipoFerida?: string },
-) {
+export async function createConsentLinkAction(contactId: string, kind: string) {
   assertConsentKind(kind);
   const c = await ctx();
   const contact = await c.crmRepo.getContact(c.accountId, contactId);
   if (!contact) throw new Error("Paciente não encontrado");
-  const tipoFerida = extra?.tipoFerida?.trim();
   const token = await signConsentToken(
-    { accountId: c.accountId, contactId, kind, ...(tipoFerida ? { tipoFerida } : {}) },
+    { accountId: c.accountId, contactId, kind },
     CONSENT_LINK_TTL_SECONDS,
   );
   const h = await headers();

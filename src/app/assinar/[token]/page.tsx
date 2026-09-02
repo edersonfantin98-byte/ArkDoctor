@@ -22,7 +22,7 @@ type Identity = Awaited<ReturnType<typeof getAccountProfessionalIdentity>>;
 // never leaks whether the token existed.
 async function loadPage(
   token: string,
-): Promise<{ kind: ConsentKind; patientName: string; identity: Identity; tipoFerida?: string } | null> {
+): Promise<{ kind: ConsentKind; patientName: string; identity: Identity } | null> {
   const claims = await verifyConsentToken(token);
   if (!claims) return null;
 
@@ -36,7 +36,7 @@ async function loadPage(
       .single();
     if (error || !data) return null;
     const identity = await getAccountProfessionalIdentity(supabase, claims.accountId);
-    return { kind: claims.kind, patientName: data.name, identity, tipoFerida: claims.tipoFerida };
+    return { kind: claims.kind, patientName: data.name, identity };
   } catch {
     return null;
   }
@@ -51,7 +51,7 @@ export default async function PublicConsentPage({
   const loaded = await loadPage(token);
   if (!loaded) return <Invalid />;
 
-  const { kind, patientName, identity, tipoFerida } = loaded;
+  const { kind, patientName, identity } = loaded;
 
   const t = renderTemplate(kind, {
     pacienteNome: patientName,
@@ -62,7 +62,6 @@ export default async function PublicConsentPage({
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,
     data: formatBrDate(new Date()),
-    tipoFerida: tipoFerida ?? null,
   });
 
   return (
@@ -73,7 +72,6 @@ export default async function PublicConsentPage({
         kind={kind}
         documentTitle={t.title}
         blocks={t.blocks}
-        tipoFerida={tipoFerida}
         defaultSignerName={patientName}
       />
     </div>

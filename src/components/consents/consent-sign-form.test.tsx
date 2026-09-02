@@ -105,22 +105,6 @@ describe("ConsentSignForm — TCLE", () => {
     expect(screen.getByLabelText(/Nome do responsável/i)).toHaveValue("João");
   });
 
-  it("tipoFerida vindo por prop aparece somente leitura", () => {
-    render(
-      <ConsentSignForm
-        kind="tcle"
-        documentTitle="TCLE"
-        blocks={tcleBlocks}
-        defaultSignerName="Maria"
-        submitLabel="Confirmar"
-        tipoFerida="úlcera venosa"
-        onComplete={async () => ({ ok: true })}
-      />,
-    );
-    const input = screen.getByLabelText(/Tipo de ferida/i);
-    expect(input).toHaveValue("úlcera venosa");
-    expect(input).toHaveAttribute("readonly");
-  });
 });
 
 describe("ConsentSignForm — imagem/laser", () => {

@@ -43,11 +43,7 @@ export function ConsentCards({
 }) {
   const [consents, setConsents] = useState<ConsentRow[]>(initialConsents);
   const [signing, setSigning] = useState<Doc | null>(null);
-  const [linkState, setLinkState] = useState<
-    | { doc: Doc; phase: "form"; tipoFerida: string }
-    | { doc: Doc; phase: "done"; url: string }
-    | null
-  >(null);
+  const [linkState, setLinkState] = useState<{ doc: Doc; url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
@@ -86,23 +82,9 @@ export function ConsentCards({
 
   async function handleLink(doc: Doc) {
     setError(null);
-    if (doc.kind === "tcle") {
-      setLinkState({ doc, phase: "form", tipoFerida: "" });
-      return;
-    }
     try {
       const { url } = await createConsentLinkAction(contactId, doc.kind);
-      setLinkState({ doc, phase: "done", url });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar link");
-    }
-  }
-
-  async function generateTcleLink(doc: Doc, tipoFerida: string) {
-    setError(null);
-    try {
-      const { url } = await createConsentLinkAction(contactId, doc.kind, { tipoFerida });
-      setLinkState({ doc, phase: "done", url });
+      setLinkState({ doc, url });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar link");
     }
@@ -217,28 +199,7 @@ export function ConsentCards({
               {linkState ? `Link para ${linkState.doc.title}` : ""}
             </DialogTitle>
           </DialogHeader>
-          {linkState?.phase === "form" && (
-            <div className="space-y-3">
-              <label className="block text-sm">
-                <span className="text-muted-foreground">Tipo de ferida</span>
-                <input
-                  value={linkState.tipoFerida}
-                  onChange={(e) =>
-                    setLinkState({ ...linkState, tipoFerida: e.target.value })
-                  }
-                  className="mt-1 w-full rounded border px-2 py-1"
-                />
-              </label>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => generateTcleLink(linkState.doc, linkState.tipoFerida)}
-              >
-                Gerar link
-              </Button>
-            </div>
-          )}
-          {linkState?.phase === "done" && (
+          {linkState && (
             <div className="space-y-3">
               <QrCode url={linkState.url} />
               <input

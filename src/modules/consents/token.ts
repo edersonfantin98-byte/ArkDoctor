@@ -15,7 +15,6 @@ export interface ConsentClaims {
   accountId: string;
   contactId: string;
   kind: ConsentKind;
-  tipoFerida?: string;
 }
 
 interface TokenPayload {
@@ -23,7 +22,6 @@ interface TokenPayload {
   c: string;
   k: string;
   e: number; // expiry, epoch seconds
-  t?: string; // tipoFerida (só no TCLE via link)
 }
 
 async function hmac(data: string, secret: string): Promise<Uint8Array> {
@@ -61,7 +59,6 @@ export async function signConsentToken(
     k: claims.kind,
     e: Math.floor(now / 1000) + ttlSeconds,
   };
-  if (claims.tipoFerida) payload.t = claims.tipoFerida;
   const body = b64url(JSON.stringify(payload));
   const sig = b64url(await hmac(body, getSecret()));
   return `${body}.${sig}`;
@@ -88,11 +85,5 @@ export async function verifyConsentToken(
   if (!CONSENT_KINDS.includes(payload.k as ConsentKind)) return null;
   if (typeof payload.a !== "string" || typeof payload.c !== "string") return null;
 
-  const out: ConsentClaims = {
-    accountId: payload.a,
-    contactId: payload.c,
-    kind: payload.k as ConsentKind,
-  };
-  if (typeof payload.t === "string" && payload.t !== "") out.tipoFerida = payload.t;
-  return out;
+  return { accountId: payload.a, contactId: payload.c, kind: payload.k as ConsentKind };
 }

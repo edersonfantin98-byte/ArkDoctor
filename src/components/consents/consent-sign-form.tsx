@@ -18,7 +18,6 @@ export interface ConsentSignFormProps {
   blocks: Block[];
   defaultSignerName: string;
   submitLabel: string;
-  tipoFerida?: string;
   onComplete: (args: {
     pdfBytes: Uint8Array;
     signerName: string;
@@ -51,10 +50,9 @@ function BlockPreview({ block }: { block: Block }) {
 
 export function ConsentSignForm(props: ConsentSignFormProps) {
   const isTcle = props.kind === "tcle";
-  const tipoFeridaLocked = isTcle && typeof props.tipoFerida === "string";
 
   const [signerName, setSignerName] = useState(props.defaultSignerName);
-  const [tipoFerida, setTipoFerida] = useState(props.tipoFerida ?? "");
+  const [tipoFerida, setTipoFerida] = useState("");
   const [autoriza, setAutoriza] = useState<"" | "sim" | "nao">("");
   const [comoResponsavel, setComoResponsavel] = useState(false);
   const [responsavelNome, setResponsavelNome] = useState("");
@@ -153,9 +151,8 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
             <span className="text-muted-foreground">Tipo de ferida</span>
             <input
               value={tipoFerida}
-              readOnly={tipoFeridaLocked}
               onChange={(e) => setTipoFerida(e.target.value)}
-              className="mt-1 w-full rounded border px-2 py-1 read-only:bg-muted/40"
+              className="mt-1 w-full rounded border px-2 py-1"
             />
           </label>
 
