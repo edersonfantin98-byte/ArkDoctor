@@ -17,7 +17,13 @@ describe("wrapLine", () => {
 });
 
 describe("measureBlock", () => {
-  const g: Geom = { contentWidth: 100, bodySize: 10, lineHeight: 14, usableHeight: 700 };
+  const g: Geom = {
+    contentWidth: 100,
+    bodySize: 10,
+    lineHeight: 14,
+    usableHeight: 700,
+    measure: (s, size) => s.length * size * 0.5,
+  };
 
   it("field com valor: 'Label: valor'", () => {
     const prims = measureBlock({ type: "field", label: "Nome", value: "Maria" }, g);
@@ -63,7 +69,13 @@ describe("layoutBlocks", () => {
       { type: "paragraph", text: "c" },
     ];
     // usableHeight 10, cada parágrafo ~ lineHeight(1) + space; força >1 página
-    const g: Geom = { contentWidth: 40, bodySize: 1, lineHeight: 4, usableHeight: 9 };
+    const g: Geom = {
+      contentWidth: 40,
+      bodySize: 1,
+      lineHeight: 4,
+      usableHeight: 9,
+      measure: (s, size) => s.length * size * 0.5,
+    };
     const pages = layoutBlocks(blocks, g, 0);
     expect(pages.length).toBeGreaterThan(1);
     expect(pages.flat().filter((p) => p.kind === "text" && p.text === "a")).toHaveLength(1);
@@ -75,7 +87,13 @@ describe("layoutBlocks", () => {
       { type: "paragraph", text: "y" },
       { type: "signature", who: "electronic", label: "Assinatura" },
     ];
-    const g: Geom = { contentWidth: 40, bodySize: 1, lineHeight: 4, usableHeight: 12 };
+    const g: Geom = {
+      contentWidth: 40,
+      bodySize: 1,
+      lineHeight: 4,
+      usableHeight: 12,
+      measure: (s, size) => s.length * size * 0.5,
+    };
     const pages = layoutBlocks(blocks, g, 0);
     const sigPage = pages.find((page) => page.some((p) => p.kind === "sig"));
     expect(sigPage).toBeDefined();
@@ -85,7 +103,13 @@ describe("layoutBlocks", () => {
 
   it("firstPageReserve reduz o espaço da primeira página", () => {
     const blocks: Block[] = [{ type: "paragraph", text: "a" }, { type: "paragraph", text: "b" }];
-    const g: Geom = { contentWidth: 40, bodySize: 1, lineHeight: 4, usableHeight: 20 };
+    const g: Geom = {
+      contentWidth: 40,
+      bodySize: 1,
+      lineHeight: 4,
+      usableHeight: 20,
+      measure: (s, size) => s.length * size * 0.5,
+    };
     const semReserva = layoutBlocks(blocks, g, 0);
     const comReserva = layoutBlocks(blocks, g, 18);
     expect(semReserva).toHaveLength(1);

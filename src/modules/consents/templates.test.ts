@@ -7,6 +7,7 @@ import {
   type Block,
   type TemplateContext,
 } from "./templates";
+import { CONSENT_KINDS } from "./schemas";
 
 const ctx: TemplateContext = {
   pacienteNome: "Maria Silva",
@@ -25,6 +26,12 @@ function types(blocks: Block[]): string[] {
 function byKey(blocks: Block[], key: string): Block | undefined {
   return blocks.find((b) => (b.type === "field" || b.type === "checkbox") && b.key === key);
 }
+
+describe("CONSENT_KINDS", () => {
+  it("são exatamente tcle, imagem e laser, nesta ordem", () => {
+    expect(CONSENT_KINDS).toEqual(["tcle", "imagem", "laser"]);
+  });
+});
 
 describe("renderTemplate", () => {
   it("tcle: título + primeiro bloco heading + campos + assinaturas", () => {

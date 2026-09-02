@@ -65,6 +65,16 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
 
   const effectiveSignerName = (comoResponsavel ? responsavelNome : signerName).trim();
 
+  const previewBlocks = useMemo(() => {
+    if (props.kind !== "tcle") return props.blocks;
+    return applyTcleFields(props.blocks, {
+      tipoFerida: tipoFerida.trim() || null,
+      autoriza: autoriza === "sim",
+      responsavelNome: comoResponsavel ? responsavelNome.trim() : null,
+      responsavelRg: comoResponsavel ? responsavelRg.trim() : null,
+    });
+  }, [props.kind, props.blocks, tipoFerida, autoriza, comoResponsavel, responsavelNome, responsavelRg]);
+
   const canSubmit = useMemo(() => {
     if (busy || !effectiveSignerName) return false;
     if (isTcle) {
@@ -132,7 +142,7 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
   return (
     <div className="space-y-3">
       <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-3 text-sm">
-        {props.blocks.map((b, i) => (
+        {previewBlocks.map((b, i) => (
           <BlockPreview key={i} block={b} />
         ))}
       </div>

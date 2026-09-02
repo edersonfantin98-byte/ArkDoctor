@@ -29,6 +29,7 @@ export interface Geom {
   bodySize: number;
   lineHeight: number;
   usableHeight: number;
+  measure: (text: string, size: number, bold: boolean) => number;
 }
 
 export type Prim =
@@ -42,7 +43,8 @@ const PARA_GAP = 6;
 const FIELD_GAP = 4;
 const HEADING_GAP_BEFORE = 12;
 const HEADING_GAP_AFTER = 4;
-const SIG_HEIGHT = 78; // gap de topo + imagem/linha + rótulo, atômico
+const SIG_HEIGHT_ELECTRONIC = 116; // gap topo + imagem + linha + rótulo + linha "assinado eletronicamente"
+const SIG_HEIGHT_BLANK = 74; // gap topo + linha + rótulo
 const FIELD_RULE = " ____________________________";
 
 function primHeight(prim: Prim, geom: Geom): number {
@@ -58,13 +60,12 @@ function primHeight(prim: Prim, geom: Geom): number {
 }
 
 export function measureBlock(block: Block, geom: Geom): Prim[] {
-  const measureAt = (size: number) => (s: string) => s.length * size * 0.5;
-
   if (block.type === "heading") {
+    const size = geom.bodySize + HEADING_EXTRA;
     return [
       { kind: "space", h: HEADING_GAP_BEFORE },
-      ...wrapLine(block.text, geom.contentWidth, measureAt(geom.bodySize + HEADING_EXTRA)).map(
-        (t): Prim => ({ kind: "text", text: t, size: geom.bodySize + HEADING_EXTRA, bold: true }),
+      ...wrapLine(block.text, geom.contentWidth, (s) => geom.measure(s, size, true)).map(
+        (t): Prim => ({ kind: "text", text: t, size, bold: true }),
       ),
       { kind: "space", h: HEADING_GAP_AFTER },
     ];
@@ -72,7 +73,7 @@ export function measureBlock(block: Block, geom: Geom): Prim[] {
 
   if (block.type === "paragraph") {
     return [
-      ...wrapLine(block.text, geom.contentWidth, measureAt(geom.bodySize)).map(
+      ...wrapLine(block.text, geom.contentWidth, (s) => geom.measure(s, geom.bodySize, false)).map(
         (t): Prim => ({ kind: "text", text: t, size: geom.bodySize, bold: false }),
       ),
       { kind: "space", h: PARA_GAP },
@@ -82,7 +83,7 @@ export function measureBlock(block: Block, geom: Geom): Prim[] {
   if (block.type === "field") {
     const line = block.value != null ? `${block.label}: ${block.value}` : `${block.label}:${FIELD_RULE}`;
     return [
-      ...wrapLine(line, geom.contentWidth, measureAt(geom.bodySize)).map(
+      ...wrapLine(line, geom.contentWidth, (s) => geom.measure(s, geom.bodySize, false)).map(
         (t): Prim => ({ kind: "text", text: t, size: geom.bodySize, bold: false }),
       ),
       { kind: "space", h: FIELD_GAP },
@@ -97,7 +98,14 @@ export function measureBlock(block: Block, geom: Geom): Prim[] {
   }
 
   // signature — um único prim atômico
-  return [{ kind: "sig", who: block.who, label: block.label, h: SIG_HEIGHT }];
+  return [
+    {
+      kind: "sig",
+      who: block.who,
+      label: block.label,
+      h: block.who === "electronic" ? SIG_HEIGHT_ELECTRONIC : SIG_HEIGHT_BLANK,
+    },
+  ];
 }
 
 export function layoutBlocks(blocks: Block[], geom: Geom, firstPageReserve: number): Prim[][] {
@@ -161,6 +169,7 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
     bodySize: BODY_SIZE,
     lineHeight: LINE_HEIGHT,
     usableHeight: PAGE_HEIGHT - MARGIN * 2 - HEADER_H - FOOTER_H,
+    measure: (t, size, isBold) => (isBold ? bold : font).widthOfTextAtSize(t, size),
   };
 
   // reserva na 1ª página para o título do documento
