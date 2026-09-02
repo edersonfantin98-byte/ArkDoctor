@@ -43,8 +43,8 @@ describe("CONSENT_KINDS", () => {
 describe("renderTemplate", () => {
   it("tcle: título + primeiro bloco heading + campos + assinaturas", () => {
     const { title, blocks } = renderTemplate("tcle", ctx);
-    expect(title).toMatch(/Tratamento de Feridas/);
-    expect(blocks[0]).toEqual({ type: "heading", text: expect.stringMatching(/Consentimento/i) });
+    expect(title).toBe("TERMO DE COMPROMISSO/CONSENTIMENTO LIVRE ESCLARECIDO");
+    expect(blocks[0]).toEqual({ type: "heading", text: "TCLE - TRATAMENTO DE FERIDAS" });
 
     const nome = blocks.find((b) => b.type === "field" && b.label === "Nome");
     expect(nome).toMatchObject({ type: "field", value: "Maria Silva" });
@@ -98,18 +98,18 @@ describe("renderTemplate", () => {
 
   it("imagem: sem campos preenchidos por enfermeira; CNPJ no corpo; 2 assinaturas", () => {
     const { title, blocks } = renderTemplate("imagem", ctx);
-    expect(title).toMatch(/Imagem e Voz/);
+    expect(title).toBe("TERMO DE AUTORIZAÇÃO DE USO DE IMAGEM E VOZ");
     expect(byKey(blocks, "tipoFerida")).toBeUndefined();
     expect(byKey(blocks, "autorizo")).toBeUndefined();
     const corpo = blocks.filter((b) => b.type === "paragraph").map((b) => (b as Extract<Block, { type: "paragraph" }>).text).join("\n");
-    expect(corpo).toContain("31.693.471/0001-56");
+    expect(corpo).toContain("31693471/0001-56"); // CNPJ literal do documento da profissional (sem pontuação)
     expect(corpo).toContain("CICATRIZE MAIS FERIDAS");
     expect(blocks.filter((b) => b.type === "signature")).toHaveLength(2);
   });
 
   it("laser: sem campos de enfermeira; 2 assinaturas; corpo menciona laserterapia", () => {
     const { title, blocks } = renderTemplate("laser", ctx);
-    expect(title).toMatch(/Laserterapia/);
+    expect(title).toBe("PROTOCOLO DE LASERTERAPIA");
     expect(byKey(blocks, "autorizo")).toBeUndefined();
     const corpo = blocks.filter((b) => b.type === "paragraph").map((b) => (b as Extract<Block, { type: "paragraph" }>).text).join("\n");
     expect(corpo).toMatch(/laserterapia/i);
@@ -160,6 +160,43 @@ describe("applyTcleFields", () => {
     const out = applyTcleFields(blocks, { tipoFerida: "x", autoriza: true, responsavelNome: null, responsavelRg: null });
     expect(types(out)).toEqual(types(blocks));
     expect(out.filter((b) => b.type === "paragraph")).toEqual(blocks.filter((b) => b.type === "paragraph"));
+  });
+});
+
+describe("texto literal do documento da profissional (não normalizar)", () => {
+  const corpo = (kind: "tcle" | "imagem" | "laser") =>
+    renderTemplate(kind, ctx)
+      .blocks.filter((b): b is Extract<Block, { type: "paragraph" | "heading" | "signature" }> =>
+        b.type === "paragraph" || b.type === "heading" || b.type === "signature",
+      )
+      .map((b) => ("text" in b ? b.text : b.label))
+      .join("\n");
+
+  it("TCLE mantém as frases exatas do documento", () => {
+    const t = corpo("tcle");
+    expect(t).toContain("Declaro que fui claramente informado sobre:");
+    expect(t).toContain("Ser de responsabilidade do Serviço de Saúde:");
+    expect(t).toContain("Ser de minha responsabilidade e/ou do meu cuidador os cuidados como segue:");
+    expect(t).toContain("Autorizo a fazer uso de informações relativas ao meu tratamento, desde que assegurado o anonimato.");
+    expect(t).toContain("tendo respondido às perguntas formuladas pelo(s) mesmo(s)");
+    expect(t).toContain("Assinatura e Carimbo do Profissional da Saúde");
+  });
+
+  it("Imagem mantém CNPJ sem pontuação e frases exatas", () => {
+    const t = corpo("imagem");
+    expect(t).toContain("inscrita sob o CNPJ 31693471/0001-56, conforme Lei 13.709/2018");
+    expect(t).toContain("ou seja, apenas caráter informativo.");
+    expect(t).toContain("em todo território nacional e no exterior");
+    expect(t).toContain("Assinatura do Responsável da Empresa");
+  });
+
+  it("Laser mantém as frases exatas do documento", () => {
+    const t = corpo("laser");
+    expect(t).toContain("baixa frequência e ou terapia fotodinâmica.");
+    expect(t).toContain("Melhora na qualidade de vida ;");
+    expect(t).toContain("( Casos onde não se consegue a analgesia pretendida)");
+    expect(t).toContain("a partir de 3 sessões a 6 sessões clínicas");
+    expect(t).toContain("As normas de Biossegurança e uso de EPIs serão adotadas");
   });
 });
 

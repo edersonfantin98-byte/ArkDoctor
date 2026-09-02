@@ -1,4 +1,3 @@
-import { LETTERHEAD } from "@/components/consents/letterhead";
 import type { ConsentKind } from "./schemas";
 
 // Clínica em Cuiabá (UTC-4, sem horário de verão). O Worker roda em UTC, então
@@ -33,10 +32,11 @@ export interface TemplateContext {
   responsavelTelefone?: string | null;
 }
 
+// Título tal como aparece no topo do documento da profissional (literal).
 const TITLES: Record<ConsentKind, string> = {
-  tcle: "Consentimento Livre e Esclarecido — Tratamento de Feridas",
-  imagem: "Termo de Autorização de Uso de Imagem e Voz",
-  laser: "Protocolo de Laserterapia — Consentimento Livre e Esclarecido",
+  tcle: "TERMO DE COMPROMISSO/CONSENTIMENTO LIVRE ESCLARECIDO",
+  imagem: "TERMO DE AUTORIZAÇÃO DE USO DE IMAGEM E VOZ",
+  laser: "PROTOCOLO DE LASERTERAPIA",
 };
 
 function isoToBr(s: string | null | undefined): string | null {
@@ -61,10 +61,15 @@ export function ageFromIsoDate(iso: string | null | undefined, ref: Date = new D
   return age >= 0 && age < 150 ? age : null;
 }
 
+// IMPORTANTE: o texto das cláusulas abaixo é cópia LITERAL do documento que a
+// profissional desenvolveu com o advogado dela (public/… / "termos de
+// consentimentos PDF 02.pdf"). Não corrigir gramática, pontuação, caixa,
+// concordância nem formatação de CNPJ. Só os campos de dados (Nome, RG, CPF,
+// endereço) são separados/rotulados para o preenchimento automático.
 function buildTcle(ctx: TemplateContext): Block[] {
   const asResponsavel = Boolean(nonEmpty(ctx.responsavelNome));
   return [
-    { type: "heading", text: "Termo de Compromisso / Consentimento Livre e Esclarecido — TCLE — Tratamento de Feridas" },
+    { type: "heading", text: "TCLE - TRATAMENTO DE FERIDAS" },
 
     { type: "field", label: "Nome", value: nonEmpty(ctx.pacienteNome) },
     { type: "field", label: "Data de nascimento", value: isoToBr(ctx.pacienteNascimento) },
@@ -72,16 +77,27 @@ function buildTcle(ctx: TemplateContext): Block[] {
     { type: "field", label: "Procedimento", value: "Tratamento de Feridas" },
     { type: "field", label: "Tipo de ferida", value: nonEmpty(ctx.tipoFerida), key: "tipoFerida" },
 
-    { type: "paragraph", text: "Declaro que fui claramente informado(a) sobre:" },
-    { type: "paragraph", text: "Serei informado(a) qual tipo de cobertura será utilizada, assim como as possíveis contraindicações e reações adversas, mediante classificação da lesão após a avaliação do enfermeiro." },
-    { type: "paragraph", text: "É de responsabilidade do Serviço de Saúde: avaliar, acompanhar e orientar o paciente e acompanhante/cuidador; encaminhar o paciente a outros profissionais quando necessário; propiciar condições que facilitem a cicatrização da ferida; orientar e estimular o autocuidado." },
-    { type: "paragraph", text: "É de minha responsabilidade e/ou do meu cuidador: não faltar aos retornos agendados por duas vezes consecutivas ou três alternadas sem comunicação prévia; respeitar e seguir todas as orientações fornecidas pelos profissionais de saúde; não retirar ou trocar o curativo no domicílio sem autorização do profissional; procurar o Serviço de Saúde fora da data agendada em caso de intercorrências ou complicações; assumir as atividades relativas à limpeza e higiene pessoal; expor minhas dúvidas ao longo do tratamento." },
-    { type: "paragraph", text: "Comprometo-me a sempre informar qualquer alteração evidenciada por mim e a manter meu histórico de saúde referente a alergias sempre atualizado." },
-    { type: "paragraph", text: "Quando houver necessidade de coletar materiais relacionados ao procedimento, autorizo o envio do material coletado ao serviço pertinente para realização do exame necessário e terei acesso ao resultado." },
-    { type: "paragraph", text: "Autorizo o uso de informações relativas ao meu tratamento, desde que assegurado o anonimato." },
+    { type: "paragraph", text: "Declaro que fui claramente informado sobre:" },
+    { type: "paragraph", text: "Serei informado (a) qual tipo de cobertura será utilizada assim como as possíveis contraindicações e reações adversas mediante classificação da lesão após a avaliação do Enfermeiro." },
+    { type: "paragraph", text: "Ser de responsabilidade do Serviço de Saúde:" },
+    { type: "paragraph", text: "Avaliar e acompanhar e orientar o paciente e acompanhante/cuidador;" },
+    { type: "paragraph", text: "Encaminhar paciente para outros profissionais quando se fizer necessário;" },
+    { type: "paragraph", text: "Propiciar condições que facilitem a cicatrização da ferida;" },
+    { type: "paragraph", text: "Orientar e estimular o autocuidado." },
+    { type: "paragraph", text: "Ser de minha responsabilidade e/ou do meu cuidador os cuidados como segue:" },
+    { type: "paragraph", text: "Não faltar aos retornos agendados por duas vezes consecutivas ou três alternadas sem comunicação prévia;" },
+    { type: "paragraph", text: "Respeitar e seguir todas as orientações fornecidas pelos profissionais de saúde;" },
+    { type: "paragraph", text: "Não retirar ou trocar o curativo no domicílio sem a autorização do profissional;" },
+    { type: "paragraph", text: "Procurar o Serviço de Saúde fora da data agendada em caso de intercorrências ou complicações;" },
+    { type: "paragraph", text: "Assumir as atividades relativas à limpeza e higiene pessoal;" },
+    { type: "paragraph", text: "Expor minhas dúvidas ao longo do tratamento." },
+    { type: "paragraph", text: "Sempre informar qualquer alteração evidenciada por mim e manter o meu histórico de saúde referente a alergias sempre atualizado." },
+    { type: "paragraph", text: "Quando houver necessidade de coletar materiais relacionadas ao procedimento, autorizo o envio do material coletado ao serviço pertinente a realizar o exame necessário e terei acesso ao resultado." },
+    { type: "paragraph", text: "Autorizo a fazer uso de informações relativas ao meu tratamento, desde que assegurado o anonimato." },
 
-    { type: "heading", text: "Preenchimento exclusivo pelo(a) paciente ou pelo(a) responsável legal" },
-    { type: "paragraph", text: "Declaro, portanto, que fui devidamente informado(a) quanto ao procedimento que será realizado, assim como os benefícios, riscos, contraindicações e principais efeitos adversos relacionados, sendo-me concedida a oportunidade de esclarecer todas as dúvidas antes da assinatura deste documento, e ciente de que, em qualquer tempo, posso mudar de opinião e desistir da realização do procedimento." },
+    { type: "heading", text: "TCLE - TRATAMENTO DE FERIDAS" },
+    { type: "heading", text: "PREENCHIMENTO EXCLUSIVO PELO(A) PACIENTE OU PELO (A) RESPONSÁVEL LEGAL" },
+    { type: "paragraph", text: "Declaro, portanto, que fui devidamente informado (a) quanto ao procedimento que será realizado, assim como os benefícios, riscos,contraindicações e principais efeitos adversos relacionados, sendo concedida a oportunidade de esclarecer todas as dúvidas antes da assinatura deste documento e ciente de que em qualquer tempo, posso mudar de opinião e desistir da realização do procedimento." },
     { type: "paragraph", text: "Mediante estas informações:" },
     { type: "checkbox", label: "Autorizo a realização do tratamento proposto.", checked: ctx.autoriza === true, key: "autorizo" },
     { type: "checkbox", label: "Não autorizo a realização do tratamento proposto.", checked: false, key: "naoAutorizo" },
@@ -93,54 +109,56 @@ function buildTcle(ctx: TemplateContext): Block[] {
     { type: "field", label: "RG do responsável legal", value: nonEmpty(ctx.responsavelRg), key: "responsavelRg" },
     { type: "field", label: "Contato telefônico do responsável", value: nonEmpty(ctx.responsavelTelefone), key: "responsavelTelefone" },
 
-    { type: "signature", who: "electronic", label: "Assinatura de quem consente" },
-    { type: "checkbox", label: "Assino como paciente.", checked: !asResponsavel, key: "assinaComoPaciente" },
-    { type: "checkbox", label: "Assino como responsável legal.", checked: asResponsavel, key: "assinaComoResponsavel" },
+    { type: "signature", who: "electronic", label: "Assinatura" },
+    { type: "checkbox", label: "paciente", checked: !asResponsavel, key: "assinaComoPaciente" },
+    { type: "checkbox", label: "responsável legal", checked: asResponsavel, key: "assinaComoResponsavel" },
 
-    { type: "heading", text: "Preenchimento exclusivo — profissional de saúde" },
-    { type: "paragraph", text: "Afirmo, para os devidos fins legais, que expliquei detalhadamente todos os esclarecimentos necessários e que o paciente e/ou acompanhante compreendeu sobre benefícios, riscos e alternativas, tendo respondido às perguntas formuladas e assegurando-me de que houve período de reflexão suficiente para a tomada de decisão. De acordo com o meu entendimento, o(a) paciente e/ou seu responsável está em condições de compreender o que lhe foi informado e de que, a qualquer tempo, pode mudar de opinião e desistir da realização do procedimento." },
+    { type: "heading", text: "PREENCHIMENTO EXCLUSIVO PROFISSIONAL DE SAÚDE" },
+    { type: "paragraph", text: "Afirmo, para os devidos fins legais, que expliquei detalhadamente todos os esclarecimentos necessários e que paciente e/ou acompanhante compreendeu sobre benefícios, riscos e alternativas, tendo respondido às perguntas formuladas pelo(s) mesmo(s) e assegurei-me de que houve um período de reflexão suficiente para a tomada da decisão. De acordo com o meu entendimento, o(a) paciente e/ou seu responsável, está em condições de compreender o que lhes foi informado e que a qualquer tempo, pode mudar de opinião e desistir da realização do procedimento." },
     { type: "field", label: "Data", value: nonEmpty(ctx.data) },
-    { type: "signature", who: "fixed", label: "Assinatura do profissional de saúde" },
+    { type: "signature", who: "fixed", label: "Assinatura e Carimbo do Profissional da Saúde" },
   ];
 }
 
 function buildImagem(ctx: TemplateContext): Block[] {
   return [
-    { type: "heading", text: "Termo de Autorização de Uso de Imagem e Voz" },
-
     { type: "field", label: "Eu", value: nonEmpty(ctx.pacienteNome) },
     { type: "field", label: "RG", value: nonEmpty(ctx.pacienteRg), key: "pacienteRg" },
     { type: "field", label: "CPF", value: nonEmpty(ctx.pacienteCpf), key: "pacienteCpf" },
     { type: "field", label: "Endereço", value: nonEmpty(ctx.pacienteEndereco), key: "pacienteEndereco" },
     { type: "field", label: "Município / UF", value: nonEmpty(ctx.pacienteCidadeUf), key: "pacienteCidadeUf" },
 
-    { type: "paragraph", text: `Autorizo a coleta e o uso de minha imagem e/ou voz, presentes em fotos, gravações de áudio e/ou vídeo realizadas em consultas e/ou avaliações em que participei, com a finalidade de confecção de atas, registros e históricos, criação de conteúdo em redes sociais e replicação em treinamentos, eventos, reuniões e afins, pela empresa ${LETTERHEAD.empresaRazaoSocial}, inscrita sob o CNPJ ${LETTERHEAD.empresaCnpj}, conforme a Lei 13.709/2018 (LGPD — Lei Geral de Proteção de Dados).` },
-    { type: "paragraph", text: "As imagens, filmes e gravações de voz serão mantidos durante o período em que forem pertinentes ao alcance das finalidades acima citadas." },
-    { type: "paragraph", text: "Quando publicados os vídeos e/ou fotos em mídia social, a ação será realizada sem possibilitar o download, ou seja, apenas em caráter informativo." },
-    { type: "paragraph", text: "A presente autorização é concedida a título gratuito, abrangendo o uso da imagem e/ou voz acima mencionada em todo o território nacional e no exterior, em todas as suas modalidades e, em destaque, das seguintes formas: (I) home page; (II) mídias sociais; (III) divulgação em geral; (IV) material didático, inclusive para cessão de direitos de veiculação." },
-    { type: "paragraph", text: "Este documento registra a manifestação livre, informada e inequívoca, conforme o disposto no Art. 5º, XII, da Lei 13.709/2018 (LGPD), e poderá ser revogado pelo titular, a qualquer momento, mediante solicitação por e-mail à empresa." },
-    { type: "paragraph", text: "Por esta ser a expressão da minha vontade, declaro que autorizo o uso acima descrito sem que nada haja a ser reclamado a título de direitos conexos à minha imagem ou a qualquer outro." },
+    { type: "paragraph", text: "AUTORIZO a coleta e uso de minha imagem e/ou voz, presente(s) em foto(s), gravação(ões) de áudio e/ou vídeo, realizada(s) em consulta(s) e/ou avaliação(ões) em que participei, com a finalidade de confecção de ata(s), registro(s), histórico(s), criação de conteúdo em redes sociais e replicação em outro(s) treinamento(s), eventos, reunião(ões) e afins, pela empresa CICATRIZE MAIS FERIDAS, inscrita sob o CNPJ 31693471/0001-56, conforme Lei 13.709/2018 (LGPD – Lei Geral de Proteção de Dados)." },
+    { type: "paragraph", text: "As imagens, filmes e gravação de voz serão mantidos durante o período em que eles forem pertinentes ao alcance das finalidades acima citadas." },
+    { type: "paragraph", text: "Quando publicado(s) o(s) vídeo(s) e/ou foto(s) em mídia social, a ação será realizada sem possibilitar o download, ou seja, apenas caráter informativo." },
+    { type: "paragraph", text: "A presente autorização é concedida a título gratuito, abrangendo o uso da imagem e/ou voz acima mencionada em todo território nacional e no exterior, em todas as suas modalidades e, em destaque, das seguintes formas: (I) home page; (II) mídias sociais; (III) divulgação em geral; (IV) material didático, inclusive para cessão de direitos de veiculação." },
+    { type: "paragraph", text: "Este documento registra a manifestação livre, informada e inequívoca, conforme disposto no Art. 5º, XII, Lei 13.709/2018 (LGPD – Lei Geral de Proteção de Dados), e poderá ser revogado pelo titular, a qualquer momento, mediante solicitação via e-mail à empresa." },
+    { type: "paragraph", text: "Por esta ser a expressão da minha vontade declaro que autorizo o uso acima descrito sem que nada haja a ser reclamado a título de direitos conexos à minha imagem ou a qualquer outro." },
 
-    { type: "signature", who: "electronic", label: "Assinatura do responsável" },
-    { type: "signature", who: "fixed", label: "Assinatura do responsável da empresa" },
+    { type: "signature", who: "electronic", label: "Assinatura do Responsável" },
+    { type: "signature", who: "fixed", label: "Assinatura do Responsável da Empresa" },
   ];
 }
 
 function buildLaser(ctx: TemplateContext): Block[] {
   return [
-    { type: "heading", text: "Protocolo de Laserterapia — Termo de Consentimento Livre e Esclarecido" },
+    { type: "heading", text: "TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO" },
 
     { type: "field", label: "Eu", value: nonEmpty(ctx.pacienteNome) },
     { type: "field", label: "CPF", value: nonEmpty(ctx.pacienteCpf), key: "pacienteCpf" },
 
-    { type: "paragraph", text: "Por este instrumento de consentimento informado e esclarecido, como paciente em pleno gozo de minhas faculdades mentais, livre e voluntariamente autorizo o tratamento de laserterapia de baixa frequência e/ou terapia fotodinâmica." },
-    { type: "paragraph", text: "Os benefícios esperados pelo uso desse tipo de terapia são, segundo estudos prévios: diminuição da sintomatologia dolorosa dos músculos acometidos; uso de uma terapia indolor, de curto prazo, sem custos e sem riscos eminentes ao paciente e ao operador; melhora na qualidade de vida." },
-    { type: "paragraph", text: "Os riscos que podem surgir ao longo do tratamento são: sintomatologia dolorosa persistente mesmo após o tratamento com o laser de baixa frequência (casos em que não se consegue a analgesia pretendida)." },
-    { type: "paragraph", text: "Os procedimentos realizados e o número de sessões serão a critério do especialista, mas em média podem ser realizadas de 3 a 6 sessões clínicas com aplicação do laser: 2 a 3 vezes por semana, durante 2 semanas consecutivas, sendo que a sensibilidade à dor será analisada de acordo com uma escala, antes do tratamento inicial, depois de cada sessão e após 30 dias da última sessão clínica." },
-    { type: "paragraph", text: "As normas de biossegurança e o uso de EPIs serão adotados durante todas as etapas do tratamento, tanto para o operador quanto para o paciente." },
+    { type: "paragraph", text: "Por este instrumento de consentimento informado e esclarecido, como paciente em pleno gozo de minhas faculdades mentais, livre e voluntariamente autorizo o tratamento de laserterapia de baixa frequência e ou terapia fotodinâmica." },
+    { type: "paragraph", text: "Os benefícios esperados pelo uso do tipo de terapia são, segundo estudos prévios:" },
+    { type: "paragraph", text: "Diminuição da sintomatologia dolorosa dos músculos acometidos;" },
+    { type: "paragraph", text: "Uso de uma terapia indolor, de curto prazo, sem custos e riscos eminentes aos pacientes e operador;" },
+    { type: "paragraph", text: "Melhora na qualidade de vida ;" },
+    { type: "paragraph", text: "Os riscos que podem surgir ao longo do tratamento são:" },
+    { type: "paragraph", text: "Sintomatologia dolorosa persistente mesmo após o tratamento com o laser de baixa frequência ( Casos onde não se consegue a analgesia pretendida)" },
+    { type: "paragraph", text: "Os procedimentos realizados e número de sessões serão a critério do especialista mas em média podem ser realizados a partir de 3 sessões a 6 sessões clínicas com aplicação do laser: 2 a 3 vezes na semana, durante 2 semanas consecutivas sendo que a sensibilidade a dor será analisada de acordo com uma escala, antes de iniciarmos o tratamento inicial, depois de cada sessão e após 30 dias da última sessão clínica." },
+    { type: "paragraph", text: "As normas de Biossegurança e uso de EPIs serão adotadas durante todas as etapas do tratamento, tanto para o operador quanto para o paciente." },
 
     { type: "signature", who: "electronic", label: "Assinatura do paciente" },
-    { type: "signature", who: "fixed", label: "Assinatura do profissional — Silvana Lopes · Enfermeira · Especialista em Feridas · COREN-MT nº 481743" },
+    { type: "signature", who: "fixed", label: "Assinatura do Profissional — Silvana Lopes | Enfermeira | Especialista em Feridas | COREN-MT nº 481743" },
   ];
 }
 
