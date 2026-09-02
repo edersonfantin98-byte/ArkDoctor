@@ -12,6 +12,10 @@ export const createContactInputSchema = z.object({
   guardianName: z.string().trim().min(1).max(200).optional(),
   guardianPhone: z.string().trim().min(1).max(30).optional(),
   guardianRelationship: z.string().trim().min(1).max(100).optional(),
+  rg: z.string().trim().min(1).max(40).optional(),
+  address: z.string().trim().min(1).max(300).optional(),
+  cityState: z.string().trim().min(1).max(120).optional(),
+  guardianRg: z.string().trim().min(1).max(40).optional(),
 });
 
 export type CreateContactInput = z.infer<typeof createContactInputSchema>;
@@ -28,6 +32,10 @@ export const updateContactInputSchema = z.object({
   guardianName: z.string().trim().max(200).nullable().optional(),
   guardianPhone: z.string().trim().max(30).nullable().optional(),
   guardianRelationship: z.string().trim().max(100).nullable().optional(),
+  rg: z.string().trim().max(40).nullable().optional(),
+  address: z.string().trim().max(300).nullable().optional(),
+  cityState: z.string().trim().max(120).nullable().optional(),
+  guardianRg: z.string().trim().max(40).nullable().optional(),
 });
 
 export type UpdateContactInput = z.infer<typeof updateContactInputSchema>;

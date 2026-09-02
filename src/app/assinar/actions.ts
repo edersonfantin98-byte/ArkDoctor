@@ -2,7 +2,9 @@
 
 import { createServiceRoleSupabaseClient } from "@/lib/supabase/service-role";
 import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
+import { createSupabaseCrmRepository } from "@/modules/crm/repository.supabase";
 import * as consents from "@/modules/consents/service";
+import { docFieldsToContactUpdate } from "@/modules/consents/patient-doc-sync";
 import { verifyConsentToken } from "@/modules/consents/token";
 import { withinConsentSignRateLimit } from "@/lib/rate-limit";
 
@@ -56,6 +58,23 @@ export async function submitPublicConsentAction(
       console.error("[assinar/actions] recordConsent rollback", rollbackError);
     }
     return { ok: false, error: "Não foi possível registrar a assinatura. Tente novamente." };
+  }
+
+  const docFieldsRaw = formData.get("docFields");
+  if (typeof docFieldsRaw === "string" && docFieldsRaw) {
+    try {
+      const update = docFieldsToContactUpdate(JSON.parse(docFieldsRaw) as Record<string, string>);
+      if (Object.values(update).some((v) => v !== undefined)) {
+        await createSupabaseCrmRepository(supabase).updateContact(
+          claims.accountId,
+          claims.contactId,
+          update,
+        );
+      }
+    } catch (err) {
+      // A assinatura já está registrada; sincronizar o cadastro é best-effort.
+      console.error("[assinar/actions] updateContact", err);
+    }
   }
 
   return { ok: true };

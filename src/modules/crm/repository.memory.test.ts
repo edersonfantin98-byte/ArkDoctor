@@ -135,6 +135,34 @@ describe("createInMemoryCrmRepository", () => {
     expect(withoutFields.guardianRelationship).toBeNull();
   });
 
+  it("persists the document fields (rg, address, city/UF, guardian rg) on insert and update", async () => {
+    const repo = createInMemoryCrmRepository();
+
+    const created = await repo.insertContact("acc-1", {
+      name: "Ana",
+      phone: "11999990000",
+      rg: "MT-1234567",
+      address: "Rua das Flores, 100",
+      cityState: "Cuiabá / MT",
+      guardianRg: "MT-7654321",
+    });
+    expect(created.rg).toBe("MT-1234567");
+    expect(created.address).toBe("Rua das Flores, 100");
+    expect(created.cityState).toBe("Cuiabá / MT");
+    expect(created.guardianRg).toBe("MT-7654321");
+
+    const bare = await repo.insertContact("acc-1", { name: "Bia", phone: "11988887777" });
+    expect(bare.rg).toBeNull();
+    expect(bare.address).toBeNull();
+    expect(bare.cityState).toBeNull();
+    expect(bare.guardianRg).toBeNull();
+
+    const updated = await repo.updateContact("acc-1", created.id, { rg: "MT-0000000", address: null });
+    expect(updated.rg).toBe("MT-0000000");
+    expect(updated.address).toBeNull();
+    expect(updated.cityState).toBe("Cuiabá / MT");
+  });
+
   it("updates the new patient fields, including clearing them with null", async () => {
     const repo = createInMemoryCrmRepository();
     const contact = await repo.insertContact("acc-1", {

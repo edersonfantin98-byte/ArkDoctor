@@ -215,52 +215,64 @@ export type Database = {
       contacts: {
         Row: {
           account_id: string
+          address: string | null
           birth_date: string | null
+          city_state: string | null
           cpf: string | null
           created_at: string
           email: string | null
           guardian_name: string | null
           guardian_phone: string | null
           guardian_relationship: string | null
+          guardian_rg: string | null
           id: string
           name: string
           notes: string | null
           origin: string | null
           phone: string
+          rg: string | null
           sex: string | null
           updated_at: string
         }
         Insert: {
           account_id: string
+          address?: string | null
           birth_date?: string | null
+          city_state?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
           guardian_name?: string | null
           guardian_phone?: string | null
           guardian_relationship?: string | null
+          guardian_rg?: string | null
           id?: string
           name: string
           notes?: string | null
           origin?: string | null
           phone: string
+          rg?: string | null
           sex?: string | null
           updated_at?: string
         }
         Update: {
           account_id?: string
+          address?: string | null
           birth_date?: string | null
+          city_state?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
           guardian_name?: string | null
           guardian_phone?: string | null
           guardian_relationship?: string | null
+          guardian_rg?: string | null
           id?: string
           name?: string
           notes?: string | null
           origin?: string | null
           phone?: string
+          rg?: string | null
           sex?: string | null
           updated_at?: string
         }

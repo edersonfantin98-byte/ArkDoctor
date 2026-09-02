@@ -2,7 +2,7 @@ import { createServiceRoleSupabaseClient } from "@/lib/supabase/service-role";
 import { getAccountProfessionalIdentity } from "@/lib/supabase/account";
 import { verifyConsentToken } from "@/modules/consents/token";
 import type { ConsentKind } from "@/modules/consents/schemas";
-import { renderTemplate, formatBrDate } from "@/modules/consents/templates";
+import { renderTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents/templates";
 import { PublicConsentForm } from "@/components/consents/public-consent-form";
 
 function Invalid() {
@@ -16,13 +16,22 @@ function Invalid() {
 }
 
 type Identity = Awaited<ReturnType<typeof getAccountProfessionalIdentity>>;
+type PatientData = {
+  name: string;
+  cpf: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  rg: string | null;
+  address: string | null;
+  cityState: string | null;
+};
 
 // Toda falha (token inválido, contato ausente, erro de query) devolve null — a
 // page nunca revela se o token existiu. / Any failure returns null so the page
 // never leaks whether the token existed.
 async function loadPage(
   token: string,
-): Promise<{ kind: ConsentKind; patientName: string; identity: Identity } | null> {
+): Promise<{ kind: ConsentKind; patient: PatientData; identity: Identity } | null> {
   const claims = await verifyConsentToken(token);
   if (!claims) return null;
 
@@ -30,13 +39,25 @@ async function loadPage(
   try {
     const { data, error } = await supabase
       .from("contacts")
-      .select("name")
+      .select("name, cpf, birth_date, phone, rg, address, city_state")
       .eq("id", claims.contactId)
       .eq("account_id", claims.accountId)
       .single();
     if (error || !data) return null;
     const identity = await getAccountProfessionalIdentity(supabase, claims.accountId);
-    return { kind: claims.kind, patientName: data.name, identity };
+    return {
+      kind: claims.kind,
+      patient: {
+        name: data.name,
+        cpf: data.cpf,
+        birthDate: data.birth_date,
+        phone: data.phone,
+        rg: data.rg,
+        address: data.address,
+        cityState: data.city_state,
+      },
+      identity,
+    };
   } catch {
     return null;
   }
@@ -51,13 +72,17 @@ export default async function PublicConsentPage({
   const loaded = await loadPage(token);
   if (!loaded) return <Invalid />;
 
-  const { kind, patientName, identity } = loaded;
+  const { kind, patient, identity } = loaded;
 
   const t = renderTemplate(kind, {
-    pacienteNome: patientName,
-    pacienteCpf: null,
-    pacienteNascimento: null,
-    pacienteTelefone: null,
+    pacienteNome: patient.name,
+    pacienteCpf: patient.cpf,
+    pacienteNascimento: patient.birthDate,
+    pacienteTelefone: patient.phone,
+    pacienteRg: patient.rg,
+    pacienteEndereco: patient.address,
+    pacienteCidadeUf: patient.cityState,
+    pacienteIdade: ageFromIsoDate(patient.birthDate),
     clinicaNome: identity.name,
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,
@@ -72,7 +97,7 @@ export default async function PublicConsentPage({
         kind={kind}
         documentTitle={t.title}
         blocks={t.blocks}
-        defaultSignerName={patientName}
+        defaultSignerName={patient.name}
       />
     </div>
   );

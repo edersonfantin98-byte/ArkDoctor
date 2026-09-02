@@ -17,7 +17,8 @@ import type { TreatmentSession } from "@/modules/treatments/types";
 import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
 import * as consents from "@/modules/consents/service";
 import { CONSENT_KINDS, type ConsentKind } from "@/modules/consents/schemas";
-import { renderTemplate, formatBrDate } from "@/modules/consents/templates";
+import { renderTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents/templates";
+import { docFieldsToContactUpdate } from "@/modules/consents/patient-doc-sync";
 import { signConsentToken } from "@/modules/consents/token";
 
 const BUCKET = "treatment-photos";
@@ -243,6 +244,14 @@ export async function uploadConsentAction(contactId: string, kind: string, formD
   const signerName = (formData.get("signerName") as string | null)?.trim();
   if (!signerName) throw new Error("Informe o nome de quem assina.");
 
+  const docFieldsRaw = formData.get("docFields");
+  if (typeof docFieldsRaw === "string" && docFieldsRaw) {
+    const update = docFieldsToContactUpdate(JSON.parse(docFieldsRaw) as Record<string, string>);
+    if (Object.values(update).some((v) => v !== undefined)) {
+      await c.crmRepo.updateContact(c.accountId, contactId, update);
+    }
+  }
+
   const repo = createSupabaseConsentsRepository(c.supabase);
   const path = `${c.accountId}/${contactId}/${kind}-${Date.now()}.pdf`;
   const { error: uploadError } = await c.supabase.storage
@@ -306,6 +315,10 @@ export async function getConsentPageDataAction(contactId: string) {
     pacienteCpf: contact.cpf,
     pacienteNascimento: contact.birthDate,
     pacienteTelefone: contact.phone ?? null,
+    pacienteRg: contact.rg,
+    pacienteEndereco: contact.address,
+    pacienteCidadeUf: contact.cityState,
+    pacienteIdade: ageFromIsoDate(contact.birthDate),
     clinicaNome: identity.name,
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,

@@ -107,6 +107,10 @@ export function createInMemoryCrmRepository(): CrmRepository {
         guardianName: input.guardianName ?? null,
         guardianPhone: input.guardianPhone ?? null,
         guardianRelationship: input.guardianRelationship ?? null,
+        rg: input.rg ?? null,
+        address: input.address ?? null,
+        cityState: input.cityState ?? null,
+        guardianRg: input.guardianRg ?? null,
         createdAt: now,
         updatedAt: now,
       };
@@ -132,6 +136,10 @@ export function createInMemoryCrmRepository(): CrmRepository {
         ...(input.guardianRelationship !== undefined
           ? { guardianRelationship: input.guardianRelationship }
           : {}),
+        ...(input.rg !== undefined ? { rg: input.rg } : {}),
+        ...(input.address !== undefined ? { address: input.address } : {}),
+        ...(input.cityState !== undefined ? { cityState: input.cityState } : {}),
+        ...(input.guardianRg !== undefined ? { guardianRg: input.guardianRg } : {}),
         updatedAt: new Date().toISOString(),
       };
       contacts.set(contactId, updated);

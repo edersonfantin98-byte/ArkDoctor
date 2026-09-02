@@ -30,6 +30,10 @@ function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contac
     guardianName: row.guardian_name,
     guardianPhone: row.guardian_phone,
     guardianRelationship: row.guardian_relationship,
+    rg: row.rg,
+    address: row.address,
+    cityState: row.city_state,
+    guardianRg: row.guardian_rg,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

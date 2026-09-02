@@ -32,6 +32,10 @@ function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contac
     guardianName: row.guardian_name,
     guardianPhone: row.guardian_phone,
     guardianRelationship: row.guardian_relationship,
+    rg: row.rg,
+    address: row.address,
+    cityState: row.city_state,
+    guardianRg: row.guardian_rg,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -171,6 +175,10 @@ export function createSupabaseCrmRepository(
           guardian_name: input.guardianName ?? null,
           guardian_phone: input.guardianPhone ?? null,
           guardian_relationship: input.guardianRelationship ?? null,
+          rg: input.rg ?? null,
+          address: input.address ?? null,
+          city_state: input.cityState ?? null,
+          guardian_rg: input.guardianRg ?? null,
         })
         .select("*")
         .single();
@@ -195,6 +203,10 @@ export function createSupabaseCrmRepository(
           ...(input.guardianRelationship !== undefined
             ? { guardian_relationship: input.guardianRelationship }
             : {}),
+          ...(input.rg !== undefined ? { rg: input.rg } : {}),
+          ...(input.address !== undefined ? { address: input.address } : {}),
+          ...(input.cityState !== undefined ? { city_state: input.cityState } : {}),
+          ...(input.guardianRg !== undefined ? { guardian_rg: input.guardianRg } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq("account_id", accountId)

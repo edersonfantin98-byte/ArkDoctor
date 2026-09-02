@@ -29,6 +29,10 @@ export interface CrmRepository {
       guardianName?: string;
       guardianPhone?: string;
       guardianRelationship?: string;
+      rg?: string;
+      address?: string;
+      cityState?: string;
+      guardianRg?: string;
     },
   ): Promise<Contact>;
   updateContact(
@@ -46,6 +50,10 @@ export interface CrmRepository {
       guardianName?: string | null;
       guardianPhone?: string | null;
       guardianRelationship?: string | null;
+      rg?: string | null;
+      address?: string | null;
+      cityState?: string | null;
+      guardianRg?: string | null;
     },
   ): Promise<Contact>;
   searchContacts(accountId: string, query: string): Promise<Contact[]>;

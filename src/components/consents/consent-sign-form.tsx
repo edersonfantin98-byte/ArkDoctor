@@ -3,8 +3,10 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
+  applyDocFields,
   applyTcleFields,
   formatBrDateTime,
+  PATIENT_DOC_KEYS,
   type Block,
   type TcleFieldValues,
 } from "@/modules/consents/templates";
@@ -21,6 +23,7 @@ export interface ConsentSignFormProps {
   onComplete: (args: {
     pdfBytes: Uint8Array;
     signerName: string;
+    docFields: Record<string, string>;
   }) => Promise<{ ok: boolean; error?: string }>;
   onDone?: () => void;
 }
@@ -57,30 +60,51 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
   const [comoResponsavel, setComoResponsavel] = useState(false);
   const [responsavelNome, setResponsavelNome] = useState("");
   const [responsavelRg, setResponsavelRg] = useState("");
+  const [responsavelTelefone, setResponsavelTelefone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const padRef = useRef<SignaturePadHandle>(null);
 
+  // Campos de documento do paciente que este termo usa (RG, CPF, endereço,
+  // município/UF). Prefill vem do valor já montado no bloco.
+  const docFieldDefs = useMemo(
+    () =>
+      props.blocks.filter(
+        (b): b is Extract<Block, { type: "field" }> =>
+          b.type === "field" &&
+          !!b.key &&
+          (PATIENT_DOC_KEYS as readonly string[]).includes(b.key),
+      ),
+    [props.blocks],
+  );
+  const [docValues, setDocValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(docFieldDefs.map((b) => [b.key as string, b.value ?? ""])),
+  );
+
   const effectiveSignerName = (comoResponsavel ? responsavelNome : signerName).trim();
 
   const previewBlocks = useMemo(() => {
-    if (props.kind !== "tcle") return props.blocks;
-    return applyTcleFields(props.blocks, {
+    const withDocs = applyDocFields(props.blocks, docValues);
+    if (props.kind !== "tcle") return withDocs;
+    return applyTcleFields(withDocs, {
       tipoFerida: tipoFerida.trim() || null,
       autoriza: autoriza === "sim",
       responsavelNome: comoResponsavel ? responsavelNome.trim() : null,
       responsavelRg: comoResponsavel ? responsavelRg.trim() : null,
+      responsavelTelefone: comoResponsavel ? responsavelTelefone.trim() : null,
     });
-  }, [props.kind, props.blocks, tipoFerida, autoriza, comoResponsavel, responsavelNome, responsavelRg]);
+  }, [props.kind, props.blocks, docValues, tipoFerida, autoriza, comoResponsavel, responsavelNome, responsavelRg, responsavelTelefone]);
+
+  const docFieldsMissing = docFieldDefs.some((b) => !docValues[b.key as string]?.trim());
 
   const canSubmit = useMemo(() => {
-    if (busy || !effectiveSignerName) return false;
+    if (busy || !effectiveSignerName || docFieldsMissing) return false;
     if (isTcle) {
       if (autoriza === "") return false;
-      if (comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim())) return false;
+      if (comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim() || !responsavelTelefone.trim())) return false;
     }
     return true;
-  }, [busy, effectiveSignerName, isTcle, autoriza, comoResponsavel, responsavelNome, responsavelRg]);
+  }, [busy, effectiveSignerName, docFieldsMissing, isTcle, autoriza, comoResponsavel, responsavelNome, responsavelRg, responsavelTelefone]);
 
   async function handleSubmit() {
     if (busy) return;
@@ -96,8 +120,12 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
       setError("Escolha se autoriza ou não o tratamento.");
       return;
     }
-    if (isTcle && comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim())) {
-      setError("Informe nome e RG do responsável legal.");
+    if (isTcle && comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim() || !responsavelTelefone.trim())) {
+      setError("Informe nome, RG e telefone do responsável legal.");
+      return;
+    }
+    if (docFieldsMissing) {
+      setError("Preencha todos os dados do paciente antes de assinar.");
       return;
     }
     if (padRef.current?.isEmpty() ?? true) {
@@ -108,14 +136,16 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
     setBusy(true);
     setError(null);
     try {
+      const withDocs = applyDocFields(props.blocks, docValues);
       const finalBlocks = isTcle
-        ? applyTcleFields(props.blocks, {
+        ? applyTcleFields(withDocs, {
             tipoFerida: tipoFerida.trim() || null,
             autoriza: true,
             responsavelNome: comoResponsavel ? responsavelNome.trim() : null,
             responsavelRg: comoResponsavel ? responsavelRg.trim() : null,
+            responsavelTelefone: comoResponsavel ? responsavelTelefone.trim() : null,
           } satisfies TcleFieldValues)
-        : props.blocks;
+        : withDocs;
 
       const pdfBytes = await buildConsentPdf({
         title: props.documentTitle,
@@ -124,7 +154,13 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
         signerName: effectiveSignerName,
         signedAtLabel: formatBrDateTime(new Date()),
       });
-      const res = await props.onComplete({ pdfBytes, signerName: effectiveSignerName });
+      const res = await props.onComplete({
+        pdfBytes,
+        signerName: effectiveSignerName,
+        docFields: Object.fromEntries(
+          docFieldDefs.map((b) => [b.key as string, docValues[b.key as string]?.trim() ?? ""]),
+        ),
+      });
       if (!res.ok) {
         setError(res.error ?? "Não foi possível salvar. Tente novamente.");
         return;
@@ -144,6 +180,25 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
           <BlockPreview key={i} block={b} />
         ))}
       </div>
+
+      {docFieldDefs.length > 0 && (
+        <div className="space-y-2 rounded-md border p-3">
+          <p className="text-sm text-muted-foreground">Dados do paciente</p>
+          {docFieldDefs.map((b) => {
+            const key = b.key as string;
+            return (
+              <label key={key} className="block text-sm">
+                <span className="text-muted-foreground">{b.label}</span>
+                <input
+                  value={docValues[key] ?? ""}
+                  onChange={(e) => setDocValues((v) => ({ ...v, [key]: e.target.value }))}
+                  className="mt-1 w-full rounded border px-2 py-1"
+                />
+              </label>
+            );
+          })}
+        </div>
+      )}
 
       {isTcle && (
         <div className="space-y-3 rounded-md border p-3">
@@ -202,6 +257,14 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
                 <input
                   value={responsavelRg}
                   onChange={(e) => setResponsavelRg(e.target.value)}
+                  className="mt-1 w-full rounded border px-2 py-1"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="text-muted-foreground">Telefone do responsável legal</span>
+                <input
+                  value={responsavelTelefone}
+                  onChange={(e) => setResponsavelTelefone(e.target.value)}
                   className="mt-1 w-full rounded border px-2 py-1"
                 />
               </label>

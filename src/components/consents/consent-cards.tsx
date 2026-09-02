@@ -55,10 +55,16 @@ export function ConsentCards({
     return consents.find((c) => c.kind === kind); // lista já vem signed_at desc
   }
 
-  async function handleComplete(kind: ConsentKind, pdfBytes: Uint8Array, signerName: string) {
+  async function handleComplete(
+    kind: ConsentKind,
+    pdfBytes: Uint8Array,
+    signerName: string,
+    docFields: Record<string, string>,
+  ) {
     const fd = new FormData();
     fd.set("file", new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), "consent.pdf");
     fd.set("signerName", signerName);
+    fd.set("docFields", JSON.stringify(docFields));
     try {
       await uploadConsentAction(contactId, kind, fd);
       return { ok: true };
@@ -175,13 +181,14 @@ export function ConsentCards({
           </DialogHeader>
           {signing && (
             <ConsentSignForm
+              key={signing.kind}
               kind={signing.kind}
               documentTitle={signing.title}
               blocks={signing.blocks}
               defaultSignerName={patientName}
               submitLabel="Confirmar assinatura"
-              onComplete={({ pdfBytes, signerName }) =>
-                handleComplete(signing.kind, pdfBytes, signerName)
+              onComplete={({ pdfBytes, signerName, docFields }) =>
+                handleComplete(signing.kind, pdfBytes, signerName, docFields)
               }
               onDone={async () => {
                 setSigning(null);

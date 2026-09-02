@@ -55,6 +55,13 @@ describe("measureBlock", () => {
     expect((prims[0] as { h: number }).h).toBeGreaterThan(g.lineHeight);
   });
 
+  it("signature fixa: who='fixed' reserva mais altura que a linha em branco (cabe a imagem)", () => {
+    const fixed = measureBlock({ type: "signature", who: "fixed", label: "Profissional" }, g);
+    const blank = measureBlock({ type: "signature", who: "blank", label: "Profissional" }, g);
+    expect(fixed[0]).toMatchObject({ kind: "sig", who: "fixed" });
+    expect((fixed[0] as { h: number }).h).toBeGreaterThan((blank[0] as { h: number }).h);
+  });
+
   it("heading: prim de texto bold", () => {
     const prims = measureBlock({ type: "heading", text: "Título" }, g);
     expect(prims.some((p) => p.kind === "text" && "bold" in p && p.bold)).toBe(true);

@@ -22,6 +22,10 @@ export interface Contact {
   guardianName: string | null;
   guardianPhone: string | null;
   guardianRelationship: string | null;
+  rg: string | null;
+  address: string | null;
+  cityState: string | null;
+  guardianRg: string | null;
   createdAt: string;
   updatedAt: string;
 }

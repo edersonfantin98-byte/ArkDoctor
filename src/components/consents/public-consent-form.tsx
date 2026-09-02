@@ -35,10 +35,11 @@ export function PublicConsentForm(props: {
       blocks={props.blocks}
       defaultSignerName={props.defaultSignerName}
       submitLabel="Confirmar assinatura"
-      onComplete={async ({ pdfBytes, signerName }) => {
+      onComplete={async ({ pdfBytes, signerName, docFields }) => {
         const fd = new FormData();
         fd.set("file", new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), "consent.pdf");
         fd.set("signerName", signerName);
+        fd.set("docFields", JSON.stringify(docFields));
         return submitPublicConsentAction(props.token, fd);
       }}
       onDone={() => setDone(true)}

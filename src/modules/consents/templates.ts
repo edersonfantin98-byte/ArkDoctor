@@ -10,13 +10,17 @@ export type Block =
   | { type: "paragraph"; text: string }
   | { type: "field"; label: string; value: string | null; key?: string }
   | { type: "checkbox"; label: string; checked: boolean; key?: string }
-  | { type: "signature"; who: "electronic" | "blank"; label: string };
+  | { type: "signature"; who: "electronic" | "blank" | "fixed"; label: string };
 
 export interface TemplateContext {
   pacienteNome: string;
   pacienteCpf: string | null;
   pacienteNascimento: string | null; // YYYY-MM-DD
   pacienteTelefone: string | null;
+  pacienteRg: string | null;
+  pacienteEndereco: string | null;
+  pacienteCidadeUf: string | null;
+  pacienteIdade: string | number | null;
   clinicaNome: string;
   profissionalNome: string | null;
   profissionalConselho: string | null;
@@ -26,6 +30,7 @@ export interface TemplateContext {
   autoriza?: boolean | null;
   responsavelNome?: string | null;
   responsavelRg?: string | null;
+  responsavelTelefone?: string | null;
 }
 
 const TITLES: Record<ConsentKind, string> = {
@@ -44,6 +49,18 @@ function nonEmpty(s: string | null | undefined): string | null {
   return s != null && s.trim() !== "" ? s : null;
 }
 
+// Idade em anos completos a partir de uma data ISO (YYYY-MM-DD), calculada
+// contra `ref` (default: agora). Fora do fluxo de template para manter os
+// builders puros/determinísticos.
+export function ageFromIsoDate(iso: string | null | undefined, ref: Date = new Date()): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  let age = ref.getFullYear() - y;
+  if (ref.getMonth() + 1 < mo || (ref.getMonth() + 1 === mo && ref.getDate() < d)) age -= 1;
+  return age >= 0 && age < 150 ? age : null;
+}
+
 function buildTcle(ctx: TemplateContext): Block[] {
   const asResponsavel = Boolean(nonEmpty(ctx.responsavelNome));
   return [
@@ -51,7 +68,7 @@ function buildTcle(ctx: TemplateContext): Block[] {
 
     { type: "field", label: "Nome", value: nonEmpty(ctx.pacienteNome) },
     { type: "field", label: "Data de nascimento", value: isoToBr(ctx.pacienteNascimento) },
-    { type: "field", label: "Idade", value: null },
+    { type: "field", label: "Idade", value: nonEmpty(ctx.pacienteIdade == null ? null : String(ctx.pacienteIdade)) },
     { type: "field", label: "Procedimento", value: "Tratamento de Feridas" },
     { type: "field", label: "Tipo de ferida", value: nonEmpty(ctx.tipoFerida), key: "tipoFerida" },
 
@@ -71,10 +88,10 @@ function buildTcle(ctx: TemplateContext): Block[] {
 
     { type: "field", label: "Nome do paciente", value: nonEmpty(ctx.pacienteNome) },
     { type: "field", label: "Contato telefônico", value: nonEmpty(ctx.pacienteTelefone) },
-    { type: "field", label: "Endereço residencial", value: null },
+    { type: "field", label: "Endereço residencial", value: nonEmpty(ctx.pacienteEndereco), key: "pacienteEndereco" },
     { type: "field", label: "Nome do responsável legal", value: nonEmpty(ctx.responsavelNome), key: "responsavelNome" },
     { type: "field", label: "RG do responsável legal", value: nonEmpty(ctx.responsavelRg), key: "responsavelRg" },
-    { type: "field", label: "Contato telefônico do responsável", value: null },
+    { type: "field", label: "Contato telefônico do responsável", value: nonEmpty(ctx.responsavelTelefone), key: "responsavelTelefone" },
 
     { type: "signature", who: "electronic", label: "Assinatura de quem consente" },
     { type: "checkbox", label: "Assino como paciente.", checked: !asResponsavel, key: "assinaComoPaciente" },
@@ -83,7 +100,7 @@ function buildTcle(ctx: TemplateContext): Block[] {
     { type: "heading", text: "Preenchimento exclusivo — profissional de saúde" },
     { type: "paragraph", text: "Afirmo, para os devidos fins legais, que expliquei detalhadamente todos os esclarecimentos necessários e que o paciente e/ou acompanhante compreendeu sobre benefícios, riscos e alternativas, tendo respondido às perguntas formuladas e assegurando-me de que houve período de reflexão suficiente para a tomada de decisão. De acordo com o meu entendimento, o(a) paciente e/ou seu responsável está em condições de compreender o que lhe foi informado e de que, a qualquer tempo, pode mudar de opinião e desistir da realização do procedimento." },
     { type: "field", label: "Data", value: nonEmpty(ctx.data) },
-    { type: "signature", who: "blank", label: "Assinatura e carimbo do profissional de saúde" },
+    { type: "signature", who: "fixed", label: "Assinatura do profissional de saúde" },
   ];
 }
 
@@ -92,10 +109,10 @@ function buildImagem(ctx: TemplateContext): Block[] {
     { type: "heading", text: "Termo de Autorização de Uso de Imagem e Voz" },
 
     { type: "field", label: "Eu", value: nonEmpty(ctx.pacienteNome) },
-    { type: "field", label: "RG", value: null },
-    { type: "field", label: "CPF", value: nonEmpty(ctx.pacienteCpf) },
-    { type: "field", label: "Endereço", value: null },
-    { type: "field", label: "Município / UF", value: null },
+    { type: "field", label: "RG", value: nonEmpty(ctx.pacienteRg), key: "pacienteRg" },
+    { type: "field", label: "CPF", value: nonEmpty(ctx.pacienteCpf), key: "pacienteCpf" },
+    { type: "field", label: "Endereço", value: nonEmpty(ctx.pacienteEndereco), key: "pacienteEndereco" },
+    { type: "field", label: "Município / UF", value: nonEmpty(ctx.pacienteCidadeUf), key: "pacienteCidadeUf" },
 
     { type: "paragraph", text: `Autorizo a coleta e o uso de minha imagem e/ou voz, presentes em fotos, gravações de áudio e/ou vídeo realizadas em consultas e/ou avaliações em que participei, com a finalidade de confecção de atas, registros e históricos, criação de conteúdo em redes sociais e replicação em treinamentos, eventos, reuniões e afins, pela empresa ${LETTERHEAD.empresaRazaoSocial}, inscrita sob o CNPJ ${LETTERHEAD.empresaCnpj}, conforme a Lei 13.709/2018 (LGPD — Lei Geral de Proteção de Dados).` },
     { type: "paragraph", text: "As imagens, filmes e gravações de voz serão mantidos durante o período em que forem pertinentes ao alcance das finalidades acima citadas." },
@@ -105,7 +122,7 @@ function buildImagem(ctx: TemplateContext): Block[] {
     { type: "paragraph", text: "Por esta ser a expressão da minha vontade, declaro que autorizo o uso acima descrito sem que nada haja a ser reclamado a título de direitos conexos à minha imagem ou a qualquer outro." },
 
     { type: "signature", who: "electronic", label: "Assinatura do responsável" },
-    { type: "signature", who: "blank", label: "Assinatura do responsável da empresa" },
+    { type: "signature", who: "fixed", label: "Assinatura do responsável da empresa" },
   ];
 }
 
@@ -114,7 +131,7 @@ function buildLaser(ctx: TemplateContext): Block[] {
     { type: "heading", text: "Protocolo de Laserterapia — Termo de Consentimento Livre e Esclarecido" },
 
     { type: "field", label: "Eu", value: nonEmpty(ctx.pacienteNome) },
-    { type: "field", label: "CPF", value: nonEmpty(ctx.pacienteCpf) },
+    { type: "field", label: "CPF", value: nonEmpty(ctx.pacienteCpf), key: "pacienteCpf" },
 
     { type: "paragraph", text: "Por este instrumento de consentimento informado e esclarecido, como paciente em pleno gozo de minhas faculdades mentais, livre e voluntariamente autorizo o tratamento de laserterapia de baixa frequência e/ou terapia fotodinâmica." },
     { type: "paragraph", text: "Os benefícios esperados pelo uso desse tipo de terapia são, segundo estudos prévios: diminuição da sintomatologia dolorosa dos músculos acometidos; uso de uma terapia indolor, de curto prazo, sem custos e sem riscos eminentes ao paciente e ao operador; melhora na qualidade de vida." },
@@ -123,7 +140,7 @@ function buildLaser(ctx: TemplateContext): Block[] {
     { type: "paragraph", text: "As normas de biossegurança e o uso de EPIs serão adotados durante todas as etapas do tratamento, tanto para o operador quanto para o paciente." },
 
     { type: "signature", who: "electronic", label: "Assinatura do paciente" },
-    { type: "signature", who: "blank", label: "Assinatura do profissional — Silvana Lopes · Enfermeira · Especialista em Feridas · COREN-MT nº 481743" },
+    { type: "signature", who: "fixed", label: "Assinatura do profissional — Silvana Lopes · Enfermeira · Especialista em Feridas · COREN-MT nº 481743" },
   ];
 }
 
@@ -140,11 +157,35 @@ export function renderTemplate(
   return { title: TITLES[kind], blocks: BUILDERS[kind](ctx) };
 }
 
+// Campos de documento do paciente que a tela de assinatura coleta/edita e
+// grava de volta no cadastro. A key liga o bloco do template ao input e à
+// coluna do contato.
+export const PATIENT_DOC_KEYS = [
+  "pacienteCpf",
+  "pacienteRg",
+  "pacienteEndereco",
+  "pacienteCidadeUf",
+] as const;
+export type PatientDocKey = (typeof PATIENT_DOC_KEYS)[number];
+
+export function applyDocFields(
+  blocks: Block[],
+  values: Partial<Record<string, string | null>>,
+): Block[] {
+  return blocks.map((b): Block => {
+    if (b.type === "field" && b.key && b.key in values) {
+      return { ...b, value: nonEmpty(values[b.key] ?? null) };
+    }
+    return b;
+  });
+}
+
 export interface TcleFieldValues {
   tipoFerida: string | null;
   autoriza: boolean;
   responsavelNome: string | null;
   responsavelRg: string | null;
+  responsavelTelefone?: string | null;
 }
 
 export function applyTcleFields(blocks: Block[], v: TcleFieldValues): Block[] {
@@ -153,6 +194,7 @@ export function applyTcleFields(blocks: Block[], v: TcleFieldValues): Block[] {
     if (b.type === "field" && b.key === "tipoFerida") return { ...b, value: nonEmpty(v.tipoFerida) };
     if (b.type === "field" && b.key === "responsavelNome") return { ...b, value: nonEmpty(v.responsavelNome) };
     if (b.type === "field" && b.key === "responsavelRg") return { ...b, value: nonEmpty(v.responsavelRg) };
+    if (b.type === "field" && b.key === "responsavelTelefone") return { ...b, value: nonEmpty(v.responsavelTelefone) };
     if (b.type === "checkbox" && b.key === "autorizo") return { ...b, checked: v.autoriza };
     if (b.type === "checkbox" && b.key === "assinaComoPaciente") return { ...b, checked: !asResponsavel };
     if (b.type === "checkbox" && b.key === "assinaComoResponsavel") return { ...b, checked: asResponsavel };

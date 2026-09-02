@@ -27,6 +27,15 @@ const laserBlocks: Block[] = [
   { type: "paragraph", text: "Corpo do laser." },
   { type: "signature", who: "electronic", label: "Assinatura do paciente" },
 ];
+const imagemBlocks: Block[] = [
+  { type: "heading", text: "Imagem" },
+  { type: "field", label: "RG", value: null, key: "pacienteRg" },
+  { type: "field", label: "CPF", value: "123.456.789-00", key: "pacienteCpf" },
+  { type: "field", label: "Endereço", value: null, key: "pacienteEndereco" },
+  { type: "field", label: "Município / UF", value: null, key: "pacienteCidadeUf" },
+  { type: "signature", who: "electronic", label: "Assinatura do responsável" },
+  { type: "signature", who: "fixed", label: "Assinatura do responsável da empresa" },
+];
 
 beforeEach(() => {
   mockBuild.mockClear();
@@ -135,6 +144,43 @@ describe("ConsentSignForm — imagem/laser", () => {
       />,
     );
     expect(screen.getByText("Corpo do laser.")).toBeInTheDocument();
+  });
+
+  it("imagem: campos de documento do paciente aparecem, prefilled pelo valor do bloco", () => {
+    render(
+      <ConsentSignForm
+        kind="imagem"
+        documentTitle="Imagem"
+        blocks={imagemBlocks}
+        defaultSignerName="Maria"
+        submitLabel="Confirmar"
+        onComplete={async () => ({ ok: true })}
+      />,
+    );
+    expect(screen.getByLabelText("RG")).toHaveValue("");
+    expect(screen.getByLabelText("CPF")).toHaveValue("123.456.789-00");
+    expect(screen.getByLabelText("Endereço")).toHaveValue("");
+    expect(screen.getByLabelText("Município / UF")).toHaveValue("");
+  });
+
+  it("imagem: botão fica desabilitado até RG, endereço e município/UF serem preenchidos", async () => {
+    render(
+      <ConsentSignForm
+        kind="imagem"
+        documentTitle="Imagem"
+        blocks={imagemBlocks}
+        defaultSignerName="Maria"
+        submitLabel="Confirmar"
+        onComplete={async () => ({ ok: true })}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Confirmar" });
+    expect(button).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("RG"), "MT-1234567");
+    await userEvent.type(screen.getByLabelText("Endereço"), "Rua A, 10");
+    expect(button).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Município / UF"), "Cuiabá / MT");
+    expect(button).toBeEnabled();
   });
 
   it("bloqueia submit quando o nome está vazio", () => {

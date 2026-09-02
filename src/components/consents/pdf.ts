@@ -1,6 +1,7 @@
 import type { PDFFont } from "pdf-lib";
 import type { Block } from "@/modules/consents/templates";
 import { LETTERHEAD } from "./letterhead";
+import { PROFESSIONAL_SIGNATURE } from "./signature";
 
 export function wrapLine(
   text: string,
@@ -36,7 +37,7 @@ export type Prim =
   | { kind: "text"; text: string; size: number; bold: boolean }
   | { kind: "checkbox"; text: string; checked: boolean }
   | { kind: "space"; h: number }
-  | { kind: "sig"; who: "electronic" | "blank"; label: string; h: number };
+  | { kind: "sig"; who: "electronic" | "blank" | "fixed"; label: string; h: number };
 
 const HEADING_EXTRA = 3; // pt acima do bodySize para heading
 const PARA_GAP = 6;
@@ -45,6 +46,7 @@ const HEADING_GAP_BEFORE = 12;
 const HEADING_GAP_AFTER = 4;
 const SIG_HEIGHT_ELECTRONIC = 116; // gap topo + imagem + linha + rótulo + linha "assinado eletronicamente"
 const SIG_HEIGHT_BLANK = 74; // gap topo + linha + rótulo
+const SIG_HEIGHT_FIXED = 100; // gap topo + imagem da assinatura fixa + linha + rótulo
 const FIELD_RULE = " ____________________________";
 
 function primHeight(prim: Prim, geom: Geom): number {
@@ -103,7 +105,12 @@ export function measureBlock(block: Block, geom: Geom): Prim[] {
       kind: "sig",
       who: block.who,
       label: block.label,
-      h: block.who === "electronic" ? SIG_HEIGHT_ELECTRONIC : SIG_HEIGHT_BLANK,
+      h:
+        block.who === "electronic"
+          ? SIG_HEIGHT_ELECTRONIC
+          : block.who === "fixed"
+            ? SIG_HEIGHT_FIXED
+            : SIG_HEIGHT_BLANK,
     },
   ];
 }
@@ -242,9 +249,15 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
       } else {
         // sig
         y -= 16; // gap de topo do bloco
-        if (prim.who === "electronic" && input.signatureDataUrl) {
+        const sigImg =
+          prim.who === "electronic"
+            ? input.signatureDataUrl
+            : prim.who === "fixed" && PROFESSIONAL_SIGNATURE.pngBase64
+              ? `data:image/png;base64,${PROFESSIONAL_SIGNATURE.pngBase64}`
+              : "";
+        if (sigImg) {
           try {
-            const png = await doc.embedPng(input.signatureDataUrl);
+            const png = await doc.embedPng(sigImg);
             const w = 170;
             const h = Math.min((png.height / png.width) * w, 44);
             page.drawImage(png, { x: MARGIN, y: y - h, width: w, height: h });

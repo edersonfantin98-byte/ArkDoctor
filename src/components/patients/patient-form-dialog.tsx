@@ -47,6 +47,10 @@ export function PatientFormDialog({
   const [guardianName, setGuardianName] = useState("");
   const [guardianPhone, setGuardianPhone] = useState("");
   const [guardianRelationship, setGuardianRelationship] = useState("");
+  const [rg, setRg] = useState("");
+  const [address, setAddress] = useState("");
+  const [cityState, setCityState] = useState("");
+  const [guardianRg, setGuardianRg] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +66,10 @@ export function PatientFormDialog({
     setGuardianName(editingPatient?.guardianName ?? "");
     setGuardianPhone(editingPatient?.guardianPhone ?? "");
     setGuardianRelationship(editingPatient?.guardianRelationship ?? "");
+    setRg(editingPatient?.rg ?? "");
+    setAddress(editingPatient?.address ?? "");
+    setCityState(editingPatient?.cityState ?? "");
+    setGuardianRg(editingPatient?.guardianRg ?? "");
     setNotes(editingPatient?.notes ?? "");
     setError(null);
   }, [open, editingPatient]);
@@ -70,7 +78,22 @@ export function PatientFormDialog({
     e.preventDefault();
     setError(null);
     const input = buildContactInput(
-      { name, phone, email, birthDate, cpf, sex, guardianName, guardianPhone, guardianRelationship, notes },
+      {
+        name,
+        phone,
+        email,
+        birthDate,
+        cpf,
+        sex,
+        guardianName,
+        guardianPhone,
+        guardianRelationship,
+        rg,
+        address,
+        cityState,
+        guardianRg,
+        notes,
+      },
       Boolean(editingPatient),
     );
 
@@ -145,6 +168,25 @@ export function PatientFormDialog({
           </div>
 
           <div className="space-y-1">
+            <Label htmlFor="rg">RG</Label>
+            <Input id="rg" value={rg} onChange={(e) => setRg(e.target.value)} />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="address">Endereço</Label>
+            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="cityState">Município / UF</Label>
+            <Input
+              id="cityState"
+              value={cityState}
+              onChange={(e) => setCityState(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1">
             <Label htmlFor="guardianName">Responsável — nome</Label>
             <Input
               id="guardianName"
@@ -159,6 +201,15 @@ export function PatientFormDialog({
               id="guardianPhone"
               value={guardianPhone}
               onChange={(e) => setGuardianPhone(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="guardianRg">Responsável — RG</Label>
+            <Input
+              id="guardianRg"
+              value={guardianRg}
+              onChange={(e) => setGuardianRg(e.target.value)}
             />
           </div>
 

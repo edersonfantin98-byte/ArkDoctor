@@ -11,6 +11,10 @@ const emptyFields: ContactFormFields = {
   guardianName: "",
   guardianPhone: "",
   guardianRelationship: "",
+  rg: "",
+  address: "",
+  cityState: "",
+  guardianRg: "",
   notes: "",
 };
 
@@ -28,6 +32,10 @@ describe("buildContactInput", () => {
       guardianName: null,
       guardianPhone: null,
       guardianRelationship: null,
+      rg: null,
+      address: null,
+      cityState: null,
+      guardianRg: null,
       notes: null,
     });
   });
@@ -45,6 +53,10 @@ describe("buildContactInput", () => {
       guardianName: undefined,
       guardianPhone: undefined,
       guardianRelationship: undefined,
+      rg: undefined,
+      address: undefined,
+      cityState: undefined,
+      guardianRg: undefined,
       notes: undefined,
     });
   });

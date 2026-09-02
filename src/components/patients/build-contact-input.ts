@@ -8,6 +8,10 @@ export type ContactFormFields = {
   guardianName: string;
   guardianPhone: string;
   guardianRelationship: string;
+  rg: string;
+  address: string;
+  cityState: string;
+  guardianRg: string;
   notes: string;
 };
 
@@ -31,6 +35,10 @@ export function buildContactInput(fields: ContactFormFields, isEditing: boolean)
     guardianName: fields.guardianName || clearable,
     guardianPhone: fields.guardianPhone || clearable,
     guardianRelationship: fields.guardianRelationship || clearable,
+    rg: fields.rg || clearable,
+    address: fields.address || clearable,
+    cityState: fields.cityState || clearable,
+    guardianRg: fields.guardianRg || clearable,
     notes: fields.notes || clearable,
   };
 }
