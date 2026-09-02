@@ -4,8 +4,6 @@ import type { Block } from "@/modules/consents/templates";
 
 const measure = (s: string) => s.length; // 1 unidade por caractere
 
-const geom: Geom = { contentWidth: 40, bodySize: 1, lineHeight: 1, usableHeight: 10 };
-
 describe("wrapLine", () => {
   it("quebra em limites de palavra no maxWidth", () => {
     expect(wrapLine("aaa bbb ccc", 7, measure)).toEqual(["aaa bbb", "ccc"]);
