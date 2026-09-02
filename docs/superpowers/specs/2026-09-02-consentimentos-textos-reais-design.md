@@ -47,8 +47,10 @@ PDF assinado, sem colunas de status estruturado.
 5. **Recusa bloqueia.** Se quem assina marcar "Não autorizo o tratamento
    proposto", o sistema não gera nem guarda PDF — só um aviso na tela.
 6. **Campos do TCLE de Feridas:**
-   - Nome, CPF, data de nascimento, endereço, telefone → do cadastro do paciente
+   - Nome, CPF, data de nascimento, telefone → do cadastro do paciente
      (`contacts`), impressos no PDF; linha em branco quando faltarem.
+   - **Endereço residencial** → não existe coluna em `contacts`; o campo sai
+     sempre como linha em branco no PDF.
    - **Tipo de ferida** → a enfermeira digita. Fluxo inline: no diálogo de
      assinar. Fluxo link: no diálogo "Enviar link" (viaja assinado dentro do
      token; ver seção Token).
@@ -114,8 +116,7 @@ export interface TemplateContext {
   pacienteNome: string;
   pacienteCpf: string | null;
   pacienteNascimento: string | null; // YYYY-MM-DD
-  pacienteEndereco: string | null;   // novo — de contacts
-  pacienteTelefone: string | null;   // novo — de contacts
+  pacienteTelefone: string | null;   // novo — de contacts.phone (endereço não existe no cadastro)
   clinicaNome: string;
   profissionalNome: string | null;
   profissionalConselho: string | null;
@@ -292,8 +293,8 @@ sobre a árvore de blocos), com teste.
 - Diálogo "Assinar": passa `kind={doc.kind}` e `blocks={doc.blocks}` ao
   `ConsentSignForm` (sem `tipoFerida` — inline a enfermeira digita lá).
 - Resto igual (Ver PDF, Excluir com confirmação, Assinar novamente).
-- `getConsentPageDataAction`: `templateCtx` ganha `pacienteEndereco` /
-  `pacienteTelefone` de `contacts`; `docs = CONSENT_KINDS.map(k => { const t =
+- `getConsentPageDataAction`: `templateCtx` ganha `pacienteTelefone`
+  (`contact.phone`); `docs = CONSENT_KINDS.map(k => { const t =
   renderTemplate(k, ctx); return { kind: k, title: t.title, blocks: t.blocks }; })`.
 
 ## `src/modules/consents/token.ts`
@@ -335,7 +336,7 @@ sobre a árvore de blocos), com teste.
 | Logo PNG ausente no build | `buildConsentPdf` desenha só a linha divisória com o nome da clínica em texto. Não quebra. |
 | Tipo de ferida vazio (inline) | Permitido — sai como linha em branco no PDF. |
 | Bloco de assinatura não cabe no fim da página | `layoutBlocks` empurra o bloco inteiro para a página nova. |
-| Endereço / telefone / nascimento ausentes em `contacts` | `field` sai como "Label: __________". |
+| Telefone / nascimento ausentes em `contacts` (e endereço, que nunca existe) | `field` sai como "Label: __________". |
 | Token adulterado no `tipoFerida` | HMAC não bate → `verifyConsentToken` devolve `null` → tela "link expirado ou inválido". |
 
 Casos herdados da Feature 2 (upload falha, insert falha após upload, PDF > 2 MB,
@@ -411,5 +412,5 @@ novo: `public/logo/silvana-lopes.png`, convertido para base64 em
 - `src/components/consents/consent-cards.tsx` — `Doc.blocks`, tipo de ferida no "Enviar link"
 - `src/components/consents/public-consent-form.tsx` — repassa `kind` + `tipoFerida`
 - `src/app/(app)/pacientes/[id]/documentos/page.tsx` — sem `headerLines`
-- `src/app/(app)/pacientes/[id]/actions.ts` — `createConsentLinkAction` com `extra`; `getConsentPageDataAction` com endereço/telefone e `blocks`
+- `src/app/(app)/pacientes/[id]/actions.ts` — `createConsentLinkAction` com `extra`; `getConsentPageDataAction` com `pacienteTelefone` e `blocks`
 - `src/app/assinar/[token]/page.tsx` — `tipoFerida` do token para o `renderTemplate` / form
