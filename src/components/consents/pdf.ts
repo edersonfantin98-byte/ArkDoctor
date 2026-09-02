@@ -154,12 +154,12 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  let logo: Awaited<ReturnType<typeof doc.embedPng>> | null = null;
-  if (LETTERHEAD.logoPngBase64) {
+  let timbre: Awaited<ReturnType<typeof doc.embedJpg>> | null = null;
+  if (LETTERHEAD.timbreJpgBase64) {
     try {
-      logo = await doc.embedPng(`data:image/png;base64,${LETTERHEAD.logoPngBase64}`);
+      timbre = await doc.embedJpg(`data:image/jpeg;base64,${LETTERHEAD.timbreJpgBase64}`);
     } catch {
-      logo = null;
+      timbre = null;
     }
   }
 
@@ -180,12 +180,10 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
 
   const drawFrame = () => {
     const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    // timbre
-    if (logo) {
-      const w = 150;
-      const h = (logo.height / logo.width) * w;
-      page.drawImage(logo, { x: MARGIN, y: PAGE_HEIGHT - MARGIN - h, width: w, height: Math.min(h, HEADER_H) });
+    if (timbre) {
+      page.drawImage(timbre, { x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT });
     } else {
+      // fallback se o base64 faltar / falhar: só o nome da clínica no topo
       page.drawText(LETTERHEAD.empresaRazaoSocial, {
         x: MARGIN,
         y: PAGE_HEIGHT - MARGIN - 12,
@@ -194,20 +192,6 @@ export async function buildConsentPdf(input: ConsentPdfInput): Promise<Uint8Arra
         color: rgb(0.2, 0.2, 0.2),
       });
     }
-    page.drawLine({
-      start: { x: MARGIN, y: PAGE_HEIGHT - MARGIN - HEADER_H + 8 },
-      end: { x: PAGE_WIDTH - MARGIN, y: PAGE_HEIGHT - MARGIN - HEADER_H + 8 },
-      thickness: 0.5,
-      color: rgb(0.75, 0.75, 0.75),
-    });
-    // rodapé
-    page.drawText(LETTERHEAD.footer, {
-      x: MARGIN,
-      y: MARGIN - 4,
-      size: 7.5,
-      font,
-      color: rgb(0.45, 0.45, 0.45),
-    });
     return page;
   };
 
