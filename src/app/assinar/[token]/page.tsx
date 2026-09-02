@@ -22,7 +22,7 @@ type Identity = Awaited<ReturnType<typeof getAccountProfessionalIdentity>>;
 // never leaks whether the token existed.
 async function loadPage(
   token: string,
-): Promise<{ kind: ConsentKind; patientName: string; identity: Identity } | null> {
+): Promise<{ kind: ConsentKind; patientName: string; identity: Identity; tipoFerida?: string } | null> {
   const claims = await verifyConsentToken(token);
   if (!claims) return null;
 
@@ -36,7 +36,7 @@ async function loadPage(
       .single();
     if (error || !data) return null;
     const identity = await getAccountProfessionalIdentity(supabase, claims.accountId);
-    return { kind: claims.kind, patientName: data.name, identity };
+    return { kind: claims.kind, patientName: data.name, identity, tipoFerida: claims.tipoFerida };
   } catch {
     return null;
   }
@@ -51,34 +51,29 @@ export default async function PublicConsentPage({
   const loaded = await loadPage(token);
   if (!loaded) return <Invalid />;
 
-  const { kind, patientName, identity } = loaded;
+  const { kind, patientName, identity, tipoFerida } = loaded;
 
   const t = renderTemplate(kind, {
     pacienteNome: patientName,
     pacienteCpf: null,
     pacienteNascimento: null,
+    pacienteTelefone: null,
     clinicaNome: identity.name,
     profissionalNome: identity.professionalName,
     profissionalConselho: identity.councilId,
     data: formatBrDate(new Date()),
+    tipoFerida: tipoFerida ?? null,
   });
-
-  const headerLines = [
-    identity.name,
-    identity.professionalName
-      ? `${identity.professionalName}${identity.councilId ? ` - ${identity.councilId}` : ""}`
-      : null,
-    `Paciente: ${patientName}`,
-  ].filter((l): l is string => Boolean(l));
 
   return (
     <div className="mx-auto max-w-2xl p-6">
       <h1 className="mb-4 text-xl font-bold">{t.title}</h1>
       <PublicConsentForm
         token={token}
+        kind={kind}
         documentTitle={t.title}
-        headerLines={headerLines}
-        paragraphs={t.paragraphs}
+        blocks={t.blocks}
+        tipoFerida={tipoFerida}
         defaultSignerName={patientName}
       />
     </div>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { submitPublicConsentAction } from "@/app/assinar/actions";
+import type { Block } from "@/modules/consents/templates";
+import type { ConsentKind } from "@/modules/consents/schemas";
 
 const ConsentSignForm = dynamic(
   () => import("./consent-sign-form").then((m) => m.ConsentSignForm),
@@ -11,9 +13,10 @@ const ConsentSignForm = dynamic(
 
 export function PublicConsentForm(props: {
   token: string;
+  kind: ConsentKind;
   documentTitle: string;
-  headerLines: string[];
-  paragraphs: string[];
+  blocks: Block[];
+  tipoFerida?: string;
   defaultSignerName: string;
 }) {
   const [done, setDone] = useState(false);
@@ -28,9 +31,10 @@ export function PublicConsentForm(props: {
 
   return (
     <ConsentSignForm
+      kind={props.kind}
       documentTitle={props.documentTitle}
-      headerLines={props.headerLines}
-      paragraphs={props.paragraphs}
+      blocks={props.blocks}
+      tipoFerida={props.tipoFerida}
       defaultSignerName={props.defaultSignerName}
       submitLabel="Confirmar assinatura"
       onComplete={async ({ pdfBytes, signerName }) => {
