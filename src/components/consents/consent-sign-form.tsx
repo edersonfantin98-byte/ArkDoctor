@@ -66,13 +66,13 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
   const effectiveSignerName = (comoResponsavel ? responsavelNome : signerName).trim();
 
   const canSubmit = useMemo(() => {
-    if (busy) return false;
+    if (busy || !effectiveSignerName) return false;
     if (isTcle) {
       if (autoriza === "") return false;
       if (comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim())) return false;
     }
     return true;
-  }, [busy, isTcle, autoriza, comoResponsavel, responsavelNome, responsavelRg]);
+  }, [busy, effectiveSignerName, isTcle, autoriza, comoResponsavel, responsavelNome, responsavelRg]);
 
   async function handleSubmit() {
     if (busy) return;

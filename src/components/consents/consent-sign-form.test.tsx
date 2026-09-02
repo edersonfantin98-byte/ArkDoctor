@@ -28,12 +28,6 @@ const laserBlocks: Block[] = [
   { type: "signature", who: "electronic", label: "Assinatura do paciente" },
 ];
 
-// signature_pad é mockado; para os testes que precisam de traço, força isEmpty=false
-function stubPadNotEmpty() {
-  // o componente usa padRef.current?.isEmpty(); o mock não expõe ref, então
-  // esses testes cobrem só o caminho de validação anterior ao pad.
-}
-
 beforeEach(() => {
   mockBuild.mockClear();
 });
@@ -159,7 +153,7 @@ describe("ConsentSignForm — imagem/laser", () => {
     expect(screen.getByText("Corpo do laser.")).toBeInTheDocument();
   });
 
-  it("bloqueia submit quando o nome está vazio", async () => {
+  it("bloqueia submit quando o nome está vazio", () => {
     const onComplete = vi.fn(async () => ({ ok: true }));
     render(
       <ConsentSignForm
@@ -171,8 +165,7 @@ describe("ConsentSignForm — imagem/laser", () => {
         onComplete={onComplete}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    expect(screen.getByText("Informe o nome de quem assina.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeDisabled();
     expect(onComplete).not.toHaveBeenCalled();
   });
 });
