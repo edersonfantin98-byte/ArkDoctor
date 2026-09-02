@@ -44,4 +44,25 @@ describe("consent token", () => {
     expect(await verifyConsentToken("not-a-token")).toBeNull();
     expect(await verifyConsentToken("")).toBeNull();
   });
+
+  it("round-trips tipoFerida quando presente", async () => {
+    const token = await signConsentToken({ ...claims, tipoFerida: "úlcera venosa" }, 3600);
+    expect(await verifyConsentToken(token)).toEqual({ ...claims, tipoFerida: "úlcera venosa" });
+  });
+
+  it("token sem tipoFerida continua válido e não devolve a chave", async () => {
+    const token = await signConsentToken(claims, 3600);
+    const out = await verifyConsentToken(token);
+    expect(out).toEqual(claims);
+    expect(out && "tipoFerida" in out).toBe(false);
+  });
+
+  it("tipoFerida adulterado quebra o HMAC", async () => {
+    const token = await signConsentToken({ ...claims, tipoFerida: "a" }, 3600);
+    const [body, sig] = token.split(".");
+    const forged = Buffer.from(
+      JSON.stringify({ ...JSON.parse(Buffer.from(body, "base64url").toString("utf8")), t: "b" }),
+    ).toString("base64url");
+    expect(await verifyConsentToken(`${forged}.${sig}`)).toBeNull();
+  });
 });
