@@ -111,7 +111,7 @@ export async function handleInboundMessage(
   }
 
   const preview =
-    input.media && input.body === ""
+    input.media && mediaDeps && input.body === ""
       ? mediaPreviewLabel(input.media.type)
       : input.body;
 
