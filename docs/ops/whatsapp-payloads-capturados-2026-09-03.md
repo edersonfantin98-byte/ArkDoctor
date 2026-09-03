@@ -115,8 +115,41 @@ accept-ranges: bytes
 ```
 → Fluxo do app: `/message/download` → GET simples no `fileURL` (sem auth) → sobe no bucket.
 
-## 5. `POST /send/media` — ❌ NÃO validado (bloqueado; ação de saída). Plano 2b.
-Doc sugere `{"number","type":"image|document|audio|video","file":"<url|base64>","text":"<caption>","docName":"<nome>"}` — **confirmar campos e resposta**.
+## 5. `POST /send/media` — ✅ validado ao vivo 2026-09-03 (4 tipos enviados p/ `556696746676`)
+
+**Request** — header `token`, body JSON:
+```json
+{"number":"556696746676","type":"image","file":"<URL pública OU base64 cru>","text":"<legenda>","docName":"<nome, só p/ document>"}
+```
+- `number`: DDI+DDD+número, **sem** `@s.whatsapp.net`.
+- `type`: `image` | `audio` | `video` | `document`.
+- `file`: aceita URL pública **ou** string base64 crua (sem prefixo `data:`). O app manda base64 (arquivo vem do compositor via FormData). Confirmado com PDF base64.
+- `text`: legenda. Aparece em `content.caption` p/ image/video/document. Áudio ignora legenda.
+- `docName`: define o nome do arquivo → volta em `content.fileName`. Só relevante p/ `document`.
+
+**Response** — HTTP 200, objeto de mensagem completo (mesmo shape do `/message/find`):
+```json
+{"chatid":"556696746676@s.whatsapp.net",
+ "messageid":"3EB05D6F865EB4CBD195E2",
+ "id":"556696746676:3EB05D6F865EB4CBD195E2",
+ "messageType":"DocumentMessage",
+ "messageTimestamp":1788466722317,
+ "fromMe":true,"status":"Pending","text":"teste doc base64",
+ "content":{"URL":"https://mmg.whatsapp.net/...enc?...","mimetype":"application/pdf",
+            "fileLength":302,"fileName":"relatorio.pdf","caption":"teste doc base64"}}
+```
+- Guardar `messageid` como `providerMessageId` da mensagem outbound.
+- `messageType`: `ImageMessage` | `AudioMessage` | `VideoMessage` | `DocumentMessage`.
+- `messageTimestamp`: epoch **ms**.
+
+**Erros** — status não-2xx + body `{"error":"<msg>"}`:
+| caso | status | body |
+|---|---|---|
+| URL do arquivo 404/inacessível | `500` | `{"error":"failed to process file: ..."}` |
+| token inválido | `401` | — |
+| falta `number` | `400` | `{"error":"Missing number"}` |
+
+→ Provider: `if (!res.ok) throw` lendo `data.error`/texto.
 
 ## 6. Payload de mídia no **webhook** — ❌ NÃO capturado
 `/message/find` é boa aproximação (mesmo recurso "message"). Falta confirmar o envelope
