@@ -31,9 +31,10 @@ export async function prepareTreatmentPhoto(file: File): Promise<Blob> {
   let working: Blob = file;
   if (isHeic(file)) {
     try {
-      const heic2any = (await import("heic2any")).default;
-      const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
-      working = Array.isArray(converted) ? converted[0] : converted;
+      // heic-to/csp: build sem eval/Function nem WebAssembly (wasm2js),
+      // compatível com o CSP restrito. Precisa de `worker-src blob:`.
+      const { heicTo } = await import("heic-to/csp");
+      working = await heicTo({ blob: file, type: "image/jpeg", quality: 0.9 });
     } catch {
       throw new Error(
         "Não foi possível processar esta foto. Exporte como JPEG e tente de novo.",
