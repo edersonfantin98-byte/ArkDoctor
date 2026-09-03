@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, FileText, Image as ImageIcon, Mic, Video } from "lucide-react";
+import { Plus, FileText, Image as ImageIcon, Mic, Video, Paperclip, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import {
   listConversationsAction,
   getConversationMessagesAction,
+  sendWhatsappMediaAction,
   logMessageAction,
   startConversationAction,
   getConnectionStatusAction,
@@ -235,10 +236,24 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachmentCaption, setAttachmentCaption] = useState("");
+  const [attachmentPreviewUrl, setAttachmentPreviewUrl] = useState<string | null>(null);
   const [connection, setConnection] = useState<WhatsappConnectionSummary>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [togglingConnection, setTogglingConnection] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!attachment || !attachment.type.startsWith("image/")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- limpa o preview quando o anexo sai ou não é imagem
+      setAttachmentPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(attachment);
+    setAttachmentPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [attachment]);
 
   const refreshConnection = useCallback(async () => {
     const conn = await getWhatsappConnectionAction();
@@ -372,6 +387,45 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     }
   }
 
+  function handlePickAttachment(file: File | null) {
+    setSendError(null);
+    if (!file) return;
+    if (file.size > 16 * 1024 * 1024) {
+      setSendError("Arquivo acima do limite de 16 MB.");
+      return;
+    }
+    setAttachment(file);
+    setAttachmentCaption("");
+  }
+
+  function clearAttachment() {
+    setAttachment(null);
+    setAttachmentCaption("");
+  }
+
+  async function handleSendAttachment() {
+    if (!selectedConversationId || !attachment || sending) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const formData = new FormData();
+      formData.set("file", attachment);
+      formData.set("caption", attachmentCaption);
+      const result = await sendWhatsappMediaAction(selectedConversationId, formData);
+      if (!result.ok) {
+        setSendError(result.error);
+        return;
+      }
+      clearAttachment();
+      const updated = await getConversationMessagesAction(selectedConversationId);
+      setMessages(updated);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Erro ao enviar arquivo");
+    } finally {
+      setSending(false);
+    }
+  }
+
   function handleConversationCreated(conversation: Conversation) {
     setConversations((prev) => [conversation, ...prev]);
     setSelectedConversationId(conversation.id);
@@ -500,20 +554,81 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                 </p>
               )}
               {sendError && <p className="px-3 text-sm text-red-600">{sendError}</p>}
-              <div className="flex items-center gap-2 border-t p-3">
-                <Input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSend();
-                  }}
-                  placeholder="Digite uma mensagem"
-                  disabled={sending || !isConnected}
-                />
-                <Button onClick={handleSend} disabled={sending || !draft.trim() || !isConnected}>
-                  Enviar
-                </Button>
-              </div>
+              {attachment ? (
+                <div className="space-y-2 border-t p-3">
+                  <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-2">
+                    {attachmentPreviewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- object URL local de preview, não é asset estático
+                      <img
+                        src={attachmentPreviewUrl}
+                        alt={attachment.name}
+                        className="size-16 rounded object-cover"
+                      />
+                    ) : (
+                      <FileText className="size-10 shrink-0 text-muted-foreground" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{attachment.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(attachment.size / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={clearAttachment}>
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={attachmentCaption}
+                      onChange={(e) => setAttachmentCaption(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSendAttachment();
+                      }}
+                      placeholder="Legenda (opcional)"
+                      disabled={sending || !isConnected}
+                    />
+                    <Button
+                      onClick={handleSendAttachment}
+                      disabled={sending || !isConnected}
+                    >
+                      Enviar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 border-t p-3">
+                  <label
+                    className={cn(
+                      "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-muted",
+                      (sending || !isConnected) && "pointer-events-none opacity-50",
+                    )}
+                    title="Anexar arquivo"
+                  >
+                    <Paperclip className="size-4" />
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={sending || !isConnected}
+                      onChange={(e) => {
+                        handlePickAttachment(e.target.files?.[0] ?? null);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <Input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSend();
+                    }}
+                    placeholder="Digite uma mensagem"
+                    disabled={sending || !isConnected}
+                  />
+                  <Button onClick={handleSend} disabled={sending || !draft.trim() || !isConnected}>
+                    Enviar
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center p-4">
