@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -163,6 +163,43 @@ function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function MediaBubble({ message }: { message: MessageView }) {
+  const { mediaType, mediaStatus, mediaUrl, mediaFilename } = message;
+
+  if (mediaStatus === "too_large") {
+    return <p className="italic text-muted-foreground">[arquivo muito grande — não salvo]</p>;
+  }
+  if (mediaStatus === "expired" || !mediaUrl) {
+    return <p className="italic text-muted-foreground">[mídia expirada]</p>;
+  }
+  if (mediaType === "image") {
+    return (
+      <a href={mediaUrl} target="_blank" rel="noreferrer">
+        {/* eslint-disable-next-line @next/next/no-img-element -- signed Supabase Storage URL, not an optimizable static asset */}
+        <img src={mediaUrl} alt={mediaFilename ?? "imagem"} className="max-h-64 rounded" />
+      </a>
+    );
+  }
+  if (mediaType === "audio") {
+    return <audio controls src={mediaUrl} className="w-full" />;
+  }
+  if (mediaType === "video") {
+    return <video controls src={mediaUrl} className="max-h-64 rounded" />;
+  }
+  return (
+    <a
+      href={mediaUrl}
+      target="_blank"
+      rel="noreferrer"
+      download={mediaFilename ?? undefined}
+      className="flex items-center gap-2 underline"
+    >
+      <FileText className="size-4 shrink-0" />
+      <span className="truncate">{mediaFilename ?? "Documento"}</span>
+    </a>
   );
 }
 
@@ -421,11 +458,12 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                     >
                       <div
                         className={cn(
-                          "max-w-[70%] rounded-lg px-3 py-2 text-sm shadow-sm",
+                          "max-w-[70%] space-y-1 rounded-lg px-3 py-2 text-sm shadow-sm",
                           message.direction === "outbound" ? "bg-[#d9fdd3]" : "bg-white",
                         )}
                       >
-                        {message.body}
+                        {message.mediaType && <MediaBubble message={message} />}
+                        {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
                       </div>
                     </div>
                   ))
