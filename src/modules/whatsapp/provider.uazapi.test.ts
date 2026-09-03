@@ -177,3 +177,55 @@ describe("UazapiProvider", () => {
     expect(connection?.qrCode).toBeNull();
   });
 });
+
+async function repoWithUazapi() {
+  const repo = createInMemoryWhatsappRepository();
+  await repo.updateConnectionConfig("acc-1", "uazapi", {
+    subdomain: "arkscrapper",
+    token: "tok-1",
+    webhookSecret: "sec-1",
+  });
+  return repo;
+}
+
+describe("UazapiProvider.downloadMedia", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("chama /message/download e baixa o fileURL retornado", async () => {
+    const repo = await repoWithUazapi();
+    const provider = createUazapiProvider(repo);
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.endsWith("/message/download")) {
+        expect(JSON.parse(String(init?.body))).toEqual({ id: "MID-1" });
+        return new Response(
+          JSON.stringify({
+            fileURL: "https://arkscrapper.uazapi.com/files/abc.jpg",
+            mimetype: "image/jpeg",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (u === "https://arkscrapper.uazapi.com/files/abc.jpg") {
+        return new Response(bytes, { status: 200, headers: { "content-type": "image/jpeg" } });
+      }
+      throw new Error("URL inesperada: " + u);
+    });
+
+    const result = await provider.downloadMedia("acc-1", "MID-1");
+    expect(Array.from(result.bytes)).toEqual([1, 2, 3, 4]);
+    expect(result.mime).toBe("image/jpeg");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("lança quando /message/download não devolve fileURL", async () => {
+    const repo = await repoWithUazapi();
+    const provider = createUazapiProvider(repo);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "not found" }), { status: 200 }),
+    );
+    await expect(provider.downloadMedia("acc-1", "MID-x")).rejects.toThrow("Falha ao baixar mídia");
+  });
+});

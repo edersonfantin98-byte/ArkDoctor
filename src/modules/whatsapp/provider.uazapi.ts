@@ -4,6 +4,10 @@ import type { ConnectionStatus, WhatsappConnection } from "./types";
 
 export interface UazapiProvider extends WhatsappProvider {
   getQrCode(accountId: string): Promise<string | null>;
+  downloadMedia(
+    accountId: string,
+    providerMessageId: string,
+  ): Promise<{ bytes: Uint8Array; mime: string }>;
 }
 
 export function normalizeWhatsappJid(jid: string): string {
@@ -132,6 +136,29 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
     async getQrCode(accountId) {
       const connection = await repo.getConnection(accountId);
       return connection?.qrCode ?? null;
+    },
+
+    async downloadMedia(accountId, providerMessageId) {
+      const connection = await repo.getConnection(accountId);
+      const config = getConfig(connection);
+
+      const meta = await fetch(`${baseUrl(config.subdomain)}/message/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: config.token },
+        body: JSON.stringify({ id: providerMessageId }),
+      });
+      const metaJson = meta.ok ? await meta.json().catch(() => null) : null;
+      const fileUrl = metaJson?.fileURL;
+      if (typeof fileUrl !== "string" || !fileUrl) {
+        throw new Error("Falha ao baixar mídia: a Uazapi não devolveu fileURL");
+      }
+      const mime =
+        typeof metaJson?.mimetype === "string" ? metaJson.mimetype : "application/octet-stream";
+
+      const file = await fetch(fileUrl);
+      if (!file.ok) throw new Error(`Falha ao baixar mídia: arquivo (${file.status})`);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      return { bytes, mime };
     },
   };
 }
