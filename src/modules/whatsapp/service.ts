@@ -2,7 +2,7 @@ import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
 import { normalizeWhatsappJid } from "./provider.uazapi";
-import { mediaTypeFromUazapi, MAX_MEDIA_BYTES, storagePathFor } from "./media";
+import { mediaTypeFromUazapi, MAX_MEDIA_BYTES, storagePathFor, safeContentType } from "./media";
 import type { WhatsappMediaStorage } from "./storage";
 import type { WhatsappConnection, Message, MediaType } from "./types";
 import { parseOrThrow } from "@/lib/zod-error";
@@ -135,13 +135,25 @@ export async function handleInboundMessage(
           accountId,
           input.media.providerMessageId,
         );
-        const path = storagePathFor(accountId, conversation.id, message.id, mime || input.media.mime);
-        await mediaDeps.storage.upload(path, bytes, mime || input.media.mime);
-        await whatsappRepo.updateMessageMedia(accountId, message.id, {
-          status: "stored",
-          storagePath: path,
-        });
-        message = { ...message, mediaStatus: "stored", mediaStoragePath: path };
+        if (bytes.byteLength > MAX_MEDIA_BYTES) {
+          await whatsappRepo.updateMessageMedia(accountId, message.id, {
+            status: "too_large",
+            storagePath: null,
+          });
+          message = { ...message, mediaStatus: "too_large", mediaStoragePath: null };
+        } else {
+          const path = storagePathFor(accountId, conversation.id, message.id, mime || input.media.mime);
+          await mediaDeps.storage.upload(
+            path,
+            bytes,
+            safeContentType(input.media.type, mime || input.media.mime),
+          );
+          await whatsappRepo.updateMessageMedia(accountId, message.id, {
+            status: "stored",
+            storagePath: path,
+          });
+          message = { ...message, mediaStatus: "stored", mediaStoragePath: path };
+        }
       } catch (err) {
         console.error("[whatsapp] ingestão de mídia falhou, marcada como expired", err);
         // a mensagem já está gravada como 'expired' — não relança

@@ -195,6 +195,27 @@ describe("whatsapp service", () => {
     expect(stored[0].mediaStoragePath).toBeNull();
   });
 
+  it("ingestão de mídia: corpo baixado acima de 16 MB entra como too_large mesmo com fileLength subestimado", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const crmDeps = buildCrmDeps(createInMemoryCrmRepository());
+    const storage = createFakeWhatsappMediaStorage();
+    const downloadMedia = vi.fn(async () => ({
+      bytes: new Uint8Array(MAX_MEDIA_BYTES + 1),
+      mime: "image/jpeg",
+    }));
+
+    const msg = await handleInboundMessage(repo, crmDeps, "acc-1", {
+      fromPhone: "5511988887777",
+      body: "",
+      media: { providerMessageId: "MID-4", type: "image", mime: "image/jpeg", filename: null, fileLength: 10 },
+    }, { storage, downloadMedia });
+
+    const stored = await getConversationMessages(repo, "acc-1", msg.conversationId);
+    expect(stored[0].mediaStatus).toBe("too_large");
+    expect(stored[0].mediaStoragePath).toBeNull();
+    expect(storage.objects.size).toBe(0);
+  });
+
   it("ingestão de mídia: falha de download deixa a mensagem como expired, não lança", async () => {
     const repo = createInMemoryWhatsappRepository();
     const crmDeps = buildCrmDeps(createInMemoryCrmRepository());

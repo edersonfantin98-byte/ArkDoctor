@@ -32,6 +32,20 @@ export function extFromMime(mime: string): string {
   return afterSlash && /^[a-z0-9.+-]+$/.test(afterSlash) ? afterSlash : "bin";
 }
 
+export function safeContentType(type: MediaType, providerMime: string): string {
+  const mime = providerMime.trim();
+  switch (type) {
+    case "image":
+      return mime.startsWith("image/") ? mime : "application/octet-stream";
+    case "audio":
+      return mime.startsWith("audio/") ? mime : "application/octet-stream";
+    case "video":
+      return mime.startsWith("video/") ? mime : "application/octet-stream";
+    case "document":
+      return mime || "application/octet-stream";
+  }
+}
+
 export function storagePathFor(
   accountId: string,
   conversationId: string,
