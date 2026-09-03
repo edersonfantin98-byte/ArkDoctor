@@ -1,5 +1,5 @@
 name = "arkdoctor"
-main = ".open-next/worker.js"
+main = "worker.ts"
 compatibility_date = "2026-08-20"
 compatibility_flags = ["nodejs_compat"]
 
@@ -20,3 +20,12 @@ simple = { limit = 5, period = 60 }
 name = "CONSENT_SIGN_RATE_LIMIT"
 namespace_id = "1002"
 simple = { limit = 5, period = 60 }
+
+[vars]
+APP_URL = "https://arkdoctor.edersonfantin98.workers.dev"
+
+# Cron diário 04:20 UTC (~01:20 BRT) — apaga do bucket whatsapp-media a mídia
+# com sent_at > 30 dias e marca a mensagem como 'expired'. Ver
+# src/app/api/whatsapp/media-retention/route.ts.
+[triggers]
+crons = ["20 4 * * *"]
