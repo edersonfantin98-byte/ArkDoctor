@@ -2,6 +2,7 @@ import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
 import { normalizeWhatsappJid } from "./provider.uazapi";
+import { mediaTypeFromUazapi } from "./media";
 import type { WhatsappConnection, Message } from "./types";
 import { parseOrThrow } from "@/lib/zod-error";
 
@@ -194,7 +195,18 @@ export function isValidWebhookSecret(
 
 export function parseWebhookPayload(
   body: unknown,
-): { fromPhone: string; fromName?: string; body: string } | null {
+): {
+  fromPhone: string;
+  fromName?: string;
+  body: string;
+  media?: {
+    providerMessageId: string;
+    type: import("./types").MediaType;
+    mime: string;
+    filename: string | null;
+    fileLength: number;
+  };
+} | null {
   if (typeof body !== "object" || body === null) return null;
   const payload = body as Record<string, unknown>;
 
@@ -205,12 +217,47 @@ export function parseWebhookPayload(
     if (messageData.fromMe === true || messageData.isGroup === true) return null;
     const senderJid =
       typeof messageData.sender_pn === "string" ? messageData.sender_pn : messageData.sender;
-    if (typeof senderJid !== "string" || typeof messageData.text !== "string") return null;
-    return {
-      fromPhone: normalizeWhatsappJid(senderJid),
-      fromName: typeof messageData.senderName === "string" ? messageData.senderName : undefined,
-      body: messageData.text,
-    };
+    if (typeof senderJid !== "string") return null;
+
+    const content =
+      typeof messageData.content === "object" && messageData.content !== null
+        ? (messageData.content as Record<string, unknown>)
+        : {};
+    const mediaType =
+      typeof messageData.messageType === "string"
+        ? mediaTypeFromUazapi(messageData.messageType)
+        : null;
+
+    const fromPhone = normalizeWhatsappJid(senderJid);
+    const fromName =
+      typeof messageData.senderName === "string" ? messageData.senderName : undefined;
+
+    if (mediaType) {
+      const mime =
+        typeof content.mimetype === "string" ? content.mimetype : "application/octet-stream";
+      const caption =
+        typeof content.caption === "string"
+          ? content.caption
+          : typeof messageData.text === "string"
+            ? messageData.text
+            : "";
+      const filename =
+        mediaType === "document" && typeof content.fileName === "string"
+          ? content.fileName
+          : null;
+      const providerMessageId =
+        typeof messageData.messageid === "string" ? messageData.messageid : "";
+      const fileLength = typeof content.fileLength === "number" ? content.fileLength : 0;
+      return {
+        fromPhone,
+        fromName,
+        body: caption,
+        media: { providerMessageId, type: mediaType, mime, filename, fileLength },
+      };
+    }
+
+    if (typeof messageData.text !== "string") return null;
+    return { fromPhone, fromName, body: messageData.text };
   }
 
   if (payload.event === "messages.upsert") {

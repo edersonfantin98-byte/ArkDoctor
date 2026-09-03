@@ -464,6 +464,116 @@ describe("parseWebhookPayload", () => {
       body: "Respondendo sua mensagem",
     });
   });
+
+  const imageWebhook = {
+    EventType: "messages",
+    message: {
+      fromMe: false,
+      isGroup: false,
+      messageType: "ImageMessage",
+      messageid: "3AFC432F36B07600E616",
+      sender: "257208528953502@lid",
+      sender_pn: "556696604575@s.whatsapp.net",
+      senderName: "Ederson Fernandes",
+      text: "Ola amigo",
+      content: {
+        mimetype: "image/jpeg",
+        caption: "Ola amigo",
+        fileLength: 125831,
+        URL: "https://mmg.whatsapp.net/o1/v/t24/enc?mms3=true",
+      },
+    },
+  };
+
+  const documentWebhook = {
+    EventType: "messages",
+    message: {
+      fromMe: false,
+      isGroup: false,
+      messageType: "DocumentMessage",
+      messageid: "3AAED69C92FBA6BAE2C1",
+      sender: "257208528953502@lid",
+      sender_pn: "556696604575@s.whatsapp.net",
+      senderName: "Ederson Fernandes",
+      text: "",
+      content: {
+        mimetype: "application/pdf",
+        fileName: "1004239-53.2025.8.11.0040-processo.pdf",
+        fileLength: 2413752,
+      },
+    },
+  };
+
+  const audioWebhook = {
+    EventType: "messages",
+    message: {
+      fromMe: false,
+      isGroup: false,
+      messageType: "AudioMessage",
+      messageid: "3AD9DA24C6DECE028736",
+      sender_pn: "556696604575@s.whatsapp.net",
+      text: "",
+      content: { mimetype: "audio/ogg; codecs=opus", fileLength: 11705, PTT: true },
+    },
+  };
+
+  it("extrai mídia de imagem com legenda", () => {
+    const parsed = parseWebhookPayload(imageWebhook);
+    expect(parsed).toEqual({
+      fromPhone: "556696604575",
+      fromName: "Ederson Fernandes",
+      body: "Ola amigo",
+      media: {
+        providerMessageId: "3AFC432F36B07600E616",
+        type: "image",
+        mime: "image/jpeg",
+        filename: null,
+        fileLength: 125831,
+      },
+    });
+  });
+
+  it("extrai mídia de documento com fileName e legenda vazia", () => {
+    const parsed = parseWebhookPayload(documentWebhook);
+    expect(parsed?.media).toEqual({
+      providerMessageId: "3AAED69C92FBA6BAE2C1",
+      type: "document",
+      mime: "application/pdf",
+      filename: "1004239-53.2025.8.11.0040-processo.pdf",
+      fileLength: 2413752,
+    });
+    expect(parsed?.body).toBe("");
+  });
+
+  it("extrai mídia de áudio (mime com parâmetros)", () => {
+    const parsed = parseWebhookPayload(audioWebhook);
+    expect(parsed?.media?.type).toBe("audio");
+    expect(parsed?.media?.mime).toBe("audio/ogg; codecs=opus");
+  });
+
+  it("descarta mídia de grupo e fromMe", () => {
+    expect(
+      parseWebhookPayload({ ...imageWebhook, message: { ...imageWebhook.message, isGroup: true } }),
+    ).toBeNull();
+    expect(
+      parseWebhookPayload({ ...imageWebhook, message: { ...imageWebhook.message, fromMe: true } }),
+    ).toBeNull();
+  });
+
+  it("mensagem de texto puro continua sem campo media", () => {
+    const parsed = parseWebhookPayload({
+      EventType: "messages",
+      message: {
+        fromMe: false,
+        isGroup: false,
+        messageType: "Conversation",
+        sender_pn: "556696604575@s.whatsapp.net",
+        text: "oi",
+      },
+    });
+    expect(parsed).toEqual({ fromPhone: "556696604575", fromName: undefined, body: "oi" });
+    expect("media" in (parsed ?? {})).toBe(false);
+  });
 });
 
 describe("personalizeMessage", () => {
