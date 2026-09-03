@@ -10,6 +10,7 @@ import type { Message } from "@/modules/whatsapp/types";
 import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import { createUazapiProvider } from "@/modules/whatsapp/provider.uazapi";
 import * as whatsapp from "@/modules/whatsapp/service";
+import { MAX_MEDIA_BYTES, mediaTypeFromMime } from "@/modules/whatsapp/media";
 
 async function getRepoAndAccount() {
   const supabase = await createServerSupabaseClient();
@@ -135,4 +136,46 @@ export async function getWhatsappConnectionAction() {
     status: connection.status,
     isConfigured: connection.config !== null,
   };
+}
+
+export async function sendWhatsappMediaAction(
+  conversationId: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Selecione um arquivo." };
+  }
+  if (file.size > MAX_MEDIA_BYTES) {
+    return { ok: false, error: "Arquivo acima do limite de 16 MB." };
+  }
+  const rawCaption = formData.get("caption");
+  const caption = typeof rawCaption === "string" ? rawCaption : "";
+
+  const { repo, accountId } = await getRepoAndAccount();
+  const supabase = await createServerSupabaseClient();
+  const storage = createSupabaseWhatsappMediaStorage(supabase);
+  const uazapi = createUazapiProvider(repo);
+  const mime = file.type || "application/octet-stream";
+
+  const result = await whatsapp.sendMediaMessage(
+    repo,
+    storage,
+    (accId, toPhone, input) => uazapi.sendMedia(accId, toPhone, input),
+    accountId,
+    conversationId,
+    {
+      type: mediaTypeFromMime(mime),
+      bytes: new Uint8Array(await file.arrayBuffer()),
+      mime,
+      filename: file.name || null,
+      caption,
+    },
+  );
+
+  if (result.ok) {
+    revalidatePath("/whatsapp");
+    return { ok: true };
+  }
+  return { ok: false, error: result.error };
 }
