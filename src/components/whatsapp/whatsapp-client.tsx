@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Image as ImageIcon, Mic, Video } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -166,14 +166,27 @@ function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
   );
 }
 
+const MEDIA_ICON = { image: ImageIcon, audio: Mic, video: Video, document: FileText } as const;
+
 function MediaBubble({ message }: { message: MessageView }) {
   const { mediaType, mediaStatus, mediaUrl, mediaFilename } = message;
+  const Icon = mediaType ? MEDIA_ICON[mediaType] : FileText;
 
   if (mediaStatus === "too_large") {
-    return <p className="italic text-muted-foreground">[arquivo muito grande — não salvo]</p>;
+    return (
+      <p className="flex items-center gap-1.5 italic text-muted-foreground">
+        <Icon className="size-4 shrink-0" />
+        [arquivo muito grande — não salvo]
+      </p>
+    );
   }
   if (mediaStatus === "expired" || !mediaUrl) {
-    return <p className="italic text-muted-foreground">[mídia expirada]</p>;
+    return (
+      <p className="flex items-center gap-1.5 italic text-muted-foreground">
+        <Icon className="size-4 shrink-0" />
+        [mídia expirada]
+      </p>
+    );
   }
   if (mediaType === "image") {
     return (
@@ -184,17 +197,25 @@ function MediaBubble({ message }: { message: MessageView }) {
     );
   }
   if (mediaType === "audio") {
-    return <audio controls src={mediaUrl} className="w-full" />;
+    return (
+      <audio controls src={mediaUrl} className="w-full" aria-label={mediaFilename ?? "áudio"} />
+    );
   }
   if (mediaType === "video") {
-    return <video controls src={mediaUrl} className="max-h-64 rounded" />;
+    return (
+      <video
+        controls
+        src={mediaUrl}
+        className="max-h-64 rounded"
+        aria-label={mediaFilename ?? "vídeo"}
+      />
+    );
   }
   return (
     <a
-      href={mediaUrl}
+      href={`${mediaUrl}${mediaUrl.includes("?") ? "&" : "?"}download=${encodeURIComponent(mediaFilename ?? "arquivo")}`}
       target="_blank"
       rel="noreferrer"
-      download={mediaFilename ?? undefined}
       className="flex items-center gap-2 underline"
     >
       <FileText className="size-4 shrink-0" />
