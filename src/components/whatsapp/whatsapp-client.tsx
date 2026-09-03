@@ -28,8 +28,9 @@ import {
   saveUazapiConfigAction,
   getUazapiQrCodeAction,
   getWhatsappConnectionAction,
+  type MessageView,
 } from "@/app/(app)/whatsapp/actions";
-import type { Conversation, Message } from "@/modules/whatsapp/types";
+import type { Conversation } from "@/modules/whatsapp/types";
 
 type WhatsappConnectionSummary = Awaited<ReturnType<typeof getWhatsappConnectionAction>>;
 
@@ -170,7 +171,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
     initialConversations[0]?.id ?? null,
   );
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageView[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");

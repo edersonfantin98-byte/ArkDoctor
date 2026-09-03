@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAccountId } from "@/lib/supabase/account";
 import { createSupabaseWhatsappRepository } from "@/modules/whatsapp/repository.supabase";
+import { createSupabaseWhatsappMediaStorage } from "@/modules/whatsapp/storage";
+import type { Message } from "@/modules/whatsapp/types";
 import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import { createUazapiProvider } from "@/modules/whatsapp/provider.uazapi";
 import * as whatsapp from "@/modules/whatsapp/service";
@@ -21,9 +23,34 @@ export async function listConversationsAction() {
   return whatsapp.listConversations(repo, accountId);
 }
 
-export async function getConversationMessagesAction(conversationId: string) {
+const SIGNED_URL_TTL = 3600;
+export type MessageView = Message & { mediaUrl: string | null };
+
+export async function getConversationMessagesAction(
+  conversationId: string,
+): Promise<MessageView[]> {
   const { repo, accountId } = await getRepoAndAccount();
-  return whatsapp.getConversationMessages(repo, accountId, conversationId);
+  const messages = await whatsapp.getConversationMessages(repo, accountId, conversationId);
+
+  const storedPaths = messages
+    .filter((m) => m.mediaStatus === "stored" && m.mediaStoragePath)
+    .map((m) => m.mediaStoragePath as string);
+
+  let urlByPath = new Map<string, string>();
+  if (storedPaths.length > 0) {
+    const supabase = await createServerSupabaseClient();
+    const storage = createSupabaseWhatsappMediaStorage(supabase);
+    const signed = await storage.createSignedUrls(storedPaths, SIGNED_URL_TTL);
+    urlByPath = new Map(storedPaths.map((p, i) => [p, signed[i] ?? ""]));
+  }
+
+  return messages.map((m) => ({
+    ...m,
+    mediaUrl:
+      m.mediaStatus === "stored" && m.mediaStoragePath
+        ? urlByPath.get(m.mediaStoragePath) ?? null
+        : null,
+  }));
 }
 
 export async function startConversationAction(input: unknown) {
