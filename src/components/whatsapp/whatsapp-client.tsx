@@ -270,9 +270,13 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     }
   }
 
-  const fetchMessages = useCallback(async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string, preserveKnownUrls = false) => {
     const data = await getConversationMessagesAction(conversationId);
-    setMessages(data);
+    setMessages((prev) => {
+      if (!preserveKnownUrls) return data;
+      const known = new Map(prev.map((m) => [m.id, m.mediaUrl]));
+      return data.map((m) => ({ ...m, mediaUrl: known.get(m.id) ?? m.mediaUrl }));
+    });
     await resetUnreadCountAction(conversationId);
     setConversations((prev) =>
       prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c)),
@@ -307,7 +311,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   useEffect(() => {
     if (!selectedConversationId) return;
     const interval = setInterval(() => {
-      fetchMessages(selectedConversationId).catch(() => {});
+      fetchMessages(selectedConversationId, true).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, [selectedConversationId, fetchMessages]);
