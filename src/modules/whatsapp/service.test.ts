@@ -62,6 +62,93 @@ describe("whatsapp service", () => {
 
     expect(sendSpy).toHaveBeenCalledWith("acc-1", "51991234477", "Confirmado!");
   });
+
+  it("blocks an outbound message when the connection exists but is not connected", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    await repo.upsertConnectionStatus("acc-1", "disconnected", null);
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+    const sendSpy = vi.spyOn(provider, "sendMessage");
+
+    const result = await logMessage(repo, provider, "acc-1", conversation.id, {
+      direction: "outbound",
+      body: "Confirmado!",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "WhatsApp desconectado. Conecte para enviar mensagens.",
+    });
+    expect(sendSpy).not.toHaveBeenCalled();
+    const messages = await getConversationMessages(repo, "acc-1", conversation.id);
+    expect(messages).toHaveLength(0);
+  });
+
+  it("allows an outbound message when the connection is connected", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    await repo.upsertConnectionStatus("acc-1", "connected", new Date().toISOString());
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    const result = await logMessage(repo, provider, "acc-1", conversation.id, {
+      direction: "outbound",
+      body: "Confirmado!",
+    });
+
+    expect(result.ok).toBe(true);
+    const messages = await getConversationMessages(repo, "acc-1", conversation.id);
+    expect(messages).toHaveLength(1);
+  });
+
+  it("returns the provider send failure as data instead of throwing", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    await repo.upsertConnectionStatus("acc-1", "connected", new Date().toISOString());
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+    vi.spyOn(provider, "sendMessage").mockRejectedValue(new Error("Falha ao enviar mensagem pela Uazapi"));
+
+    const result = await logMessage(repo, provider, "acc-1", conversation.id, {
+      direction: "outbound",
+      body: "Confirmado!",
+    });
+
+    expect(result).toEqual({ ok: false, error: "Falha ao enviar mensagem pela Uazapi" });
+    const messages = await getConversationMessages(repo, "acc-1", conversation.id);
+    expect(messages).toHaveLength(0);
+  });
+
+  it("still returns a success result shape on the happy path", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const provider = createFakeWhatsappProvider(repo);
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "51991234477",
+    });
+
+    const result = await logMessage(repo, provider, "acc-1", conversation.id, {
+      direction: "outbound",
+      body: "Oi",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.message.body).toBe("Oi");
+      expect(result.message.direction).toBe("outbound");
+    }
+  });
 });
 
 function buildCrmDeps(crmRepo: ReturnType<typeof createInMemoryCrmRepository>) {

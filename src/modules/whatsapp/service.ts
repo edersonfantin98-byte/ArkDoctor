@@ -2,8 +2,14 @@ import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
 import { normalizeWhatsappJid } from "./provider.uazapi";
-import type { WhatsappConnection } from "./types";
+import type { WhatsappConnection, Message } from "./types";
 import { parseOrThrow } from "@/lib/zod-error";
+
+export type LogMessageResult =
+  | { ok: true; message: Message }
+  | { ok: false; error: string };
+
+const DISCONNECTED_ERROR = "WhatsApp desconectado. Conecte para enviar mensagens.";
 
 export async function listConversations(repo: WhatsappRepository, accountId: string) {
   return repo.listConversations(accountId);
@@ -30,18 +36,26 @@ export async function logMessage(
   accountId: string,
   conversationId: string,
   rawInput: unknown,
-) {
+): Promise<LogMessageResult> {
   const input = parseOrThrow(logMessageInputSchema, rawInput);
   const conversation = await repo.getConversation(accountId, conversationId);
   if (!conversation) throw new Error("Conversa não encontrada");
 
   if (input.direction === "outbound") {
-    await provider.sendMessage(accountId, conversation.contactPhone, input.body);
+    const connection = await repo.getConnection(accountId);
+    if (connection && connection.status !== "connected") {
+      return { ok: false, error: DISCONNECTED_ERROR };
+    }
+    try {
+      await provider.sendMessage(accountId, conversation.contactPhone, input.body);
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : "Falha ao enviar mensagem" };
+    }
   }
 
   const message = await repo.insertMessage(accountId, conversationId, input);
   await repo.touchConversation(accountId, conversationId, input.body, message.sentAt);
-  return message;
+  return { ok: true, message };
 }
 
 export async function handleInboundMessage(
