@@ -229,3 +229,70 @@ describe("UazapiProvider.downloadMedia", () => {
     await expect(provider.downloadMedia("acc-1", "MID-x")).rejects.toThrow("Falha ao baixar mídia");
   });
 });
+
+describe("UazapiProvider.sendMedia", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("faz POST em /send/media com base64 e devolve o messageid", async () => {
+    const repo = await repoWithUazapi();
+    const provider = createUazapiProvider(repo);
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ messageid: "MID-1", id: "556:MID-1" }), { status: 200 }),
+    );
+
+    const result = await provider.sendMedia("acc-1", "556696746676", {
+      type: "image",
+      dataBase64: "QUJD",
+      filename: null,
+      caption: "legenda",
+    });
+
+    expect(result.providerMessageId).toBe("MID-1");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe("https://arkscrapper.uazapi.com/send/media");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      number: "556696746676",
+      type: "image",
+      file: "QUJD",
+      text: "legenda",
+    });
+  });
+
+  it("inclui docName quando é documento com filename", async () => {
+    const repo = await repoWithUazapi();
+    const provider = createUazapiProvider(repo);
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ messageid: "MID-2" }), { status: 200 }),
+    );
+
+    await provider.sendMedia("acc-1", "556696746676", {
+      type: "document",
+      dataBase64: "QUJD",
+      filename: "relatorio.pdf",
+      caption: "",
+    });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
+      type: "document",
+      docName: "relatorio.pdf",
+    });
+  });
+
+  it("lança com a mensagem de erro da Uazapi quando o status não é 2xx", async () => {
+    const repo = await repoWithUazapi();
+    const provider = createUazapiProvider(repo);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "failed to process file" }), { status: 500 }),
+    );
+
+    await expect(
+      provider.sendMedia("acc-1", "556696746676", {
+        type: "image",
+        dataBase64: "QUJD",
+        filename: null,
+        caption: "",
+      }),
+    ).rejects.toThrow("failed to process file");
+  });
+});

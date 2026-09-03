@@ -1,6 +1,6 @@
 import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
-import type { ConnectionStatus, WhatsappConnection } from "./types";
+import type { ConnectionStatus, WhatsappConnection, MediaType } from "./types";
 
 export interface UazapiProvider extends WhatsappProvider {
   getQrCode(accountId: string): Promise<string | null>;
@@ -8,6 +8,11 @@ export interface UazapiProvider extends WhatsappProvider {
     accountId: string,
     providerMessageId: string,
   ): Promise<{ bytes: Uint8Array; mime: string }>;
+  sendMedia(
+    accountId: string,
+    toPhone: string,
+    input: { type: MediaType; dataBase64: string; filename: string | null; caption: string },
+  ): Promise<{ providerMessageId: string }>;
 }
 
 export function normalizeWhatsappJid(jid: string): string {
@@ -159,6 +164,35 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
       if (!file.ok) throw new Error(`Falha ao baixar mídia: arquivo (${file.status})`);
       const bytes = new Uint8Array(await file.arrayBuffer());
       return { bytes, mime };
+    },
+
+    async sendMedia(accountId, toPhone, input) {
+      const connection = await repo.getConnection(accountId);
+      const config = getConfig(connection);
+
+      const body: Record<string, string> = {
+        number: toPhone,
+        type: input.type,
+        file: input.dataBase64,
+        text: input.caption,
+      };
+      if (input.type === "document" && input.filename) body.docName = input.filename;
+
+      const response = await fetch(`${baseUrl(config.subdomain)}/send/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: config.token },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(
+          detail && typeof detail.error === "string"
+            ? `Falha ao enviar mídia pela Uazapi: ${detail.error}`
+            : "Falha ao enviar mídia pela Uazapi",
+        );
+      }
+      const data = await response.json();
+      return { providerMessageId: data.messageid ?? data.id ?? "" };
     },
   };
 }
