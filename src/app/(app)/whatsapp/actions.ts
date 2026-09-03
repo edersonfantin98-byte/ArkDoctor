@@ -37,9 +37,9 @@ export async function logMessageAction(conversationId: string, input: unknown) {
   const { repo, accountId } = await getRepoAndAccount();
   const connection = await repo.getConnection(accountId);
   const provider = getWhatsappProvider(connection?.provider ?? "fake", repo);
-  const message = await whatsapp.logMessage(repo, provider, accountId, conversationId, input);
-  revalidatePath("/whatsapp");
-  return message;
+  const result = await whatsapp.logMessage(repo, provider, accountId, conversationId, input);
+  if (result.ok) revalidatePath("/whatsapp");
+  return result;
 }
 
 export async function getConnectionStatusAction() {

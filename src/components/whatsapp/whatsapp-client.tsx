@@ -279,6 +279,9 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
       listConversationsAction()
         .then(setConversations)
         .catch(() => {});
+      getWhatsappConnectionAction()
+        .then(setConnection)
+        .catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -288,10 +291,14 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     setSending(true);
     setSendError(null);
     try {
-      await logMessageAction(selectedConversationId, {
+      const result = await logMessageAction(selectedConversationId, {
         direction: "outbound",
         body: draft.trim(),
       });
+      if (!result.ok) {
+        setSendError(result.error);
+        return;
+      }
       setDraft("");
       const updated = await getConversationMessagesAction(selectedConversationId);
       setMessages(updated);
@@ -308,6 +315,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   }
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId) ?? null;
+  const isConnected = connection?.status === "connected";
 
   return (
     <div className="space-y-4 px-6 pb-6">
@@ -422,6 +430,11 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                   ))
                 )}
               </div>
+              {!isConnected && (
+                <p className="px-3 pt-2 text-sm text-amber-700">
+                  WhatsApp desconectado. Conecte para enviar mensagens.
+                </p>
+              )}
               {sendError && <p className="px-3 text-sm text-red-600">{sendError}</p>}
               <div className="flex items-center gap-2 border-t p-3">
                 <Input
@@ -431,9 +444,9 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                     if (e.key === "Enter") handleSend();
                   }}
                   placeholder="Digite uma mensagem"
-                  disabled={sending}
+                  disabled={sending || !isConnected}
                 />
-                <Button onClick={handleSend} disabled={sending || !draft.trim()}>
+                <Button onClick={handleSend} disabled={sending || !draft.trim() || !isConnected}>
                   Enviar
                 </Button>
               </div>
