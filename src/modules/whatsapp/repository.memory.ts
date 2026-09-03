@@ -30,6 +30,7 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
         lastMessageAt: null,
         unreadCount: 0,
         createdAt: new Date().toISOString(),
+        historyImportedAt: null,
       };
       conversations.set(id, conversation);
       return conversation;
@@ -58,9 +59,24 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
         direction: input.direction,
         body: input.body,
         sentAt: new Date().toISOString(),
+        mediaType: input.media?.type ?? null,
+        mediaStatus: input.media?.status ?? null,
+        mediaStoragePath: input.media?.storagePath ?? null,
+        mediaMime: input.media?.mime ?? null,
+        mediaFilename: input.media?.filename ?? null,
       };
       messages.set(id, message);
       return message;
+    },
+
+    async updateMessageMedia(accountId, messageId, patch) {
+      const m = messages.get(messageId);
+      if (!m || m.accountId !== accountId) return;
+      messages.set(messageId, {
+        ...m,
+        mediaStatus: patch.status,
+        mediaStoragePath: patch.storagePath,
+      });
     },
 
     async touchConversation(accountId, conversationId, lastMessagePreview, lastMessageAt) {

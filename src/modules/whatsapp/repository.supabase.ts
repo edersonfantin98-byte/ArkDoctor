@@ -1,7 +1,15 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { WhatsappRepository } from "./repository";
-import type { Conversation, Message, MessageDirection, WhatsappConnection, ConnectionStatus } from "./types";
+import type {
+  Conversation,
+  Message,
+  MessageDirection,
+  WhatsappConnection,
+  ConnectionStatus,
+  MediaType,
+  MediaStatus,
+} from "./types";
 
 function throwDbError(error: PostgrestError): never {
   console.error("[whatsapp/repository.supabase]", error);
@@ -21,6 +29,7 @@ function toConversation(
     lastMessageAt: row.last_message_at,
     unreadCount: row.unread_count,
     createdAt: row.created_at,
+    historyImportedAt: row.history_imported_at,
   };
 }
 
@@ -34,6 +43,11 @@ function toMessage(
     direction: row.direction as MessageDirection,
     body: row.body,
     sentAt: row.sent_at,
+    mediaType: (row.media_type as MediaType | null) ?? null,
+    mediaStatus: (row.media_status as MediaStatus | null) ?? null,
+    mediaStoragePath: row.media_storage_path,
+    mediaMime: row.media_mime,
+    mediaFilename: row.media_filename,
   };
 }
 
@@ -125,11 +139,25 @@ export function createSupabaseWhatsappRepository(
           conversation_id: conversationId,
           direction: input.direction,
           body: input.body,
+          media_type: input.media?.type ?? null,
+          media_status: input.media?.status ?? null,
+          media_storage_path: input.media?.storagePath ?? null,
+          media_mime: input.media?.mime ?? null,
+          media_filename: input.media?.filename ?? null,
         })
         .select("*")
         .single();
       if (error) throwDbError(error);
       return toMessage(data);
+    },
+
+    async updateMessageMedia(accountId, messageId, patch) {
+      const { error } = await supabase
+        .from("whatsapp_messages")
+        .update({ media_status: patch.status, media_storage_path: patch.storagePath })
+        .eq("account_id", accountId)
+        .eq("id", messageId);
+      if (error) throwDbError(error);
     },
 
     async touchConversation(accountId, conversationId, lastMessagePreview, lastMessageAt) {

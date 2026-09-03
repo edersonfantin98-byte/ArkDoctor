@@ -586,4 +586,35 @@ describe("sendBulkMessages", () => {
     expect(waitSpy).toHaveBeenCalledTimes(1);
     expect(waitSpy).toHaveBeenCalledWith(7000);
   });
+
+  it("insertMessage grava campos de mídia e updateMessageMedia troca o status", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await startConversation(repo, "acc-1", {
+      contactId: null,
+      contactName: "Carla",
+      contactPhone: "5511999990000",
+    });
+    const msg = await repo.insertMessage("acc-1", conversation.id, {
+      direction: "inbound",
+      body: "Ola amigo",
+      media: {
+        type: "image",
+        status: "expired",
+        mime: "image/jpeg",
+        filename: null,
+        storagePath: null,
+      },
+    });
+    expect(msg.mediaType).toBe("image");
+    expect(msg.mediaStatus).toBe("expired");
+
+    await repo.updateMessageMedia("acc-1", msg.id, {
+      status: "stored",
+      storagePath: "acc-1/" + conversation.id + "/" + msg.id + ".jpg",
+    });
+    const [read] = await getConversationMessages(repo, "acc-1", conversation.id);
+    expect(read.mediaStatus).toBe("stored");
+    expect(read.mediaStoragePath).toBe("acc-1/" + conversation.id + "/" + msg.id + ".jpg");
+    expect(read.mediaMime).toBe("image/jpeg");
+  });
 });

@@ -1,4 +1,11 @@
-import type { Conversation, Message, WhatsappConnection, ConnectionStatus } from "./types";
+import type {
+  Conversation,
+  Message,
+  WhatsappConnection,
+  ConnectionStatus,
+  MediaType,
+  MediaStatus,
+} from "./types";
 
 export interface WhatsappRepository {
   listConversations(accountId: string): Promise<Conversation[]>;
@@ -12,8 +19,23 @@ export interface WhatsappRepository {
   insertMessage(
     accountId: string,
     conversationId: string,
-    input: { direction: "inbound" | "outbound"; body: string },
+    input: {
+      direction: "inbound" | "outbound";
+      body: string;
+      media?: {
+        type: MediaType;
+        status: MediaStatus;
+        mime: string;
+        filename: string | null;
+        storagePath: string | null;
+      };
+    },
   ): Promise<Message>;
+  updateMessageMedia(
+    accountId: string,
+    messageId: string,
+    patch: { status: MediaStatus; storagePath: string | null },
+  ): Promise<void>;
   touchConversation(
     accountId: string,
     conversationId: string,
