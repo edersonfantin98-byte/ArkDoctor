@@ -712,6 +712,7 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at: string
+          history_imported_at: string | null
           id: string
           last_message_at: string | null
           last_message_preview: string | null
@@ -723,6 +724,7 @@ export type Database = {
           contact_name: string
           contact_phone: string
           created_at?: string
+          history_imported_at?: string | null
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
@@ -734,6 +736,7 @@ export type Database = {
           contact_name?: string
           contact_phone?: string
           created_at?: string
+          history_imported_at?: string | null
           id?: string
           last_message_at?: string | null
           last_message_preview?: string | null
@@ -763,6 +766,11 @@ export type Database = {
           conversation_id: string
           direction: string
           id: string
+          media_filename: string | null
+          media_mime: string | null
+          media_status: string | null
+          media_storage_path: string | null
+          media_type: string | null
           sent_at: string
         }
         Insert: {
@@ -771,6 +779,11 @@ export type Database = {
           conversation_id: string
           direction: string
           id?: string
+          media_filename?: string | null
+          media_mime?: string | null
+          media_status?: string | null
+          media_storage_path?: string | null
+          media_type?: string | null
           sent_at?: string
         }
         Update: {
@@ -779,6 +792,11 @@ export type Database = {
           conversation_id?: string
           direction?: string
           id?: string
+          media_filename?: string | null
+          media_mime?: string | null
+          media_status?: string | null
+          media_storage_path?: string | null
+          media_type?: string | null
           sent_at?: string
         }
         Relationships: [
