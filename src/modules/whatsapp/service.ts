@@ -60,6 +60,71 @@ export async function logMessage(
   return { ok: true, message };
 }
 
+export type SendMediaFn = (
+  accountId: string,
+  toPhone: string,
+  input: { type: MediaType; dataBase64: string; filename: string | null; caption: string },
+) => Promise<{ providerMessageId: string }>;
+
+export async function sendMediaMessage(
+  repo: WhatsappRepository,
+  storage: WhatsappMediaStorage,
+  sendMedia: SendMediaFn,
+  accountId: string,
+  conversationId: string,
+  input: { type: MediaType; bytes: Uint8Array; mime: string; filename: string | null; caption: string },
+): Promise<LogMessageResult> {
+  const conversation = await repo.getConversation(accountId, conversationId);
+  if (!conversation) throw new Error("Conversa não encontrada");
+
+  const connection = await repo.getConnection(accountId);
+  if (connection && connection.status !== "connected") {
+    return { ok: false, error: DISCONNECTED_ERROR };
+  }
+  if (input.bytes.byteLength > MAX_MEDIA_BYTES) {
+    return { ok: false, error: "Arquivo acima do limite de 16 MB." };
+  }
+
+  try {
+    await sendMedia(accountId, conversation.contactPhone, {
+      type: input.type,
+      dataBase64: Buffer.from(input.bytes).toString("base64"),
+      filename: input.filename,
+      caption: input.caption,
+    });
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Falha ao enviar mídia" };
+  }
+
+  const message = await repo.insertMessage(accountId, conversationId, {
+    direction: "outbound",
+    body: input.caption,
+    media: {
+      type: input.type,
+      status: "stored",
+      mime: input.mime,
+      filename: input.filename,
+      storagePath: null,
+    },
+  });
+
+  let finalMessage = message;
+  try {
+    const path = storagePathFor(accountId, conversationId, message.id, input.mime);
+    await storage.upload(path, input.bytes, safeContentType(input.type, input.mime));
+    await repo.updateMessageMedia(accountId, message.id, { status: "stored", storagePath: path });
+    finalMessage = { ...message, mediaStoragePath: path };
+  } catch (err) {
+    console.error("[whatsapp] envio: mídia enviada mas upload local falhou, marcada 'expired'", err);
+    await repo.updateMessageMedia(accountId, message.id, { status: "expired", storagePath: null });
+    finalMessage = { ...message, mediaStatus: "expired", mediaStoragePath: null };
+  }
+
+  const preview = input.caption || mediaPreviewLabel(input.type);
+  await repo.touchConversation(accountId, conversationId, preview, message.sentAt);
+  return { ok: true, message: finalMessage };
+}
+
 export async function handleInboundMessage(
   whatsappRepo: WhatsappRepository,
   crmDeps: {

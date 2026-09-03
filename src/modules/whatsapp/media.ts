@@ -54,3 +54,11 @@ export function storagePathFor(
 ): string {
   return `${accountId}/${conversationId}/${messageId}.${extFromMime(mime)}`;
 }
+
+export function mediaTypeFromMime(mime: string): MediaType {
+  const base = mime.split(";")[0].trim().toLowerCase();
+  if (base.startsWith("image/")) return "image";
+  if (base.startsWith("audio/")) return "audio";
+  if (base.startsWith("video/")) return "video";
+  return "document";
+}

@@ -4,6 +4,7 @@ import {
   extFromMime,
   storagePathFor,
   safeContentType,
+  mediaTypeFromMime,
 } from "./media";
 
 describe("mediaTypeFromUazapi", () => {
@@ -57,5 +58,15 @@ describe("safeContentType", () => {
   it("trusts the provider mime for documents", () => {
     expect(safeContentType("document", "application/pdf")).toBe("application/pdf");
     expect(safeContentType("document", "")).toBe("application/octet-stream");
+  });
+});
+
+describe("mediaTypeFromMime", () => {
+  it("mapeia o prefixo do mime para o tipo de mídia", () => {
+    expect(mediaTypeFromMime("image/jpeg")).toBe("image");
+    expect(mediaTypeFromMime("audio/ogg; codecs=opus")).toBe("audio");
+    expect(mediaTypeFromMime("video/mp4")).toBe("video");
+    expect(mediaTypeFromMime("application/pdf")).toBe("document");
+    expect(mediaTypeFromMime("")).toBe("document");
   });
 });

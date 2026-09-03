@@ -8,6 +8,7 @@ import * as crm from "../crm/service";
 import {
   startConversation,
   logMessage,
+  sendMediaMessage,
   getConversationMessages,
   handleInboundMessage,
   getConnectionStatus,
@@ -821,5 +822,135 @@ describe("sendBulkMessages", () => {
     expect(read.mediaStatus).toBe("stored");
     expect(read.mediaStoragePath).toBe("acc-1/" + conversation.id + "/" + msg.id + ".jpg");
     expect(read.mediaMime).toBe("image/jpeg");
+  });
+});
+
+describe("sendMediaMessage", () => {
+  async function setup() {
+    const repo = createInMemoryWhatsappRepository();
+    const storage = createFakeWhatsappMediaStorage();
+    await repo.upsertConnectionStatus("acc-1", "connected", new Date().toISOString());
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla",
+      contactPhone: "5511988887777",
+    });
+    return { repo, storage, conversationId: conversation.id };
+  }
+
+  it("envia pela Uazapi, grava a mensagem outbound e sobe o arquivo no bucket", async () => {
+    const { repo, storage, conversationId } = await setup();
+    const sendMedia = vi.fn().mockResolvedValue({ providerMessageId: "MID-1" });
+    const bytes = new Uint8Array([1, 2, 3]);
+
+    const result = await sendMediaMessage(repo, storage, sendMedia, "acc-1", conversationId, {
+      type: "image",
+      bytes,
+      mime: "image/jpeg",
+      filename: "foto.jpg",
+      caption: "olha isso",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(sendMedia).toHaveBeenCalledWith("acc-1", "5511988887777", {
+      type: "image",
+      dataBase64: Buffer.from(bytes).toString("base64"),
+      filename: "foto.jpg",
+      caption: "olha isso",
+    });
+    const messages = await repo.listMessages("acc-1", conversationId);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      direction: "outbound",
+      body: "olha isso",
+      mediaType: "image",
+      mediaStatus: "stored",
+    });
+    expect(messages[0].mediaStoragePath).toBeTruthy();
+    expect(storage.objects.has(messages[0].mediaStoragePath as string)).toBe(true);
+  });
+
+  it("usa o rótulo do tipo como preview quando não há legenda", async () => {
+    const { repo, storage, conversationId } = await setup();
+    const sendMedia = vi.fn().mockResolvedValue({ providerMessageId: "MID-2" });
+    await sendMediaMessage(repo, storage, sendMedia, "acc-1", conversationId, {
+      type: "document",
+      bytes: new Uint8Array([9]),
+      mime: "application/pdf",
+      filename: "x.pdf",
+      caption: "",
+    });
+    const conv = await repo.getConversation("acc-1", conversationId);
+    expect(conv?.lastMessagePreview).toContain("Documento");
+  });
+
+  it("retorna { ok: false } e não chama o provider quando desconectado", async () => {
+    const { repo, storage, conversationId } = await setup();
+    await repo.upsertConnectionStatus("acc-1", "disconnected", null);
+    const sendMedia = vi.fn();
+
+    const result = await sendMediaMessage(repo, storage, sendMedia, "acc-1", conversationId, {
+      type: "image",
+      bytes: new Uint8Array([1]),
+      mime: "image/jpeg",
+      filename: null,
+      caption: "",
+    });
+
+    expect(result).toEqual({ ok: false, error: expect.stringContaining("desconectado") });
+    expect(sendMedia).not.toHaveBeenCalled();
+  });
+
+  it("retorna { ok: false } quando o arquivo passa de 16 MB, sem chamar o provider", async () => {
+    const { repo, storage, conversationId } = await setup();
+    const sendMedia = vi.fn();
+    const big = new Uint8Array(MAX_MEDIA_BYTES + 1);
+
+    const result = await sendMediaMessage(repo, storage, sendMedia, "acc-1", conversationId, {
+      type: "video",
+      bytes: big,
+      mime: "video/mp4",
+      filename: null,
+      caption: "",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(sendMedia).not.toHaveBeenCalled();
+  });
+
+  it("retorna { ok: false } e não grava mensagem quando o provider falha", async () => {
+    const { repo, storage, conversationId } = await setup();
+    const sendMedia = vi.fn().mockRejectedValue(new Error("failed to process file"));
+
+    const result = await sendMediaMessage(repo, storage, sendMedia, "acc-1", conversationId, {
+      type: "image",
+      bytes: new Uint8Array([1]),
+      mime: "image/jpeg",
+      filename: null,
+      caption: "",
+    });
+
+    expect(result).toEqual({ ok: false, error: expect.stringContaining("failed to process file") });
+    expect(await repo.listMessages("acc-1", conversationId)).toHaveLength(0);
+  });
+
+  it("mantém a mensagem como 'expired' quando o envio dá certo mas o upload local falha", async () => {
+    const { repo, conversationId } = await setup();
+    const storage = createFakeWhatsappMediaStorage();
+    storage.upload = vi.fn().mockRejectedValue(new Error("storage down"));
+    const sendMedia = vi.fn().mockResolvedValue({ providerMessageId: "MID-3" });
+
+    const result = await sendMediaMessage(repo, storage, sendMedia, "acc-1", conversationId, {
+      type: "image",
+      bytes: new Uint8Array([1]),
+      mime: "image/jpeg",
+      filename: null,
+      caption: "",
+    });
+
+    expect(result.ok).toBe(true);
+    const messages = await repo.listMessages("acc-1", conversationId);
+    expect(messages[0].mediaStatus).toBe("expired");
+    expect(messages[0].mediaStoragePath).toBeNull();
   });
 });
