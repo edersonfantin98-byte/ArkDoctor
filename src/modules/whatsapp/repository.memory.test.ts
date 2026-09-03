@@ -178,3 +178,34 @@ describe("createInMemoryWhatsappRepository", () => {
     expect(cleared.qrCode).toBeNull();
   });
 });
+
+describe("listStoredMediaOlderThan", () => {
+  it("devolve só mídia 'stored' com caminho e sent_at anterior ao corte", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conv = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "C",
+      contactPhone: "551199",
+    });
+    const stored = await repo.insertMessage("acc-1", conv.id, {
+      direction: "inbound",
+      body: "",
+      media: { type: "image", status: "stored", mime: "image/jpeg", filename: null, storagePath: "acc-1/x/y.jpg" },
+    });
+    await repo.insertMessage("acc-1", conv.id, {
+      direction: "inbound",
+      body: "",
+      media: { type: "image", status: "too_large", mime: "image/jpeg", filename: null, storagePath: null },
+    });
+    await repo.insertMessage("acc-1", conv.id, { direction: "inbound", body: "texto" });
+
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    const past = new Date(Date.now() - 86_400_000).toISOString();
+
+    const hits = await repo.listStoredMediaOlderThan(future);
+    expect(hits).toEqual([
+      { id: stored.id, accountId: "acc-1", mediaStoragePath: "acc-1/x/y.jpg" },
+    ]);
+    expect(await repo.listStoredMediaOlderThan(past)).toEqual([]);
+  });
+});

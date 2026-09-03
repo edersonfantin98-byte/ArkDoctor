@@ -160,6 +160,21 @@ export function createSupabaseWhatsappRepository(
       if (error) throwDbError(error);
     },
 
+    async listStoredMediaOlderThan(cutoffIso) {
+      const { data, error } = await supabase
+        .from("whatsapp_messages")
+        .select("id, account_id, media_storage_path")
+        .eq("media_status", "stored")
+        .lt("sent_at", cutoffIso)
+        .not("media_storage_path", "is", null);
+      if (error) throwDbError(error);
+      return data.map((r) => ({
+        id: r.id,
+        accountId: r.account_id,
+        mediaStoragePath: r.media_storage_path as string,
+      }));
+    },
+
     async touchConversation(accountId, conversationId, lastMessagePreview, lastMessageAt) {
       const { error } = await supabase
         .from("whatsapp_conversations")

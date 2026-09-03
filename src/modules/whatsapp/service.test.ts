@@ -9,6 +9,7 @@ import {
   startConversation,
   logMessage,
   sendMediaMessage,
+  runMediaRetention,
   getConversationMessages,
   handleInboundMessage,
   getConnectionStatus,
@@ -952,5 +953,75 @@ describe("sendMediaMessage", () => {
     const messages = await repo.listMessages("acc-1", conversationId);
     expect(messages[0].mediaStatus).toBe("expired");
     expect(messages[0].mediaStoragePath).toBeNull();
+  });
+});
+
+describe("runMediaRetention", () => {
+  async function seedStored(
+    repo: ReturnType<typeof createInMemoryWhatsappRepository>,
+    storage: ReturnType<typeof createFakeWhatsappMediaStorage>,
+    convId: string,
+    path: string,
+  ) {
+    const msg = await repo.insertMessage("acc-1", convId, {
+      direction: "inbound",
+      body: "",
+      media: { type: "image", status: "stored", mime: "image/jpeg", filename: null, storagePath: path },
+    });
+    await storage.upload(path, new Uint8Array([1]), "image/jpeg");
+    return msg;
+  }
+
+  it("apaga o objeto e marca a mensagem como 'expired' para mídia vencida", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const storage = createFakeWhatsappMediaStorage();
+    const conv = await repo.insertConversation("acc-1", {
+      contactId: null, contactName: "C", contactPhone: "551199",
+    });
+    const a = await seedStored(repo, storage, conv.id, "acc-1/c/a.jpg");
+    const b = await seedStored(repo, storage, conv.id, "acc-1/c/b.jpg");
+
+    // nowIso 40 dias no futuro => corte (now - 30d) fica depois das mensagens
+    const nowIso = new Date(Date.now() + 40 * 86_400_000).toISOString();
+    const result = await runMediaRetention(repo, storage, nowIso);
+
+    expect(result).toEqual({ expired: 2, errors: 0 });
+    expect(storage.objects.size).toBe(0);
+    const msgs = await repo.listMessages("acc-1", conv.id);
+    for (const id of [a.id, b.id]) {
+      const m = msgs.find((x) => x.id === id)!;
+      expect(m.mediaStatus).toBe("expired");
+      expect(m.mediaStoragePath).toBeNull();
+    }
+  });
+
+  it("não toca em mídia 'stored' recente", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const storage = createFakeWhatsappMediaStorage();
+    const conv = await repo.insertConversation("acc-1", {
+      contactId: null, contactName: "C", contactPhone: "551199",
+    });
+    await seedStored(repo, storage, conv.id, "acc-1/c/a.jpg");
+
+    const result = await runMediaRetention(repo, storage, new Date().toISOString());
+    expect(result).toEqual({ expired: 0, errors: 0 });
+    expect(storage.objects.size).toBe(1);
+  });
+
+  it("conta erro e mantém 'stored' quando falha ao remover um objeto", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const storage = createFakeWhatsappMediaStorage();
+    const conv = await repo.insertConversation("acc-1", {
+      contactId: null, contactName: "C", contactPhone: "551199",
+    });
+    const a = await seedStored(repo, storage, conv.id, "acc-1/c/a.jpg");
+    storage.remove = vi.fn().mockRejectedValue(new Error("storage down"));
+
+    const nowIso = new Date(Date.now() + 40 * 86_400_000).toISOString();
+    const result = await runMediaRetention(repo, storage, nowIso);
+
+    expect(result).toEqual({ expired: 0, errors: 1 });
+    const m = (await repo.listMessages("acc-1", conv.id)).find((x) => x.id === a.id)!;
+    expect(m.mediaStatus).toBe("stored");
   });
 });

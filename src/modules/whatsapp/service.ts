@@ -125,6 +125,33 @@ export async function sendMediaMessage(
   return { ok: true, message: finalMessage };
 }
 
+export async function runMediaRetention(
+  repo: WhatsappRepository,
+  storage: WhatsappMediaStorage,
+  nowIso: string,
+  retentionDays = 30,
+): Promise<{ expired: number; errors: number }> {
+  const cutoffIso = new Date(
+    Date.parse(nowIso) - retentionDays * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const rows = await repo.listStoredMediaOlderThan(cutoffIso);
+
+  let expired = 0;
+  let errors = 0;
+  for (const row of rows) {
+    try {
+      await storage.remove([row.mediaStoragePath]);
+    } catch (err) {
+      console.error("[whatsapp] retenção: falha ao remover objeto, mantém 'stored'", row.id, err);
+      errors += 1;
+      continue;
+    }
+    await repo.updateMessageMedia(row.accountId, row.id, { status: "expired", storagePath: null });
+    expired += 1;
+  }
+  return { expired, errors };
+}
+
 export async function handleInboundMessage(
   whatsappRepo: WhatsappRepository,
   crmDeps: {

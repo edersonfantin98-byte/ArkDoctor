@@ -36,6 +36,9 @@ export interface WhatsappRepository {
     messageId: string,
     patch: { status: MediaStatus; storagePath: string | null },
   ): Promise<void>;
+  listStoredMediaOlderThan(
+    cutoffIso: string,
+  ): Promise<{ id: string; accountId: string; mediaStoragePath: string }[]>;
   touchConversation(
     accountId: string,
     conversationId: string,

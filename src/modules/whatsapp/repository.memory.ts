@@ -79,6 +79,21 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
       });
     },
 
+    async listStoredMediaOlderThan(cutoffIso) {
+      return [...messages.values()]
+        .filter(
+          (m) =>
+            m.mediaStatus === "stored" &&
+            m.mediaStoragePath !== null &&
+            m.sentAt < cutoffIso,
+        )
+        .map((m) => ({
+          id: m.id,
+          accountId: m.accountId,
+          mediaStoragePath: m.mediaStoragePath as string,
+        }));
+    },
+
     async touchConversation(accountId, conversationId, lastMessagePreview, lastMessageAt) {
       const c = conversations.get(conversationId);
       if (!c || c.accountId !== accountId) return;
