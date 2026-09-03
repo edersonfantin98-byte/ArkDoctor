@@ -24,7 +24,7 @@ export async function listConversationsAction() {
 }
 
 const SIGNED_URL_TTL = 3600;
-export type MessageView = Message & { mediaUrl: string | null };
+export type MessageView = Omit<Message, "mediaStoragePath"> & { mediaUrl: string | null };
 
 export async function getConversationMessagesAction(
   conversationId: string,
@@ -36,21 +36,24 @@ export async function getConversationMessagesAction(
     .filter((m) => m.mediaStatus === "stored" && m.mediaStoragePath)
     .map((m) => m.mediaStoragePath as string);
 
-  let urlByPath = new Map<string, string>();
+  let urlByPath = new Map<string, string | null>();
   if (storedPaths.length > 0) {
     const supabase = await createServerSupabaseClient();
     const storage = createSupabaseWhatsappMediaStorage(supabase);
     const signed = await storage.createSignedUrls(storedPaths, SIGNED_URL_TTL);
-    urlByPath = new Map(storedPaths.map((p, i) => [p, signed[i] ?? ""]));
+    urlByPath = new Map(storedPaths.map((p, i) => [p, signed[i] ?? null]));
   }
 
-  return messages.map((m) => ({
-    ...m,
-    mediaUrl:
-      m.mediaStatus === "stored" && m.mediaStoragePath
-        ? urlByPath.get(m.mediaStoragePath) ?? null
-        : null,
-  }));
+  return messages.map((m) => {
+    const { mediaStoragePath, ...rest } = m;
+    return {
+      ...rest,
+      mediaUrl:
+        m.mediaStatus === "stored" && mediaStoragePath
+          ? urlByPath.get(mediaStoragePath) ?? null
+          : null,
+    };
+  });
 }
 
 export async function startConversationAction(input: unknown) {
