@@ -1,0 +1,1191 @@
+<!doctype html><html><head><!-- frame-runtime --><script>window.__FRAME_PREAMBLE={"v":1,"capabilities":{"artifact":"artifact.BYHii2AW.js","assets":"assets.8Gk803W0.js","comments":"comments.BiSa9uTt.js","db":"db.h-3sndFg.js","downloads":"downloads.th1YuAIk.js","embed":"embed.eqL6deQM.js","endpoints":"endpoints.CfzSv5nM.js","mcp":"mcp.Bvma3qD7.js","network":"network.B5UA9Su4.js","permissions":"permissions.BNySkLV5.js","room":"room.VSdFwTE9.js","sample":"sample.BW2Uysoh.js","self":"artifact.BYHii2AW.js","user":"user.BpKav-Rf.js"},"transforms":"_transforms.DSB5x63f.js","comments":"_comments.CySkkG-P.js","translate":"_translate.5HCW4BJh.js","ldx":"_ldx.DYFNSryD.js"}</script><script>(function(){"use strict";var ce=["light","dark","system"],le=/^[A-Za-z0-9_-]{1,64}$/,Z=/^[a-zA-Z_:][a-zA-Z0-9_:.-]{0,127}$/,ue=new Set(["class","hidden","value","checked","style","title","alt","placeholder","lang","dir","role","tabindex","disabled","readonly","contenteditable","open","colspan","rowspan"]);function fe(e){const t=e.toLowerCase();return t.startsWith("data-")||t.startsWith("aria-")||ue.has(t)}var He="http://www.w3.org/1999/xhtml",de="http://www.w3.org/2000/svg",pe=new Set(["script","style","iframe","noscript","noframes","noembed","xmp","plaintext","template","title","textarea","object","embed"]),me=new Set(["script","style"]);function he(e){const t=e.localName.toLowerCase();return e.namespaceURI==="http://www.w3.org/1999/xhtml"?!pe.has(t):e.namespaceURI===de?!me.has(t):!1}function D(e,t){return e===t||(e===160||e===32)&&(t===160||t===32)}function _e(e,t){const r=e.length,n=t.length;let s=0;for(;s<r&&s<n&&D(e.charCodeAt(s),t.charCodeAt(s));)s++;let o=0;for(;o<r-s&&o<n-s&&D(e.charCodeAt(r-1-o),t.charCodeAt(n-1-o));)o++;return{p:s,s:o}}function ve(e,t){const r=e.firstChild;if(e.childNodes.length!==1||r===null||r.nodeType!==Node.TEXT_NODE){e.textContent=t;return}const n=r.data,s=n.length,o=t.length,{p:i,s:c}=_e(n,t);i===s&&c===0&&s===o||r.replaceData(i,s-i-c,t.slice(i,o-c));const m=r.data,d=e.ownerDocument.getSelection?.()??null,v=d!==null&&d.rangeCount>0&&(d.anchorNode===r||d.focusNode===r)?{anchor:d.anchorNode,anchorOffset:d.anchorOffset,focus:d.focusNode,focusOffset:d.focusOffset}:null;let p=-1,y=-1;for(let h=0;h<m.length&&h<t.length;h++){const E=m.charCodeAt(h),A=t.charCodeAt(h);E!==A&&D(E,A)&&(p<0&&(p=h),y=h)}const w=p>=0;if(w&&r.replaceData(p,y-p+1,t.slice(p,y+1)),w&&v!==null&&v.anchor!==null&&v.focus!==null)try{d.setBaseAndExtent(v.anchor,v.anchorOffset,v.focus,v.focusOffset)}catch{}}var ye=new Set(["html","head","body","frameset"]);function we(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&ye.has(e.localName)}function ge(e){if(e===null||typeof e!="object")return!1;const t=e;if(typeof t.target!="string"||!le.test(t.target)||t.text!==void 0&&typeof t.text!="string")return!1;if(t.attrsSet!==void 0){if(t.attrsSet===null||typeof t.attrsSet!="object")return!1;for(const[r,n]of Object.entries(t.attrsSet))if(!Z.test(r)||typeof n!="string")return!1}if(t.attrsRemoved!==void 0){if(!Array.isArray(t.attrsRemoved))return!1;for(const r of t.attrsRemoved)if(typeof r!="string"||!Z.test(r))return!1}return!0}function Ee(e,t){if(e===null||typeof e!="object")return!1;const{seq:r,elements:n}=e;if(typeof r!="number"||!Number.isSafeInteger(r)||!Array.isArray(n)||n.length===0||n.length>64)return!1;for(let s=0;s<n.length;s++)if(!t(n[s]))return!1;return!0}function be(e){return e===null||typeof e!="object"?!1:Ee(e.__frame_patch,ge)}function Ae(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_init;return t!==null&&typeof t=="object"}function Te(e){return e!==null&&typeof e=="object"&&e.__frame_size_poke===!0}function Re(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_theme;if(t===null||typeof t!="object")return!1;const r=t.theme;return typeof r=="string"&&ce.includes(r)}var S=/^[\w.-]+\.js$/;function Se(e,t,r){return r?"inert":typeof t=="string"&&S.test(t)?e?[t]:"inert":e?"inert":"framed"}var We="frame_ldx_runtime",Ke="script#an-form";function Le(){return{post(e,t){parent.postMessage(e,t)},on(e){const t=r=>{r.source===parent&&e(r.data,r.origin,r.isTrusted)};return addEventListener("message",t),()=>removeEventListener("message",t)}}}function ke(){return{post:()=>{},on:()=>()=>{}}}var I="__frame_scroll",Pe=150,Oe=310,Ce=160,Me=3e4;function je(){let e=0,t=!1,r=!1,n=!1,s=0,o=null;const i=u=>{try{sessionStorage.setItem(I,JSON.stringify({y:u}))}catch{}},c=()=>{if(clearTimeout(e),o===null)return;const u=o;o=null,i(u)},m=()=>{if(t){t=!1;return}r=!0,o=scrollY,clearTimeout(e),e=setTimeout(c,Pe)};try{addEventListener("scroll",m,{passive:!0}),addEventListener("pagehide",c)}catch{}const d=()=>{let u;try{u=sessionStorage.getItem(I)}catch{return null}if(u===null)return null;let a;try{a=JSON.parse(u)}catch{a=null}const f=a?.y;if(!(typeof f=="number"&&Number.isFinite(f)&&f>=0)){try{sessionStorage.removeItem(I)}catch{}return null}return f};let v=!1;const p=u=>{try{const a=scrollY;scrollTo({top:u,left:0,behavior:"instant"}),s=u,n=!0,clearTimeout(e),o=null,i(u);const f=scrollY;f!==a&&(t=!0),f!==u&&!v&&(v=!0,addEventListener("load",()=>{try{if(scrollY===f){const b=d();p(b!==null?b:s)}}catch{}},{once:!0}))}catch{}},y=()=>{try{return!!location.hash}catch{return!0}};let w=!1;const h=()=>{try{if(w||innerWidth>Oe||innerHeight>Ce)return;w=!0;const u=Date.now(),a=()=>{try{removeEventListener("resize",a)}catch{}if(Date.now()-u>Me||r||y())return;const f=d();p(f!==null?f:s)};addEventListener("resize",a)}catch{}};let E=!1,A=!1;return{restore(){if(E||(E=!0,y()))return;const u=d();u!==null&&(p(u),h())},promoted(){if(A||(A=!0,y()))return;const u=d();u!==null?(p(u),h()):n&&p(s)}}}function Ne(e,t,r,n){let s=null;try{s=window.trustedTypes?.createPolicy("frame-runtime",{createScriptURL:m=>m})??null}catch{}const o=window.Worker,i=o?.prototype,c=Object.freeze({Worker:o,workerOn:i?.addEventListener,workerPost:i?.postMessage,workerTerminate:i?.terminate,fetch:window.fetch.bind(window),preventDefault:Event.prototype.preventDefault,policy:s,origins:t});r(e).then(m=>m?.bootTopLevel?m.bootTopLevel(c,n):n.settle()).catch(()=>n.settle())}var $e="modulepreload",qe=function(e){return"/"+e},Xe={},Be=function(t,r,n){let s=Promise.resolve();function o(i){const c=new Event("vite:preloadError",{cancelable:!0});if(c.payload=i,window.dispatchEvent(c),!c.defaultPrevented)throw i}return s.then(i=>{for(const c of i||[])c.status==="rejected"&&o(c.reason);return t().catch(o)})},De=window===top,J=Object.getOwnPropertyDescriptor(window,"claude"),O=Se(De,window.__FRAME_PREAMBLE?.topLevel,J?.writable===!1),U=typeof O=="object"&&O[0],_=U?ke():Le();(function(){const e=Object.defineProperty,t=globalThis,r=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let n=0;for(let s=0;s<r.length;s++){const o=r[s];try{e(t,o,{value:void 0,writable:!1,configurable:!1})}catch{try{delete t[o]}catch{}try{e(t,o,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof t[o]=="function"&&n++}if(n&&O==="framed")try{_.post({__frame_rtc_lockdown_failed:n},"*")}catch{}})();var Ie=1e4,Ue=2e3,Q=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function ee(e){for(const t of Q)if(t.endsWith(":*"))try{const r=new URL(e);if(`${r.protocol}//${r.hostname}:*`===t)return!0}catch{}else if(e===t)return!0;return!1}var C=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),x=window.__FRAME_PREAMBLE?.transforms,F=window.__FRAME_PREAMBLE?.comments,z=window.__FRAME_PREAMBLE?.translate,H=window.__FRAME_PREAMBLE?.ldx;function L(e){return Be(()=>import("/_runtime/"+e),void 0)}function te(e,t){return{contract:e.contract,changes:new Set(e.changes??[]),flags:new Set(e.flags??[]),capabilities:e.capabilities??{},capBudgets:e.capBudgets??{},transforms:new Map,shellOrigin:t,mount:$,hooks:j,pipe:()=>({wrap:(r,n)=>(...s)=>{try{return n(...s)}catch(o){return Promise.reject(o)}}})}}var M=null,T=null;function re(e,t,r){try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var W=!1,j={editBefore:null,edit:null};function xe(e,t,r=!1){const n=[];let s;if(r)try{j.editBefore?.(e)}catch{}for(const o of e.elements){const i=document.querySelector(`[data-id="${o.target}"]`);if(!i){s=o.target;break}if([...Object.keys(o.attrsSet??{}),...o.attrsRemoved??[]].some(c=>!fe(c))){s=o.target;break}if(o.text!==void 0&&(!he(i)||we(i))){s=o.target;break}for(const[c,m]of Object.entries(o.attrsSet??{}))if(!oe(i,c)){try{i.setAttribute(c,m)}catch{}ne(i,c,m)}for(const c of o.attrsRemoved??[])oe(i,c)||(i.removeAttribute(c),ne(i,c,null));typeof o.text=="string"&&ve(i,o.text),n.push(o.target)}if(r)try{j.edit?.(e.seq,n,s)}catch{}if(s!==void 0){_.post({__frame_patch_miss:{seq:e.seq}},t);return}try{document.dispatchEvent(new CustomEvent("claude:edit",{detail:{seq:e.seq,targets:n}}))}catch{}}function ne(e,t,r){if(!(e instanceof HTMLInputElement))return;const n=t.toLowerCase();n==="checked"?e.checked=r!==null:n==="value"&&e.type!=="file"&&(e.value=r??"")}function oe(e,t){const r=t.toLowerCase(),n=e;return r==="data-id"||(r==="value"||r==="checked")&&(n.__artifactSecret===!0||/^(password|hidden|file)$/.test(n.type??"")||/(^|\s)(cc-|one-time-code|current-password|new-password)/i.test(`${e.getAttribute("autocomplete")??""} ${n.autocomplete??""}`))}function se(e){const t=document.documentElement;e==="light"||e==="dark"?(t.dataset.theme=e,t.style.colorScheme=e,W=!0):W&&(delete t.dataset.theme,t.style.colorScheme="",W=!1)}var N=new Map;function Fe(){let e;const t={u:new Promise(r=>{e=r}),r:r=>{t.done=!0,e(r)},done:!1,nulled:!1};return t}function K(){for(const e of N.values())e.done||(e.nulled=!0,e.r(null))}var ze=Object.freeze(Object.assign(Object.create(null),{call:Function.prototype.call,apply:Function.prototype.apply,bind:Function.prototype.bind})),$=(e,t)=>{const r=N.get(e);if(!r||r.done){r?.nulled&&T&&_.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:e}},T);return}const n=typeof t=="function"?Object.setPrototypeOf(t,ze):Object.assign(Object.create(null),t);typeof n.then=="function"&&delete n.then,r.r(Object.freeze(n))};function ae(){const e=J?.value??{};re(window,"claude",e);for(const t of Object.keys(C)){if(e[t]!==void 0){re(e,t,e[t]);continue}N.set(t,Fe())}if(e.use===void 0){const t=r=>{if(typeof r!="string"||!Object.hasOwn(C,r))return Promise.resolve(null);const n=N.get(r);return n?n.u:Promise.resolve(e[r]??null)};try{Object.defineProperty(e,"use",{value:t,writable:!0,configurable:!0,enumerable:!1})}catch{}}}if(O==="framed"){const e=x&&S.test(x)?L(x).catch(()=>{}):Promise.resolve(void 0),t=a=>{if(a.type==="auxclick"&&a.button!==1)return;const f=a.target,b=f&&f.closest?f.closest("a[href],area[href]"):null;if(!b)return;const P=b.getAttribute("href");if(!P)return;let R;try{R=new URL(P,document.baseURI)}catch{return}if((R.protocol==="http:"||R.protocol==="https:")&&R.origin!==location.origin){a.preventDefault();const k=(b.getAttribute("target")??"").toLowerCase(),g=a.type==="auxclick"||a.metaKey||a.ctrlKey||a.shiftKey||a.altKey||!["","_self","_top","_parent"].includes(k);_.post({__frame_nav:!0,url:R.href,newTab:g},"*")}};addEventListener("click",t,!0),addEventListener("auxclick",t,!0);const r={},n=a=>{a.isTrusted&&(r.pointer=!0)},s=a=>{a.isTrusted&&(r.click=!0)};addEventListener("pointermove",n,{capture:!0,passive:!0}),addEventListener("click",s,{capture:!0,passive:!0}),e.then(a=>{a?.wireNav&&(a.wireNav(),removeEventListener("click",t,!0),removeEventListener("auxclick",t,!0),removeEventListener("pointermove",n,!0),removeEventListener("click",s,!0),a.wireEngagement?.(r))});let o=null;try{o=je()}catch{}ae();let i=null,c=null,m=0;const d=_.on((a,f)=>{ee(f)&&Ae(a)&&(i=a.__frame_init,T=f,d(),clearTimeout(m),c?.())});_.post({__frame_connect:!0},"*");const v=setTimeout,p=clearTimeout;let y=0;const w=()=>{try{_.post({__frame_alive:!0},"*")}catch{}y=v(w,Ue)},h=()=>p(y);w(),addEventListener("load",h,{once:!0});const E=new Promise(a=>{c=a,m=setTimeout(()=>{d(),a()},Ie)}),A=document.readyState==="loading"?new Promise(a=>document.addEventListener("DOMContentLoaded",()=>a(),{once:!0})):Promise.resolve();A.then(()=>{try{o?.restore()}catch{}});const u={cb:null};_.on((a,f)=>{if(ee(f)&&Te(a)){try{o?.promoted()}catch{}u.cb?.()}}),E.then(async()=>{if(!i||!T){K();return}se(i.theme);const a=T;let f=!1,b=!1;_.on((l,X,B)=>{if(X!==a)return;Re(l)&&se(l.__frame_theme.theme),be(l)&&xe(l.__frame_patch,a,B);const Y=l?.__fc_mode;Y&&typeof Y=="object"&&!f&&F&&S.test(F)&&(f=!0,L(F).then(V=>V.install?.(a,Y.on===!0)).catch(()=>{}));const G=l?.__ft_cmd;G&&typeof G=="object"&&!b&&z&&S.test(z)&&(b=!0,L(z).then(V=>V.install?.(a,G)).catch(()=>{}))});const P=Object.keys(i.capabilities??{}).filter(l=>Object.hasOwn(C,l)).map(l=>[l,C[l]]).filter(l=>typeof l[1]=="string"&&S.test(l[1])),R=await Promise.allSettled(P.map(([,l])=>L(l))),k=await e,g=T;if(k?.buildBoot||_.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},g),k?.buildBoot)try{M=k.buildBoot(i,k.TRANSFORMS??{},{shellOrigin:g,mount:$,hooks:j},l=>_.post({__frame_cap_telemetry:l},g))}catch{_.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},g),M=te(i,g)}else M=te(i,g);const q=l=>_.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:l}},g),ie=M;R.forEach((l,X)=>{const B=P[X][0];if(l.status!=="fulfilled"){q(B);return}try{l.value?.install?.(ie)}catch{q(B)}}),K(),await A,h(),_.post({__frame_ready:!0},T),e.then(l=>l?.installSizeReporter?.(g,u)),ie.flags.has("frame_ldx_runtime")&&H&&S.test(H)&&document.querySelector("script#an-form")&&L(H).then(l=>l?.boot?.()).catch(()=>!1).then(l=>{l!==!0&&q("_ldx")})})}else U&&(ae(),Ne(U,Q,L,{settle:K,mount:$}))})();</script><!-- /frame-runtime --><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Prancheta ArkDoctor</title>
+<meta name="description" content="Mockups de alta fidelidade das telas de WhatsApp, Pacientes, Procedimentos e Configurações do ArkDoctor." />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    color-scheme: light;
+    --orange:#FF7900;
+    --orange-ink:#b85c00;
+    --orange-soft:#fff2e3;
+    --ink:#1b1b1a;
+    --paper:#ffffff;
+    --bg:#efedea;
+    --bg-sunk:#e9e6e1;
+    --border:#e5e2dd;
+    --border-strong:#d8d4cd;
+    --muted:#6d6b66;
+    --muted-2:#96938d;
+    --pos:#177f41;    --pos-bg:#e7f5ec;
+    --neg:#bd3b2c;    --neg-bg:#fbece9;
+    --warn:#a45e11;   --warn-bg:#fcf1de;
+    --info:#1d4ed8;   --info-bg:#e8eefc;
+    --wa:#25D366;     --wa-ink:#0f8a41;  --wa-bg:#e7fbee;
+
+    --sb-bg:#1b1b1a;
+    --sb-fg:rgba(255,255,255,.82);
+    --sb-dim:rgba(255,255,255,.32);
+    --sb-hover:rgba(255,255,255,.065);
+    --sb-border:rgba(255,255,255,.10);
+
+    --r-card:14px;
+    --r-input:10px;
+    --r-pill:999px;
+    --shadow:0 1px 2px rgba(20,20,18,.06),0 1px 3px rgba(20,20,18,.045);
+    --shadow-pop:0 8px 24px rgba(20,20,18,.14),0 2px 6px rgba(20,20,18,.08);
+
+    --fs-eyebrow:10.5px;
+    --fs-micro:12px;
+    --fs-sm:13px;
+    --fs-base:14px;
+    --fs-lg:16px;
+    --fs-h1:24px;
+
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:var(--fs-base);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,p,dl,dd,dt,ul,ol,figure{margin:0}
+  ul,ol{padding:0;list-style:none}
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:inherit}
+  input,textarea,select{font:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--orange);outline-offset:2px;border-radius:4px}
+
+  /* ---------- shell ---------- */
+  .app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+
+  .sidebar{
+    background:var(--sb-bg);color:var(--sb-fg);
+    display:flex;flex-direction:column;
+    position:sticky;top:0;height:100vh;
+  }
+  .brand{padding:22px 20px 14px;display:flex;flex-direction:column;gap:8px}
+  .wordmark{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.01em;color:#fff}
+  .wordmark b{font-weight:700}
+  .wordmark span{font-weight:400;color:rgba(255,255,255,.72)}
+  .mark{width:20px;height:20px;border-radius:6px;background:var(--orange);flex:none}
+  .stamp{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.16em;color:var(--sb-dim)}
+
+  .nav{flex:1;overflow-y:auto;padding:6px 12px 12px}
+  .nav-group{margin-bottom:18px}
+  .nav-label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.18em;color:var(--sb-dim);padding:0 12px 8px;text-transform:uppercase}
+  .nav-item{
+    width:100%;display:flex;align-items:center;gap:10px;
+    padding:8px 12px;border:0;background:transparent;border-radius:10px;
+    font-size:13px;color:var(--sb-fg);text-align:left;
+    transition:background .14s ease;
+  }
+  .nav-item svg{width:16px;height:16px;flex:none;opacity:.9}
+  .nav-item:hover:not(.is-off):not(.is-active){background:var(--sb-hover)}
+  .nav-item.is-active{background:var(--orange);color:#fff}
+  .nav-item.is-active svg{opacity:1}
+  .nav-item.is-off{color:var(--sb-dim);cursor:default}
+  .nav-item.is-off .soon{margin-left:auto;font-size:9.5px;font-family:var(--mono);letter-spacing:.1em;color:var(--sb-dim);text-transform:uppercase}
+
+  .sb-foot{border-top:1px solid var(--sb-border);padding:14px 14px;display:flex;align-items:center;gap:9px}
+  .sb-foot .avatar{background:rgba(255,255,255,.12);color:#fff}
+  .sb-foot .who{min-width:0;flex:1}
+  .sb-foot .who b{display:block;font-size:12px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sb-foot .who span{display:block;font-size:11px;color:var(--sb-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sb-foot button{border:0;background:transparent;color:var(--sb-dim);padding:6px;border-radius:8px;display:inline-flex;flex:none}
+  .sb-foot button svg{width:16px;height:16px}
+  .sb-foot button:hover{background:var(--sb-hover);color:#fff}
+
+  .content{min-width:0;display:flex;flex-direction:column}
+
+  .mobile-nav{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--sb-bg);color:#fff}
+  .mobile-nav .wordmark{font-size:15px}
+  .mobile-nav select{margin-left:auto;background:#2a2a28;color:#fff;border:1px solid var(--sb-border);border-radius:8px;padding:6px 8px;font-size:13px}
+
+  /* ---------- page header ---------- */
+  .page-head{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+    padding:24px 24px 18px;
+  }
+  .eyebrow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:var(--fs-eyebrow);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+  .tick{width:22px;height:2px;border-radius:999px;background:var(--orange);flex:none}
+  .page-head h1{font-size:var(--fs-h1);font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+  .page-head .sub{margin-top:5px;font-size:var(--fs-sm);color:var(--muted)}
+  .page-actions{display:flex;align-items:center;gap:8px;flex:none}
+
+  .crumbs{display:flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:var(--muted);padding:16px 24px 0}
+  .crumbs a{color:var(--muted);text-decoration:none}
+  .crumbs a:hover{color:var(--ink);text-decoration:underline}
+  .crumbs svg{width:13px;height:13px;opacity:.55}
+  .crumbs b{color:var(--ink);font-weight:600}
+  .crumbs + .page-head{padding-top:10px}
+
+  .screen-body{padding:0 24px 40px;display:flex;flex-direction:column;gap:20px}
+
+  /* ---------- primitives ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;justify-content:center;
+    border-radius:var(--r-input);border:1px solid transparent;
+    padding:8px 13px;font-size:var(--fs-sm);font-weight:600;
+    transition:background .14s ease,border-color .14s ease,transform .1s ease;
+    white-space:nowrap;
+  }
+  .btn svg{width:15px;height:15px}
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--orange);color:#fff}
+  .btn-primary:hover{background:#ec7000}
+  .btn-outline{background:var(--paper);border-color:var(--border-strong);color:var(--ink)}
+  .btn-outline:hover{background:var(--bg-sunk)}
+  .btn-ghost{background:transparent;color:var(--muted)}
+  .btn-ghost:hover{background:var(--bg-sunk);color:var(--ink)}
+  .btn-sm{padding:6px 10px;font-size:var(--fs-micro)}
+  .btn-danger{background:var(--paper);border-color:var(--border-strong);color:var(--neg)}
+  .btn-danger:hover{background:var(--neg-bg)}
+
+  .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted)}
+  .icon-btn svg{width:16px;height:16px}
+  .icon-btn:hover{background:var(--bg-sunk);color:var(--ink)}
+
+  .field input,.field textarea{
+    width:100%;background:var(--paper);border:1px solid var(--border-strong);
+    border-radius:var(--r-input);padding:8px 11px;font-size:var(--fs-sm);
+  }
+  .field textarea{resize:vertical;min-height:64px;line-height:1.55}
+  .field input:focus,.field textarea:focus{outline:2px solid var(--orange);outline-offset:1px;border-color:transparent}
+  .field label{display:block;font-size:var(--fs-micro);font-weight:600;color:var(--muted);margin-bottom:5px}
+  .field .help{font-size:var(--fs-micro);color:var(--muted-2);margin-top:5px}
+
+  .search{position:relative;flex:1;max-width:340px}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted-2)}
+  .search input{width:100%;background:var(--paper);border:1px solid var(--border-strong);border-radius:var(--r-input);padding:8px 11px 8px 32px;font-size:var(--fs-sm)}
+  .search input:focus{outline:2px solid var(--orange);outline-offset:1px;border-color:transparent}
+
+  .card{background:var(--paper);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow)}
+  .card-pad{padding:20px}
+  .card-head{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .card-head h2{font-size:var(--fs-lg);font-weight:600}
+  .card-head .note{font-size:var(--fs-micro);color:var(--muted);font-weight:400}
+  .section-label{display:flex;align-items:center;gap:8px;font-size:var(--fs-base);font-weight:600}
+  .section-label .tick{width:14px}
+
+  .avatar{width:34px;height:34px;border-radius:var(--r-pill);background:var(--bg-sunk);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none;letter-spacing:.02em}
+  .avatar.lg{width:56px;height:56px;font-size:18px}
+  .avatar.sm{width:26px;height:26px;font-size:10px}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:var(--r-pill);letter-spacing:.01em}
+  .badge-pos{background:var(--pos-bg);color:var(--pos)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn)}
+  .badge-neutral{background:var(--bg-sunk);color:var(--muted)}
+  .badge-info{background:var(--info-bg);color:var(--info)}
+  .badge-outline{background:transparent;border:1px solid var(--border-strong);color:var(--muted)}
+  .badge .dot{width:6px;height:6px;border-radius:999px;background:currentColor}
+
+  .meta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:var(--fs-micro);color:var(--muted)}
+  .meta-row .sep{width:3px;height:3px;border-radius:999px;background:var(--border-strong)}
+
+  /* menu */
+  .menu-wrap{position:relative}
+  .menu{
+    position:absolute;right:0;top:calc(100% + 4px);z-index:20;
+    min-width:184px;background:var(--paper);border:1px solid var(--border);
+    border-radius:12px;box-shadow:var(--shadow-pop);padding:5px;
+  }
+  .menu button{width:100%;display:flex;align-items:center;gap:9px;border:0;background:transparent;padding:8px 9px;border-radius:8px;font-size:var(--fs-sm);text-align:left}
+  .menu button svg{width:15px;height:15px;color:var(--muted-2)}
+  .menu button:hover{background:var(--bg-sunk)}
+  .menu .danger{color:var(--neg)}
+  .menu .danger svg{color:var(--neg)}
+  .menu-sep{height:1px;background:var(--border);margin:5px 3px}
+  .menu-confirm{padding:9px}
+  .menu-confirm p{font-size:var(--fs-micro);color:var(--muted);margin-bottom:9px}
+  .menu-confirm .row{display:flex;gap:7px}
+
+  /* tables */
+  .table-wrap{overflow-x:auto;border-radius:var(--r-card)}
+  table.grid{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+  table.grid thead th{
+    background:var(--bg-sunk);text-align:left;font-size:11px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;color:var(--muted);
+    padding:10px 14px;white-space:nowrap;
+  }
+  table.grid thead th:first-child{border-top-left-radius:var(--r-card)}
+  table.grid thead th:last-child{border-top-right-radius:var(--r-card)}
+  table.grid tbody td{padding:9px 14px;border-top:1px solid var(--border);vertical-align:middle}
+  table.grid tbody tr:hover{background:#faf8f5}
+  table.grid tbody tr.is-selected{background:var(--orange-soft)}
+  .cell-person{display:flex;align-items:center;gap:11px}
+  .cell-person .who b{display:block;font-weight:600}
+  .cell-person .who span{display:block;font-size:var(--fs-micro);color:var(--muted)}
+  .tnum{font-variant-numeric:tabular-nums}
+  .row-actions{display:flex;justify-content:flex-end;gap:2px;opacity:0;transition:opacity .12s ease}
+  table.grid tbody tr:hover .row-actions,.row-actions.is-open{opacity:1}
+  .checkbox{width:16px;height:16px;accent-color:var(--orange)}
+
+  .selbar{
+    display:flex;align-items:center;gap:12px;
+    background:var(--ink);color:#fff;border-radius:var(--r-input);
+    padding:8px 8px 8px 15px;font-size:var(--fs-sm);
+  }
+  .selbar b{font-weight:600}
+  .selbar .spacer{flex:1}
+  .selbar button{border:0;border-radius:8px;padding:6px 11px;font-size:var(--fs-micro);font-weight:600}
+  .selbar .go{background:var(--orange);color:#fff}
+  .selbar .clear{background:rgba(255,255,255,.12);color:#fff}
+
+  .empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:44px 20px;color:var(--muted)}
+  .empty .chip{width:40px;height:40px;border-radius:11px;background:var(--orange-soft);color:var(--orange-ink);display:flex;align-items:center;justify-content:center}
+  .empty .chip svg{width:19px;height:19px}
+
+  /* ---------- whatsapp ---------- */
+  .wa-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .conn{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-sm);font-weight:600;padding:5px 11px;border-radius:var(--r-pill);background:var(--wa-bg);color:var(--wa-ink)}
+  .conn .dot{width:7px;height:7px;border-radius:999px;background:var(--wa);box-shadow:0 0 0 3px rgba(37,211,102,.18)}
+  .conn.off{background:var(--neg-bg);color:var(--neg)}
+  .conn.off .dot{background:var(--neg);box-shadow:0 0 0 3px rgba(189,59,44,.16)}
+  .wa-phone{font-size:var(--fs-micro);color:var(--muted);font-variant-numeric:tabular-nums}
+
+  .wa-panel{display:grid;grid-template-columns:320px 1fr;min-height:520px;background:var(--paper);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow)}
+  .wa-list{display:flex;flex-direction:column;border-right:1px solid var(--border);min-width:0}
+  .wa-list .list-search{padding:12px;border-bottom:1px solid var(--border)}
+  .wa-list ul{overflow-y:auto;flex:1}
+  .wa-conv{width:100%;display:flex;gap:11px;padding:12px 13px;border:0;background:transparent;text-align:left;border-bottom:1px solid var(--border);position:relative}
+  .wa-conv:hover{background:#faf8f5}
+  .wa-conv.is-active{background:#f4f0ea}
+  .wa-conv.is-active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--orange)}
+  .wa-conv .who{min-width:0;flex:1}
+  .wa-conv .line1{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .wa-conv .line1 b{font-weight:600;font-size:var(--fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wa-conv .line1 time{font-size:11px;color:var(--muted-2);flex:none}
+  .wa-conv .line2{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:3px}
+  .wa-conv .line2 span{font-size:var(--fs-micro);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wa-unread{flex:none;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--wa);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  .wa-chat{display:flex;flex-direction:column;min-width:0;background:#ece7df}
+  .wa-chat-head{display:flex;align-items:center;gap:11px;padding:11px 15px;background:var(--paper);border-bottom:1px solid var(--border)}
+  .wa-chat-head .who b{display:block;font-size:var(--fs-sm);font-weight:600}
+  .wa-chat-head .who span{display:block;font-size:11px;color:var(--muted)}
+  .wa-chat-head .spacer{flex:1}
+  .wa-msgs{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:7px}
+  .wa-day{align-self:center;background:rgba(255,255,255,.75);color:var(--muted);font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;margin:4px 0 8px}
+  .bubble{max-width:74%;padding:7px 10px 5px;border-radius:9px;font-size:var(--fs-sm);line-height:1.45;box-shadow:0 1px 1px rgba(20,20,18,.08);position:relative}
+  .bubble .stamp{display:block;text-align:right;font-size:10px;color:var(--muted-2);margin-top:2px;display:flex;gap:3px;justify-content:flex-end;align-items:center}
+  .bubble .stamp svg{width:14px;height:14px;color:var(--info)}
+  .in{align-self:flex-start;background:#fff}
+  .out{align-self:flex-end;background:#e6fbd6}
+  .bubble.photo{padding:5px 5px 5px}
+  .bubble.photo .ph{width:200px;height:132px;border-radius:6px;background:linear-gradient(135deg,#d9d2c6,#c7bdac);display:flex;align-items:center;justify-content:center;color:#8a7f6b}
+  .bubble.photo .ph svg{width:26px;height:26px}
+  .bubble.photo .cap{padding:5px 5px 0;font-size:var(--fs-micro)}
+  .wa-compose{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--paper);border-top:1px solid var(--border)}
+  .wa-compose input{flex:1;background:var(--bg-sunk);border:1px solid var(--border);border-radius:var(--r-pill);padding:9px 14px;font-size:var(--fs-sm)}
+  .wa-compose input:focus{outline:2px solid var(--orange);outline-offset:1px}
+
+  .preview-label{font-family:var(--mono);font-size:var(--fs-eyebrow);font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-2);display:flex;align-items:center;gap:8px}
+  .preview-label::before{content:"";width:14px;height:2px;border-radius:999px;background:var(--border-strong)}
+  .wa-disc{max-width:none}
+  .disc-inner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:34px 20px}
+  .qr{width:150px;height:150px;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
+  .disc-inner ol{counter-reset:s;display:flex;flex-direction:column;gap:7px;text-align:left;max-width:330px}
+  .disc-inner ol li{counter-increment:s;font-size:var(--fs-sm);color:var(--muted);padding-left:26px;position:relative}
+  .disc-inner ol li::before{content:counter(s);position:absolute;left:0;top:0;width:18px;height:18px;border-radius:999px;background:var(--orange-soft);color:var(--orange-ink);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .disc-inner .small{font-size:var(--fs-micro);color:var(--muted-2)}
+
+  /* ---------- patient detail ---------- */
+  .patient-grid{display:grid;grid-template-columns:284px 1fr;gap:20px;align-items:start}
+  .id-card{position:sticky;top:20px}
+  .id-top{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:22px 18px 18px}
+  .id-top b{font-size:var(--fs-lg);font-weight:600}
+  .id-top span{font-size:var(--fs-micro);color:var(--muted)}
+  .id-dl{padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:9px}
+  .id-dl div{display:flex;flex-direction:column;gap:1px}
+  .id-dl dt{font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.04em}
+  .id-dl dd{font-size:var(--fs-sm)}
+  .id-docs{padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+  .id-docs .hd{display:flex;align-items:center;justify-content:space-between}
+  .id-docs .hd b{font-size:var(--fs-micro);font-weight:600}
+  .doc-dots{display:flex;gap:5px}
+  .doc-dots i{width:9px;height:9px;border-radius:999px;background:var(--pos)}
+  .doc-dots i.pending{background:var(--border-strong)}
+  .id-docs a{font-size:var(--fs-micro);color:var(--orange-ink);text-decoration:none;font-weight:600}
+  .id-docs a:hover{text-decoration:underline}
+
+  .treat-list{display:flex;flex-direction:column;gap:11px}
+  .treat-card{display:flex;align-items:center;gap:14px;padding:15px 16px;text-align:left;width:100%;border:1px solid var(--border);background:var(--paper);border-radius:var(--r-card);box-shadow:var(--shadow);transition:border-color .14s ease,box-shadow .14s ease}
+  .treat-card:hover{border-color:var(--border-strong);box-shadow:0 4px 12px rgba(20,20,18,.08)}
+  .treat-card .body{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+  .treat-card .body .t1{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .treat-card .body .t1 b{font-weight:600;font-size:var(--fs-sm)}
+  .treat-card .body .t2{font-size:var(--fs-micro);color:var(--muted)}
+  .treat-card > svg{width:17px;height:17px;color:var(--muted-2);flex:none}
+
+  /* ---------- treatment detail ---------- */
+  .form-card > .fsec{padding:18px 20px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .form-card > .fsec .fsec-label{grid-column:1/-1;font-size:var(--fs-micro);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}
+  .form-card > .fsec .span2{grid-column:1/-1}
+  .form-foot{display:flex;align-items:center;gap:12px;padding:14px 20px}
+  .form-foot .when{font-size:var(--fs-micro);color:var(--muted-2);margin-left:auto}
+
+  .timeline{display:flex;flex-direction:column}
+  .timeline li{display:flex;gap:13px;padding:11px 4px;border-bottom:1px solid var(--border)}
+  .timeline li:last-child{border-bottom:0}
+  .timeline .dt{font-size:var(--fs-micro);color:var(--muted);font-variant-numeric:tabular-nums;flex:none;width:74px;padding-top:1px}
+  .timeline .tx{font-size:var(--fs-sm);min-width:0}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+  .photo{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--paper)}
+  .photo .img{aspect-ratio:4/3;background:linear-gradient(135deg,#ded7ca,#c9bfad);display:flex;align-items:center;justify-content:center;color:#8a7f6b}
+  .photo .img svg{width:24px;height:24px}
+  .photo .cap{padding:8px 10px}
+  .photo .cap b{display:block;font-size:var(--fs-micro);font-weight:600}
+  .photo .cap span{display:block;font-size:11px;color:var(--muted-2)}
+  .photo.add{border-style:dashed;border-color:var(--border-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:var(--muted);min-height:140px;cursor:pointer}
+  .photo.add svg{width:20px;height:20px}
+  .photo.add span{font-size:var(--fs-micro);font-weight:600}
+
+  /* ---------- documents ---------- */
+  .banner{display:flex;gap:11px;align-items:flex-start;background:var(--warn-bg);border:1px solid #f0dcb6;border-radius:var(--r-input);padding:12px 14px;font-size:var(--fs-sm);color:var(--warn)}
+  .banner svg{width:16px;height:16px;flex:none;margin-top:2px}
+  .banner a{color:var(--warn);font-weight:700}
+
+  .doc-row{display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid var(--border)}
+  .doc-row:last-child{border-bottom:0}
+  .doc-row .di{min-width:0;flex:1}
+  .doc-row .di b{display:block;font-size:var(--fs-sm);font-weight:600}
+  .doc-row .di span{display:block;font-size:var(--fs-micro);color:var(--muted);margin-top:2px}
+  .doc-row .acts{display:flex;align-items:center;gap:6px;flex:none}
+  .link-btn{border:0;background:transparent;color:var(--orange-ink);font-size:var(--fs-micro);font-weight:600;padding:5px 6px;border-radius:6px}
+  .link-btn:hover{background:var(--orange-soft)}
+
+  .sharelink{display:flex;gap:18px;align-items:center;padding:18px}
+  .sharelink .qr{width:120px;height:120px;flex:none}
+  .sharelink .sl-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:9px}
+  .sharelink .urlbox{display:flex;gap:8px}
+  .sharelink .urlbox input{flex:1;background:var(--bg-sunk);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:var(--fs-micro);font-family:var(--mono)}
+  .sharelink .sl-body p{font-size:var(--fs-micro);color:var(--muted-2)}
+
+  /* ---------- procedures ---------- */
+  .proc-edit td{background:var(--orange-soft)}
+  .proc-edit input{background:#fff;border:1px solid var(--border-strong);border-radius:8px;padding:6px 9px;font-size:var(--fs-sm);width:100%}
+  .proc-edit .mini{width:96px}
+  .proc-add{display:flex;align-items:center;gap:9px;padding:11px 14px;border-top:1px solid var(--border);color:var(--muted);font-size:var(--fs-sm);font-weight:600;width:100%;background:transparent;border-left:0;border-right:0;border-bottom:0}
+  .proc-add:hover{background:#faf8f5;color:var(--ink)}
+  .proc-add svg{width:15px;height:15px}
+
+  /* ---------- settings ---------- */
+  .settings-col{max-width:620px;display:flex;flex-direction:column;gap:20px}
+  .save-line{font-size:var(--fs-micro);color:var(--pos);display:flex;align-items:center;gap:6px}
+  .save-line svg{width:14px;height:14px}
+  .meter{height:8px;border-radius:999px;background:var(--bg-sunk);overflow:hidden}
+  .meter i{display:block;height:100%;background:var(--orange);border-radius:999px}
+  .usage-num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .kv{display:flex;justify-content:space-between;font-size:var(--fs-sm);padding:7px 0;border-bottom:1px solid var(--border)}
+  .kv:last-child{border-bottom:0}
+  .kv dt{color:var(--muted)}
+
+  @media (max-width:960px){
+    .app{grid-template-columns:1fr}
+    .sidebar{display:none}
+    .mobile-nav{display:flex}
+    .patient-grid{grid-template-columns:1fr}
+    .id-card{position:static}
+    .wa-panel{grid-template-columns:1fr}
+    .wa-list{max-height:280px}
+    .form-card > .fsec{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important}
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></symbol>
+    <symbol id="i-calplus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+    <symbol id="i-img" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+    <symbol id="i-checks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 13l4 4L15 7"/><path d="M9 17l1 1L23 5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="wordmark"><span class="mark"></span><b>Ark</b><span>Doctor</span></div>
+      <div class="stamp">MOCKUP · DADOS FICTÍCIOS</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-group">
+        <p class="nav-label">Geral</p>
+        <button class="nav-item is-off" title="Fora do escopo deste mockup"><svg><use href="#i-dash"/></svg>Dashboard</button>
+        <button class="nav-item is-off" title="Fora do escopo deste mockup"><svg><use href="#i-money"/></svg>Financeiro</button>
+        <button class="nav-item is-off" title="Fora do escopo deste mockup"><svg><use href="#i-cal"/></svg>Agenda</button>
+      </div>
+      <div class="nav-group">
+        <p class="nav-label">Atendimento</p>
+        <button class="nav-item" data-nav="whatsapp"><svg><use href="#i-chat"/></svg>WhatsApp</button>
+        <button class="nav-item is-off" title="Fora do escopo deste mockup"><svg><use href="#i-filter"/></svg>Pipeline</button>
+      </div>
+      <div class="nav-group">
+        <p class="nav-label">Clínica</p>
+        <button class="nav-item" data-nav="pacientes"><svg><use href="#i-users"/></svg>Pacientes</button>
+        <button class="nav-item" data-nav="procedimentos"><svg><use href="#i-clip"/></svg>Procedimentos</button>
+        <button class="nav-item is-off" title="Fora do escopo deste mockup"><svg><use href="#i-calplus"/></svg>Agendamento</button>
+        <button class="nav-item" data-nav="configuracoes"><svg><use href="#i-cog"/></svg>Configurações</button>
+      </div>
+    </nav>
+    <div class="sb-foot">
+      <span class="avatar sm">SF</span>
+      <span class="who"><b>Silvana Fantin</b><span>silvana@clinicaferidas.com.br</span></span>
+      <button aria-label="Sair"><svg><use href="#i-logout"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="mobile-nav">
+      <div class="wordmark"><span class="mark"></span><b>Ark</b><span>Doctor</span></div>
+      <select id="mobile-screen" aria-label="Trocar de tela">
+        <option value="whatsapp">WhatsApp</option>
+        <option value="pacientes">Pacientes</option>
+        <option value="procedimentos">Procedimentos</option>
+        <option value="configuracoes">Configurações</option>
+      </select>
+    </div>
+
+    <!-- ============ WHATSAPP ============ -->
+    <section data-screen="whatsapp">
+      <header class="page-head">
+        <div>
+          <p class="eyebrow"><span class="tick"></span>Atendimento</p>
+          <h1>Inbox</h1>
+          <p class="sub">Conversas com pacientes pelo WhatsApp.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary"><svg><use href="#i-plus"/></svg>Nova conversa</button>
+        </div>
+      </header>
+
+      <div class="screen-body">
+        <div class="wa-strip">
+          <span class="conn"><span class="dot"></span>Conectado</span>
+          <span class="wa-phone">+55 15 99123-4567</span>
+          <div class="menu-wrap">
+            <button class="icon-btn" data-menu aria-label="Opções de conexão"><svg><use href="#i-dots"/></svg></button>
+            <div class="menu" hidden>
+              <div class="menu-list">
+                <button><svg><use href="#i-cog"/></svg>Configurar WhatsApp</button>
+                <button><svg><use href="#i-link"/></svg>Ver número conectado</button>
+                <div class="menu-sep"></div>
+                <button class="danger" data-confirm><svg><use href="#i-logout"/></svg>Desconectar</button>
+              </div>
+              <div class="menu-confirm" hidden>
+                <p>Desconectar este número? Você precisará ler o QR code de novo para reconectar.</p>
+                <div class="row">
+                  <button class="btn btn-outline btn-sm" data-cancel>Cancelar</button>
+                  <button class="btn btn-danger btn-sm">Desconectar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wa-panel">
+          <div class="wa-list">
+            <div class="list-search">
+              <div class="search"><svg><use href="#i-search"/></svg><input placeholder="Buscar conversa" /></div>
+            </div>
+            <ul>
+              <button class="wa-conv is-active">
+                <span class="avatar">AS</span>
+                <span class="who">
+                  <span class="line1"><b>Aparecida de Souza</b><time>14:32</time></span>
+                  <span class="line2"><span>Enviei a foto da ferida como a senhora pediu</span></span>
+                </span>
+              </button>
+              <button class="wa-conv">
+                <span class="avatar">MR</span>
+                <span class="who">
+                  <span class="line1"><b>Marlene (filha do Benedito)</b><time>13:05</time></span>
+                  <span class="line2"><span>Ok, confirmado para quinta às 9h</span><span class="wa-unread">2</span></span>
+                </span>
+              </button>
+              <button class="wa-conv">
+                <span class="avatar">CL</span>
+                <span class="who">
+                  <span class="line1"><b>Creusa Lima Martins</b><time>Ontem</time></span>
+                  <span class="line2"><span>Bom dia! A troca do curativo pode ser amanhã?</span></span>
+                </span>
+              </button>
+              <button class="wa-conv">
+                <span class="avatar">DF</span>
+                <span class="who">
+                  <span class="line1"><b>Djalma Ferreira</b><time>Ontem</time></span>
+                  <span class="line2"><span>Obrigado, doutora 🙏</span></span>
+                </span>
+              </button>
+              <button class="wa-conv">
+                <span class="avatar">EB</span>
+                <span class="who">
+                  <span class="line1"><b>Edna Barbosa</b><time>Seg</time></span>
+                  <span class="line2"><span>Vou levar os exames na consulta</span></span>
+                </span>
+              </button>
+            </ul>
+          </div>
+
+          <div class="wa-chat">
+            <div class="wa-chat-head">
+              <span class="avatar sm">AS</span>
+              <span class="who"><b>Aparecida de Souza</b><span>74 anos · úlcera venosa</span></span>
+              <span class="spacer"></span>
+              <button class="btn btn-outline btn-sm" data-goto-nav="pacientes"><svg><use href="#i-ext"/></svg>Abrir prontuário</button>
+              <button class="icon-btn" aria-label="Mais opções"><svg><use href="#i-dots"/></svg></button>
+            </div>
+            <div class="wa-msgs">
+              <div class="wa-day">Hoje</div>
+              <div class="bubble in">Bom dia, dona Aparecida! Como a ferida está desde a última troca?<span class="stamp">09:12</span></div>
+              <div class="bubble out">Bom dia! Está menos inchada, mas ainda sai um pouco de secreção amarelada<span class="stamp">14:20 <svg><use href="#i-checks"/></svg></span></div>
+              <div class="bubble in">Certo. Consegue me mandar uma foto agora, com boa luz?<span class="stamp">14:22</span></div>
+              <div class="bubble out photo">
+                <div class="ph"><svg><use href="#i-img"/></svg></div>
+                <div class="cap">Perna direita — tornozelo</div>
+                <span class="stamp">14:31 <svg><use href="#i-checks"/></svg></span>
+              </div>
+              <div class="bubble out">Enviei a foto da ferida como a senhora pediu<span class="stamp">14:32 <svg><use href="#i-checks"/></svg></span></div>
+              <div class="bubble in">Recebi. A borda está cicatrizando bem. Mantenha a bota de Unna e nos vemos quinta às 10h.<span class="stamp">14:35</span></div>
+            </div>
+            <div class="wa-compose">
+              <button class="icon-btn" aria-label="Anexar"><svg><use href="#i-paperclip"/></svg></button>
+              <input placeholder="Escreva uma mensagem" />
+              <button class="btn btn-primary"><svg><use href="#i-send"/></svg>Enviar</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="preview-label">Estado quando o WhatsApp está desconectado</p>
+        <div class="card wa-disc">
+          <div class="disc-inner">
+            <span class="conn off"><span class="dot"></span>Desconectado</span>
+            <div class="qr">
+              <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true">
+                <rect width="100" height="100" fill="#fff"/>
+                <path fill="#1b1b1a" d="M6 6h22v22H6zM12 12v10h10V12zM72 6h22v22H72zM78 12v10h10V12zM6 72h22v22H6zM12 78v10h10V78z"/>
+                <path fill="#1b1b1a" d="M34 6h6v6h-6zM46 6h6v12h-6zM58 12h6v6h-6zM34 18h12v6H34zM6 34h6v6H6zM18 34h12v6H18zM40 34h6v6h-6zM52 34h12v12H52zM70 40h6v6h-6zM82 34h12v6h-6zM88 46h6v12h-6zM6 46h12v6H6zM24 48h6v14h-6zM36 46h10v6H36zM6 58h6v8H6zM40 58h12v6H40zM60 58h8v6h-8zM76 58h6v10h-6zM88 64h6v6h-6zM34 34h6v6h-6zM34 70h6v6h-6zM46 70h8v6h-8zM60 72h6v6h-6zM72 72h6v6h-6zM84 72h10v6h-6zM34 84h10v10H34zM50 84h6v10h-6zM64 88h14v6H64zM84 84h10v10H84z"/>
+              </svg>
+            </div>
+            <ol>
+              <li>Abra o WhatsApp no celular da clínica.</li>
+              <li>Toque em <b>Aparelhos conectados</b> e depois em <b>Conectar aparelho</b>.</li>
+              <li>Aponte a câmera para este código. O envio de mensagens volta assim que conectar.</li>
+            </ol>
+            <p class="small">O código expira em 40 segundos e é gerado de novo automaticamente.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PACIENTES (list) ============ -->
+    <section data-screen="pacientes" hidden>
+      <div data-pscreen="list">
+        <header class="page-head">
+          <div>
+            <p class="eyebrow"><span class="tick"></span>Clínica</p>
+            <h1>Pacientes</h1>
+            <p class="sub">Cadastro, histórico de tratamentos e mensagens em massa pelo WhatsApp.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-primary"><svg><use href="#i-plus"/></svg>Novo paciente</button>
+          </div>
+        </header>
+
+        <div class="screen-body">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="search"><svg><use href="#i-search"/></svg><input placeholder="Buscar por nome ou telefone" /></div>
+            <span style="font-size:var(--fs-micro);color:var(--muted)">6 pacientes</span>
+          </div>
+
+          <div class="selbar">
+            <b>2 selecionados</b>
+            <span class="spacer"></span>
+            <button class="go">Enviar mensagem</button>
+            <button class="clear">Limpar seleção</button>
+          </div>
+
+          <div class="card">
+            <div class="table-wrap">
+              <table class="grid">
+                <thead>
+                  <tr>
+                    <th style="width:38px"><input class="checkbox" type="checkbox" aria-label="Selecionar todos" /></th>
+                    <th>Paciente</th>
+                    <th>E-mail</th>
+                    <th style="width:70px">Idade</th>
+                    <th style="width:190px">Último tratamento</th>
+                    <th style="width:52px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="is-selected">
+                    <td><input class="checkbox" type="checkbox" checked aria-label="Selecionar Aparecida de Souza" /></td>
+                    <td>
+                      <div class="cell-person">
+                        <span class="avatar sm">AS</span>
+                        <span class="who"><b><a href="#" data-goto-p="detail" style="text-decoration:none">Aparecida de Souza</a></b><span>+55 15 99123-4567</span></span>
+                      </div>
+                    </td>
+                    <td>—</td>
+                    <td class="tnum">74</td>
+                    <td><span class="badge badge-warn"><span class="dot"></span>Em andamento</span> <span style="font-size:var(--fs-micro);color:var(--muted-2)" class="tnum">12/03</span></td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button>
+                        <div class="menu" hidden>
+                          <div class="menu-list">
+                            <button data-goto-p="detail"><svg><use href="#i-ext"/></svg>Ver paciente</button>
+                            <button><svg><use href="#i-pencil"/></svg>Editar dados</button>
+                            <button><svg><use href="#i-chat"/></svg>Enviar mensagem</button>
+                            <div class="menu-sep"></div>
+                            <button class="danger" data-confirm><svg><use href="#i-trash"/></svg>Excluir</button>
+                          </div>
+                          <div class="menu-confirm" hidden>
+                            <p>Excluir <b>Aparecida de Souza</b> e todo o histórico? Esta ação não pode ser desfeita.</p>
+                            <div class="row">
+                              <button class="btn btn-outline btn-sm" data-cancel>Cancelar</button>
+                              <button class="btn btn-danger btn-sm">Excluir</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input class="checkbox" type="checkbox" aria-label="Selecionar Benedito Ramos" /></td>
+                    <td><div class="cell-person"><span class="avatar sm">BR</span><span class="who"><b><a href="#" data-goto-p="detail" style="text-decoration:none">Benedito Ramos</a></b><span>+55 15 99640-2210</span></span></div></td>
+                    <td>—</td>
+                    <td class="tnum">68</td>
+                    <td><span class="badge badge-warn"><span class="dot"></span>Em andamento</span> <span style="font-size:var(--fs-micro);color:var(--muted-2)" class="tnum">02/04</span></td>
+                    <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button data-goto-p="detail"><svg><use href="#i-ext"/></svg>Ver paciente</button><button><svg><use href="#i-pencil"/></svg>Editar dados</button><button><svg><use href="#i-chat"/></svg>Enviar mensagem</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                  </tr>
+                  <tr class="is-selected">
+                    <td><input class="checkbox" type="checkbox" checked aria-label="Selecionar Creusa Lima Martins" /></td>
+                    <td><div class="cell-person"><span class="avatar sm">CL</span><span class="who"><b><a href="#" data-goto-p="detail" style="text-decoration:none">Creusa Lima Martins</a></b><span>+55 15 99511-8834</span></span></div></td>
+                    <td>creusa.lm@gmail.com</td>
+                    <td class="tnum">81</td>
+                    <td><span class="badge badge-warn"><span class="dot"></span>Em andamento</span> <span style="font-size:var(--fs-micro);color:var(--muted-2)" class="tnum">28/03</span></td>
+                    <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button data-goto-p="detail"><svg><use href="#i-ext"/></svg>Ver paciente</button><button><svg><use href="#i-pencil"/></svg>Editar dados</button><button><svg><use href="#i-chat"/></svg>Enviar mensagem</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                  </tr>
+                  <tr>
+                    <td><input class="checkbox" type="checkbox" aria-label="Selecionar Djalma Ferreira" /></td>
+                    <td><div class="cell-person"><span class="avatar sm">DF</span><span class="who"><b><a href="#" data-goto-p="detail" style="text-decoration:none">Djalma Ferreira</a></b><span>+55 15 99277-6001</span></span></div></td>
+                    <td>djalma.f@outlook.com</td>
+                    <td class="tnum">59</td>
+                    <td><span class="badge badge-pos"><svg width="12" height="12"><use href="#i-check"/></svg>Concluído</span> <span style="font-size:var(--fs-micro);color:var(--muted-2)" class="tnum">18/02</span></td>
+                    <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button data-goto-p="detail"><svg><use href="#i-ext"/></svg>Ver paciente</button><button><svg><use href="#i-pencil"/></svg>Editar dados</button><button><svg><use href="#i-chat"/></svg>Enviar mensagem</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                  </tr>
+                  <tr>
+                    <td><input class="checkbox" type="checkbox" aria-label="Selecionar Edna Barbosa" /></td>
+                    <td><div class="cell-person"><span class="avatar sm">EB</span><span class="who"><b><a href="#" data-goto-p="detail" style="text-decoration:none">Edna Barbosa</a></b><span>+55 15 99802-4417</span></span></div></td>
+                    <td>—</td>
+                    <td class="tnum">66</td>
+                    <td><span class="badge badge-warn"><span class="dot"></span>Em andamento</span> <span style="font-size:var(--fs-micro);color:var(--muted-2)" class="tnum">05/04</span></td>
+                    <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button data-goto-p="detail"><svg><use href="#i-ext"/></svg>Ver paciente</button><button><svg><use href="#i-pencil"/></svg>Editar dados</button><button><svg><use href="#i-chat"/></svg>Enviar mensagem</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                  </tr>
+                  <tr>
+                    <td><input class="checkbox" type="checkbox" aria-label="Selecionar Genésio Alves" /></td>
+                    <td><div class="cell-person"><span class="avatar sm">GA</span><span class="who"><b><a href="#" data-goto-p="detail" style="text-decoration:none">Genésio Alves</a></b><span>+55 15 99165-3390</span></span></div></td>
+                    <td>—</td>
+                    <td class="tnum">77</td>
+                    <td><span class="badge badge-pos"><svg width="12" height="12"><use href="#i-check"/></svg>Concluído</span> <span style="font-size:var(--fs-micro);color:var(--muted-2)" class="tnum">09/01</span></td>
+                    <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button data-goto-p="detail"><svg><use href="#i-ext"/></svg>Ver paciente</button><button><svg><use href="#i-pencil"/></svg>Editar dados</button><button><svg><use href="#i-chat"/></svg>Enviar mensagem</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- PACIENTE: detalhe ---- -->
+      <div data-pscreen="detail" hidden>
+        <nav class="crumbs">
+          <a href="#" data-goto-p="list">Pacientes</a><svg><use href="#i-chev"/></svg><b>Aparecida de Souza</b>
+        </nav>
+        <header class="page-head">
+          <div>
+            <p class="eyebrow"><span class="tick"></span>Paciente</p>
+            <h1>Aparecida de Souza</h1>
+            <p class="sub">Cadastrada em 04/02/2026 · 1 tratamento ativo</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline"><svg><use href="#i-doc"/></svg>Documentos</button>
+            <button class="btn btn-outline"><svg><use href="#i-pencil"/></svg>Editar dados</button>
+          </div>
+        </header>
+
+        <div class="screen-body">
+          <div class="patient-grid">
+            <div class="card id-card">
+              <div class="id-top">
+                <span class="avatar lg">AS</span>
+                <b>Aparecida de Souza</b>
+                <span>74 anos</span>
+              </div>
+              <dl class="id-dl">
+                <div><dt>Telefone</dt><dd class="tnum">+55 15 99123-4567</dd></div>
+                <div><dt>E-mail</dt><dd>—</dd></div>
+                <div><dt>CPF</dt><dd class="tnum">123.456.789-00</dd></div>
+                <div><dt>Nascimento</dt><dd class="tnum">18/05/1951</dd></div>
+              </dl>
+              <div class="id-docs">
+                <div class="hd">
+                  <b>Documentos</b>
+                  <span class="doc-dots" title="2 de 3 assinados"><i></i><i></i><i class="pending"></i></span>
+                </div>
+                <span style="font-size:var(--fs-micro);color:var(--muted)">2 de 3 termos assinados</span>
+                <a href="#" data-goto-p="docs">Ver documentos →</a>
+              </div>
+            </div>
+
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+                <span class="section-label"><span class="tick"></span>Tratamentos</span>
+                <button class="btn btn-primary btn-sm"><svg><use href="#i-plus"/></svg>Novo tratamento</button>
+              </div>
+              <div class="treat-list">
+                <button class="treat-card" data-goto-p="treatment">
+                  <div class="body">
+                    <div class="t1"><b>Úlcera venosa — perna direita</b><span class="badge badge-warn"><span class="dot"></span>Em andamento</span></div>
+                    <div class="t2">Iniciado em 12/03/2026 · 8 sessões realizadas · Bota de Unna + alginato</div>
+                  </div>
+                  <svg><use href="#i-chev"/></svg>
+                </button>
+                <button class="treat-card" data-goto-p="treatment">
+                  <div class="body">
+                    <div class="t1"><b>Dermatite de contato — dorso do pé</b><span class="badge badge-pos"><svg width="12" height="12"><use href="#i-check"/></svg>Concluído</span></div>
+                    <div class="t2">12/11/2025 – 20/12/2025 · 5 sessões · Alta por cicatrização completa</div>
+                  </div>
+                  <svg><use href="#i-chev"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- TRATAMENTO: detalhe ---- -->
+      <div data-pscreen="treatment" hidden>
+        <nav class="crumbs">
+          <a href="#" data-goto-p="list">Pacientes</a><svg><use href="#i-chev"/></svg>
+          <a href="#" data-goto-p="detail">Aparecida de Souza</a><svg><use href="#i-chev"/></svg><b>Tratamento</b>
+        </nav>
+        <header class="page-head">
+          <div>
+            <p class="eyebrow"><span class="tick"></span>Tratamento</p>
+            <h1>Úlcera venosa — perna direita</h1>
+            <div class="meta-row" style="margin-top:8px">
+              <span class="badge badge-warn"><span class="dot"></span>Em andamento</span>
+              <span class="sep"></span><span>Início 12/03/2026</span>
+              <span class="sep"></span><span>8 sessões realizadas</span>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline">Concluir tratamento</button>
+            <button class="btn btn-primary"><svg><use href="#i-printer"/></svg>Imprimir relatório</button>
+            <div class="menu-wrap">
+              <button class="icon-btn" data-menu aria-label="Mais ações"><svg><use href="#i-dots"/></svg></button>
+              <div class="menu" hidden>
+                <div class="menu-list">
+                  <button class="danger" data-confirm><svg><use href="#i-trash"/></svg>Excluir tratamento</button>
+                </div>
+                <div class="menu-confirm" hidden>
+                  <p>Excluir este tratamento? 8 sessões deixarão de estar vinculadas. Esta ação não pode ser desfeita.</p>
+                  <div class="row">
+                    <button class="btn btn-outline btn-sm" data-cancel>Cancelar</button>
+                    <button class="btn btn-danger btn-sm">Excluir</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="screen-body">
+          <div class="card form-card">
+            <div class="fsec">
+              <p class="fsec-label">Ferida</p>
+              <div class="field"><label>Tipos de ferida</label><input value="Úlcera venosa crônica" /></div>
+              <div class="field"><label>Localização</label><input value="Terço distal da perna direita, região maleolar" /></div>
+              <div class="field span2"><label>Detalhes da ferida</label><textarea>Lesão de ~4 x 3 cm, bordas irregulares em epitelização. Leito com 70% tecido de granulação, 30% esfacelo. Exsudato seroso moderado. Pele perilesional com hiperpigmentação e leve dermatite ocre.</textarea></div>
+            </div>
+            <div class="fsec">
+              <p class="fsec-label">Tratamento</p>
+              <div class="field span2"><label>Tipo de tratamento / conduta</label><input value="Bota de Unna semanal + curativo primário com alginato de cálcio" /></div>
+            </div>
+            <div class="fsec">
+              <p class="fsec-label">Avaliação</p>
+              <div class="field span2"><label>Avaliação da profissional</label><textarea>Boa resposta à compressão. Redução de ~30% da área desde o início. Mantida conduta; reforçada elevação de membros e deambulação.</textarea></div>
+              <div class="field span2"><label>Percepção do paciente</label><textarea>Refere menos dor e peso na perna. Consegue calçar o sapato novamente. Preocupada com o tempo de cicatrização.</textarea></div>
+            </div>
+            <div class="form-foot">
+              <button class="btn btn-primary">Salvar alterações</button>
+              <button class="btn btn-ghost">Descartar</button>
+              <span class="when">Última edição há 2 dias</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Sessões realizadas</h2><span class="note">8 sessões</span></div>
+            <div class="card-pad" style="padding-top:6px;padding-bottom:6px">
+              <ul class="timeline">
+                <li><span class="dt">30/04</span><span class="tx">Troca da bota de Unna. Leito mais limpo, esfacelo &lt; 20%. Sem sinais de infecção.</span></li>
+                <li><span class="dt">23/04</span><span class="tx">Desbridamento instrumental conservador do esfacelo. Alginato + espuma. Orientada quanto a repouso.</span></li>
+                <li><span class="dt">16/04</span><span class="tx">Área 4,2 x 3,1 cm. Exsudato moderado. Mantida compressão.</span></li>
+                <li><span class="dt">09/04</span><span class="tx">Perilesional macerada — ajustada frequência de troca. Aplicado creme barreira.</span></li>
+                <li><span class="dt">02/04</span><span class="tx">Primeira bota de Unna. Boa tolerância. Sem dor à compressão.</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Fotos da evolução</h2><span class="note">4 fotos</span></div>
+            <div class="card-pad">
+              <div class="photo-grid">
+                <button class="photo add"><svg><use href="#i-plus"/></svg><span>Adicionar foto</span></button>
+                <figure class="photo"><div class="img"><svg><use href="#i-img"/></svg></div><figcaption class="cap"><b>Semana 1</b><span>12/03/2026</span></figcaption></figure>
+                <figure class="photo"><div class="img"><svg><use href="#i-img"/></svg></div><figcaption class="cap"><b>Semana 3</b><span>26/03/2026</span></figcaption></figure>
+                <figure class="photo"><div class="img"><svg><use href="#i-img"/></svg></div><figcaption class="cap"><b>Semana 5</b><span>09/04/2026</span></figcaption></figure>
+                <figure class="photo"><div class="img"><svg><use href="#i-img"/></svg></div><figcaption class="cap"><b>Semana 7</b><span>23/04/2026</span></figcaption></figure>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- DOCUMENTOS ---- -->
+      <div data-pscreen="docs" hidden>
+        <nav class="crumbs">
+          <a href="#" data-goto-p="list">Pacientes</a><svg><use href="#i-chev"/></svg>
+          <a href="#" data-goto-p="detail">Aparecida de Souza</a><svg><use href="#i-chev"/></svg><b>Documentos</b>
+        </nav>
+        <header class="page-head">
+          <div>
+            <p class="eyebrow"><span class="tick"></span>Documentos</p>
+            <h1>Consentimentos</h1>
+            <p class="sub">Termos assinados pela paciente. O PDF guarda a assinatura e a data.</p>
+          </div>
+        </header>
+
+        <div class="screen-body">
+          <div class="banner">
+            <svg><use href="#i-alert"/></svg>
+            <span>Seu registro no conselho ainda não está preenchido. Complete em <a href="#" data-goto-nav="configuracoes">Configurações</a> para que apareça no rodapé dos termos.</span>
+          </div>
+
+          <div class="card">
+            <div class="doc-row">
+              <div class="di">
+                <b>Termo de consentimento para tratamento de feridas</b>
+                <span>Assinado em 12/03/2026 por Aparecida de Souza</span>
+              </div>
+              <div class="acts">
+                <button class="link-btn"><svg width="13" height="13" style="vertical-align:-2px"><use href="#i-doc"/></svg> Ver PDF</button>
+                <button class="btn btn-outline btn-sm"><svg><use href="#i-link"/></svg>Enviar link</button>
+                <button class="btn btn-outline btn-sm">Assinar de novo</button>
+                <div class="menu-wrap">
+                  <button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button>
+                  <div class="menu" hidden><div class="menu-list"><button class="danger"><svg><use href="#i-trash"/></svg>Excluir documento</button></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="di">
+                <b>Autorização de uso de imagem</b>
+                <span>Assinado em 12/03/2026 por Aparecida de Souza</span>
+              </div>
+              <div class="acts">
+                <button class="link-btn"><svg width="13" height="13" style="vertical-align:-2px"><use href="#i-doc"/></svg> Ver PDF</button>
+                <button class="btn btn-outline btn-sm"><svg><use href="#i-link"/></svg>Enviar link</button>
+                <button class="btn btn-outline btn-sm">Assinar de novo</button>
+                <div class="menu-wrap">
+                  <button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button>
+                  <div class="menu" hidden><div class="menu-list"><button class="danger"><svg><use href="#i-trash"/></svg>Excluir documento</button></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="di">
+                <b>Ciência sobre riscos e cuidados domiciliares</b>
+                <span style="color:var(--warn)">Pendente de assinatura</span>
+              </div>
+              <div class="acts">
+                <button class="btn btn-outline btn-sm"><svg><use href="#i-link"/></svg>Enviar link</button>
+                <button class="btn btn-primary btn-sm">Assinar agora</button>
+                <div class="menu-wrap">
+                  <button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button>
+                  <div class="menu" hidden><div class="menu-list"><button class="danger"><svg><use href="#i-trash"/></svg>Remover da lista</button></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="preview-label">Ao tocar em "Enviar link"</p>
+          <div class="card">
+            <div class="sharelink">
+              <div class="qr">
+                <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true">
+                  <rect width="100" height="100" fill="#fff"/>
+                  <path fill="#1b1b1a" d="M6 6h24v24H6zM13 13v10h10V13zM70 6h24v24H70zM77 13v10h10V13zM6 70h24v24H6zM13 77v10h10V77z"/>
+                  <path fill="#1b1b1a" d="M38 6h6v12h-6zM50 10h8v6h-8zM38 22h14v6H38zM6 38h10v6H6zM22 40h6v12h-6zM40 40h10v10H40zM56 38h8v6h-8zM68 44h6v6h-6zM80 38h14v6h-6zM86 50h8v14h-6zM6 52h10v6H6zM34 56h6v6h-6zM46 56h14v6H46zM64 58h8v6h-8zM76 56h6v12h-6zM38 34h6v6h-6zM38 68h12v6H38zM56 70h6v6h-6zM68 70h8v6h-8zM82 70h12v6h-6zM38 82h12v12H38zM54 84h8v10h-8zM68 88h16v6H68zM86 84h8v10h-8z"/>
+                </svg>
+              </div>
+              <div class="sl-body">
+                <b style="font-size:var(--fs-sm)">Link para "Ciência sobre riscos e cuidados domiciliares"</b>
+                <div class="urlbox">
+                  <input readonly value="arkdoctor.app/assinar/9f3ac21b" aria-label="Link de assinatura" />
+                  <button class="btn btn-outline btn-sm">Copiar</button>
+                </div>
+                <p>O link expira em 48 horas. Mostre o QR code na consulta ou envie pelo WhatsApp.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROCEDIMENTOS ============ -->
+    <section data-screen="procedimentos" hidden>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow"><span class="tick"></span>Clínica</p>
+          <h1>Procedimentos</h1>
+          <p class="sub">Valor e duração padrão de cada procedimento. Usados como sugestão ao agendar e ao lançar no financeiro.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary"><svg><use href="#i-plus"/></svg>Adicionar procedimento</button>
+        </div>
+      </header>
+
+      <div class="screen-body">
+        <div class="card">
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th>Procedimento</th>
+                  <th style="width:150px">Valor padrão</th>
+                  <th style="width:130px">Duração</th>
+                  <th style="width:52px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Avaliação inicial de ferida</td>
+                  <td class="tnum">R$ 180,00</td>
+                  <td class="tnum">60 min</td>
+                  <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button><svg><use href="#i-pencil"/></svg>Editar</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                </tr>
+                <tr>
+                  <td>Curativo simples</td>
+                  <td class="tnum">R$ 90,00</td>
+                  <td class="tnum">30 min</td>
+                  <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button><svg><use href="#i-pencil"/></svg>Editar</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                </tr>
+                <tr class="proc-edit">
+                  <td><input value="Curativo complexo com desbridamento" aria-label="Nome do procedimento" /></td>
+                  <td><input class="mini tnum" value="160,00" aria-label="Valor padrão" inputmode="decimal" /></td>
+                  <td><input class="mini tnum" value="45" aria-label="Duração em minutos" inputmode="numeric" /></td>
+                  <td>
+                    <div class="row-actions is-open" style="gap:6px">
+                      <button class="btn btn-primary btn-sm">Salvar</button>
+                      <button class="btn btn-ghost btn-sm">Cancelar</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Bota de Unna</td>
+                  <td class="tnum">R$ 140,00</td>
+                  <td class="tnum">40 min</td>
+                  <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button><svg><use href="#i-pencil"/></svg>Editar</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                </tr>
+                <tr>
+                  <td>Terapia por pressão negativa — troca</td>
+                  <td class="tnum">R$ 320,00</td>
+                  <td class="tnum">50 min</td>
+                  <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button><svg><use href="#i-pencil"/></svg>Editar</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                </tr>
+                <tr>
+                  <td>Retirada de pontos</td>
+                  <td class="tnum">R$ 70,00</td>
+                  <td class="tnum">20 min</td>
+                  <td><div class="row-actions"><button class="icon-btn" data-menu aria-label="Ações"><svg><use href="#i-dots"/></svg></button><div class="menu" hidden><div class="menu-list"><button><svg><use href="#i-pencil"/></svg>Editar</button><div class="menu-sep"></div><button class="danger"><svg><use href="#i-trash"/></svg>Excluir</button></div></div></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="proc-add"><svg><use href="#i-plus"/></svg>Adicionar procedimento</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CONFIGURAÇÕES ============ -->
+    <section data-screen="configuracoes" hidden>
+      <header class="page-head">
+        <div>
+          <p class="eyebrow"><span class="tick"></span>Clínica</p>
+          <h1>Configurações</h1>
+          <p class="sub">Identidade profissional e uso de armazenamento.</p>
+        </div>
+      </header>
+
+      <div class="screen-body">
+        <div class="settings-col">
+          <div class="card">
+            <div class="card-head"><h2>Identidade profissional</h2></div>
+            <div class="card-pad" style="display:flex;flex-direction:column;gap:15px">
+              <p style="font-size:var(--fs-micro);color:var(--muted);margin-top:-2px">
+                Aparece no cabeçalho e no rodapé do relatório clínico e dos termos de consentimento.
+              </p>
+              <div class="field">
+                <label for="s-name">Nome da profissional</label>
+                <input id="s-name" value="Silvana Fantin" />
+              </div>
+              <div class="field">
+                <label for="s-council">Registro no conselho</label>
+                <input id="s-council" placeholder="COREN-SP 123456" value="COREN-SP 123456" />
+                <span class="help">Ex.: COREN-SP 123456. Deixe em branco se ainda não tiver.</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <button class="btn btn-primary">Salvar</button>
+                <span class="save-line"><svg><use href="#i-check"/></svg>Configurações salvas.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Armazenamento de fotos</h2></div>
+            <div class="card-pad" style="display:flex;flex-direction:column;gap:11px">
+              <div style="display:flex;align-items:baseline;gap:8px">
+                <span class="usage-num">312 MB</span>
+                <span style="font-size:var(--fs-sm);color:var(--muted)">de 1 GB</span>
+              </div>
+              <div class="meter"><i style="width:31%"></i></div>
+              <p style="font-size:var(--fs-micro);color:var(--muted-2)">
+                Fotos de evolução dos tratamentos. Ao chegar a 1 GB, o envio de novas fotos é bloqueado até você liberar espaço.
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Conta</h2></div>
+            <div class="card-pad">
+              <dl>
+                <div class="kv"><dt>E-mail</dt><dd>silvana@clinicaferidas.com.br</dd></div>
+                <div class="kv"><dt>Plano</dt><dd>Profissional · anual</dd></div>
+              </dl>
+              <button class="btn btn-outline" style="margin-top:14px"><svg><use href="#i-logout"/></svg>Sair da conta</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var screens = Array.prototype.slice.call(document.querySelectorAll('[data-screen]'));
+  var navs = Array.prototype.slice.call(document.querySelectorAll('[data-nav]'));
+  var msel = document.getElementById('mobile-screen');
+  var psub = Array.prototype.slice.call(document.querySelectorAll('[data-pscreen]'));
+
+  function showP(name){
+    psub.forEach(function(s){ s.hidden = s.dataset.pscreen !== name; });
+    window.scrollTo(0,0);
+  }
+  function show(name){
+    screens.forEach(function(s){ s.hidden = s.dataset.screen !== name; });
+    navs.forEach(function(n){ n.classList.toggle('is-active', n.dataset.nav === name); });
+    if (msel) msel.value = name;
+    if (name === 'pacientes') showP('list');
+    window.scrollTo(0,0);
+  }
+
+  navs.forEach(function(n){
+    n.addEventListener('click', function(){
+      if (n.classList.contains('is-off')) return;
+      show(n.dataset.nav);
+    });
+  });
+  if (msel) msel.addEventListener('change', function(){ show(msel.value); });
+
+  document.querySelectorAll('[data-goto-p]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); showP(el.dataset.gotoP); });
+  });
+  document.querySelectorAll('[data-goto-nav]').forEach(function(el){
+    el.addEventListener('click', function(e){ e.preventDefault(); show(el.dataset.gotoNav); });
+  });
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-menu]');
+    document.querySelectorAll('.menu:not([hidden])').forEach(function(m){
+      if (!btn || m !== btn.nextElementSibling) {
+        m.hidden = true;
+        var l = m.querySelector('.menu-list'), c = m.querySelector('.menu-confirm');
+        if (l && c) { l.hidden = false; c.hidden = true; }
+      }
+    });
+    if (btn) { var m = btn.nextElementSibling; m.hidden = !m.hidden; }
+
+    var del = e.target.closest('[data-confirm]');
+    if (del) {
+      e.preventDefault();
+      var box = del.closest('.menu');
+      box.querySelector('.menu-list').hidden = true;
+      box.querySelector('.menu-confirm').hidden = false;
+    }
+    var cancel = e.target.closest('[data-cancel]');
+    if (cancel) {
+      var box2 = cancel.closest('.menu');
+      box2.querySelector('.menu-list').hidden = false;
+      box2.querySelector('.menu-confirm').hidden = true;
+    }
+  });
+
+  window.show = show;
+  window.showP = showP;
+  show('whatsapp');
+})();
+</script>
+
+</body></html>
