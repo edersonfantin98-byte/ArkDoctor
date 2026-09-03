@@ -2,8 +2,9 @@ import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import { startConversationInputSchema, logMessageInputSchema } from "./schemas";
 import { normalizeWhatsappJid } from "./provider.uazapi";
-import { mediaTypeFromUazapi } from "./media";
-import type { WhatsappConnection, Message } from "./types";
+import { mediaTypeFromUazapi, MAX_MEDIA_BYTES, storagePathFor } from "./media";
+import type { WhatsappMediaStorage } from "./storage";
+import type { WhatsappConnection, Message, MediaType } from "./types";
 import { parseOrThrow } from "@/lib/zod-error";
 
 export type LogMessageResult =
@@ -69,7 +70,25 @@ export async function handleInboundMessage(
     ) => Promise<{ id: string; name: string }>;
   },
   accountId: string,
-  input: { fromPhone: string; fromName?: string; body: string },
+  input: {
+    fromPhone: string;
+    fromName?: string;
+    body: string;
+    media?: {
+      providerMessageId: string;
+      type: MediaType;
+      mime: string;
+      filename: string | null;
+      fileLength: number;
+    };
+  },
+  mediaDeps?: {
+    storage: WhatsappMediaStorage;
+    downloadMedia: (
+      accountId: string,
+      providerMessageId: string,
+    ) => Promise<{ bytes: Uint8Array; mime: string }>;
+  },
 ) {
   let contact = await crmDeps.findContactByPhone(accountId, input.fromPhone);
   if (!contact) {
@@ -91,14 +110,58 @@ export async function handleInboundMessage(
     conversation = { ...conversation, contactId: contact.id };
   }
 
-  const message = await whatsappRepo.insertMessage(accountId, conversation.id, {
-    direction: "inbound",
-    body: input.body,
-  });
-  await whatsappRepo.touchConversation(accountId, conversation.id, input.body, message.sentAt);
+  const preview =
+    input.media && input.body === ""
+      ? mediaPreviewLabel(input.media.type)
+      : input.body;
+
+  let message: Message;
+  if (input.media && mediaDeps) {
+    const tooLarge = input.media.fileLength > MAX_MEDIA_BYTES;
+    message = await whatsappRepo.insertMessage(accountId, conversation.id, {
+      direction: "inbound",
+      body: input.body,
+      media: {
+        type: input.media.type,
+        status: tooLarge ? "too_large" : "expired",
+        mime: input.media.mime,
+        filename: input.media.filename,
+        storagePath: null,
+      },
+    });
+    if (!tooLarge) {
+      try {
+        const { bytes, mime } = await mediaDeps.downloadMedia(
+          accountId,
+          input.media.providerMessageId,
+        );
+        const path = storagePathFor(accountId, conversation.id, message.id, mime || input.media.mime);
+        await mediaDeps.storage.upload(path, bytes, mime || input.media.mime);
+        await whatsappRepo.updateMessageMedia(accountId, message.id, {
+          status: "stored",
+          storagePath: path,
+        });
+        message = { ...message, mediaStatus: "stored", mediaStoragePath: path };
+      } catch (err) {
+        console.error("[whatsapp] ingestão de mídia falhou, marcada como expired", err);
+        // a mensagem já está gravada como 'expired' — não relança
+      }
+    }
+  } else {
+    message = await whatsappRepo.insertMessage(accountId, conversation.id, {
+      direction: "inbound",
+      body: input.body,
+    });
+  }
+
+  await whatsappRepo.touchConversation(accountId, conversation.id, preview, message.sentAt);
   await whatsappRepo.incrementUnreadCount(accountId, conversation.id);
 
   return message;
+}
+
+function mediaPreviewLabel(type: MediaType): string {
+  return { image: "📷 Imagem", audio: "🎤 Áudio", video: "🎬 Vídeo", document: "📄 Documento" }[type];
 }
 
 export function personalizeMessage(template: string, contactName: string): string {

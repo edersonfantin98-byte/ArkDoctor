@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { createInMemoryWhatsappRepository } from "./repository.memory";
 import { createInMemoryCrmRepository } from "../crm/repository.memory";
 import { createFakeWhatsappProvider } from "./provider.fake";
+import { createFakeWhatsappMediaStorage } from "./storage.fake";
+import { MAX_MEDIA_BYTES } from "./media";
 import * as crm from "../crm/service";
 import {
   startConversation,
@@ -148,6 +150,78 @@ describe("whatsapp service", () => {
       expect(result.message.body).toBe("Oi");
       expect(result.message.direction).toBe("outbound");
     }
+  });
+
+  function mediaDepsFake() {
+    const storage = createFakeWhatsappMediaStorage();
+    const downloadMedia = vi.fn(async () => ({ bytes: new Uint8Array([9, 9, 9]), mime: "image/jpeg" }));
+    return { storage, downloadMedia };
+  }
+
+  it("ingestão de mídia: baixa, sobe no bucket e grava a mensagem como stored", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const crmDeps = buildCrmDeps(createInMemoryCrmRepository());
+    const deps = mediaDepsFake();
+
+    const msg = await handleInboundMessage(repo, crmDeps, "acc-1", {
+      fromPhone: "5511988887777",
+      fromName: "Carla",
+      body: "Ola amigo",
+      media: { providerMessageId: "MID-1", type: "image", mime: "image/jpeg", filename: null, fileLength: 3 },
+    }, deps);
+
+    expect(deps.downloadMedia).toHaveBeenCalledWith("acc-1", "MID-1");
+    const stored = await getConversationMessages(repo, "acc-1", msg.conversationId);
+    expect(stored[0].mediaType).toBe("image");
+    expect(stored[0].mediaStatus).toBe("stored");
+    expect(stored[0].body).toBe("Ola amigo");
+    expect(deps.storage.objects.get(stored[0].mediaStoragePath!)).toBeDefined();
+  });
+
+  it("ingestão de mídia: arquivo acima de 16 MB entra como too_large sem baixar", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const crmDeps = buildCrmDeps(createInMemoryCrmRepository());
+    const deps = mediaDepsFake();
+
+    const msg = await handleInboundMessage(repo, crmDeps, "acc-1", {
+      fromPhone: "5511988887777",
+      body: "",
+      media: { providerMessageId: "MID-2", type: "video", mime: "video/mp4", filename: null, fileLength: MAX_MEDIA_BYTES + 1 },
+    }, deps);
+
+    expect(deps.downloadMedia).not.toHaveBeenCalled();
+    const stored = await getConversationMessages(repo, "acc-1", msg.conversationId);
+    expect(stored[0].mediaStatus).toBe("too_large");
+    expect(stored[0].mediaStoragePath).toBeNull();
+  });
+
+  it("ingestão de mídia: falha de download deixa a mensagem como expired, não lança", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const crmDeps = buildCrmDeps(createInMemoryCrmRepository());
+    const storage = createFakeWhatsappMediaStorage();
+    const downloadMedia = vi.fn(async () => { throw new Error("rede caiu"); });
+
+    const msg = await handleInboundMessage(repo, crmDeps, "acc-1", {
+      fromPhone: "5511988887777",
+      body: "",
+      media: { providerMessageId: "MID-3", type: "audio", mime: "audio/ogg", filename: null, fileLength: 10 },
+    }, { storage, downloadMedia });
+
+    const stored = await getConversationMessages(repo, "acc-1", msg.conversationId);
+    expect(stored[0].mediaStatus).toBe("expired");
+    expect(stored[0].mediaType).toBe("audio");
+  });
+
+  it("sem media no input, handleInboundMessage grava texto puro como antes", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const crmDeps = buildCrmDeps(createInMemoryCrmRepository());
+    const msg = await handleInboundMessage(repo, crmDeps, "acc-1", {
+      fromPhone: "5511988887777",
+      body: "oi",
+    });
+    const stored = await getConversationMessages(repo, "acc-1", msg.conversationId);
+    expect(stored[0].mediaType).toBeNull();
+    expect(stored[0].body).toBe("oi");
   });
 });
 
