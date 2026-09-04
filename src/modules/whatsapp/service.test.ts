@@ -1089,6 +1089,38 @@ describe("importWhatsappHistory", () => {
     expect(messages.find((m) => m.direction === "outbound")?.body).toBe("Claro, qual dia?");
   });
 
+  it("creates and links a lead when the conversation already exists without a contact", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "5511999999999",
+    });
+
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue([fakeChat()]),
+      findMessages: vi.fn().mockResolvedValue([
+        { fromMe: false, text: "Oi, gostaria de agendar", messageTimestamp: Date.parse(NOW) - 60 * 60 * 1000 },
+      ]),
+      downloadMedia: vi.fn(),
+    };
+
+    const result = await importWhatsappHistory(
+      repo,
+      makeCrmDeps(),
+      uazapiDeps,
+      createFakeWhatsappMediaStorage(),
+      "acc-1",
+      NOW,
+    );
+
+    expect(result).toEqual({ imported: 1, skipped: 0, errors: 0, hasMore: false });
+
+    const conversation = await repo.getConversationByPhone("acc-1", "5511999999999");
+    expect(conversation?.contactId).not.toBeNull();
+    expect(conversation?.historyImportedAt).toBe(NOW);
+  });
+
   it("skips a conversation already marked as imported", async () => {
     const repo = createInMemoryWhatsappRepository();
     const conversation = await repo.insertConversation("acc-1", {

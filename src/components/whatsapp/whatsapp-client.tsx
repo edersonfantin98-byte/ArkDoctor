@@ -318,7 +318,9 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     try {
       const result = await importWhatsappHistoryAction();
       setHistoryImportSummary(
-        `${result.imported} conversas importadas, ${result.skipped} já existentes, ${result.errors} com erro.`,
+        `${result.imported} ${result.imported === 1 ? "conversa importada" : "conversas importadas"}, ` +
+          `${result.skipped} ${result.skipped === 1 ? "já existente" : "já existentes"}, ` +
+          `${result.errors} ${result.errors === 1 ? "com erro" : "com erros"}.`,
       );
       setHistoryHasMore(result.hasMore);
       setHistoryBannerDismissed(true);

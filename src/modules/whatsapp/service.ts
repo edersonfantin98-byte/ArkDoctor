@@ -346,6 +346,13 @@ export async function importWhatsappHistory(
           contactName: contact.name,
           contactPhone: chat.phone,
         });
+      } else if (conversation.contactId === null) {
+        let contact = await crmDeps.findContactByPhone(accountId, chat.phone);
+        if (!contact) {
+          contact = await crmDeps.createContact(accountId, { name: chat.name, phone: chat.phone });
+        }
+        await whatsappRepo.linkConversationContact(accountId, conversation.id, contact.id);
+        conversation = { ...conversation, contactId: contact.id };
       }
       const conversationId = conversation.id;
       const priorLastMessageAt = conversation.lastMessageAt;
