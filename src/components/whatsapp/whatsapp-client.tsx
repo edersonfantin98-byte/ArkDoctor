@@ -700,6 +700,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                     <Button
                       variant="outline"
                       size="sm"
+                      nativeButton={false}
                       render={<Link href={`/pacientes/${selectedConversation.contactId}`} />}
                     >
                       <ExternalLink />
