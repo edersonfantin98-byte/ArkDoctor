@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { RowActionsMenu } from "@/components/ui/row-actions";
-import { Table, THead, TH, TBody, TR, TD, RowActionsCell } from "@/components/ui/table";
+import { THead, TH, TBody, TR, TD, RowActionsCell } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
 import {
   createProcedureAction,
@@ -60,8 +60,8 @@ export function ProceduresClient({ initialProcedures }: { initialProcedures: Pro
     <div className="space-y-4 px-6 pb-6">
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="rounded-xl ring-1 ring-foreground/10">
-        <Table>
+      <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
+        <table className="w-full border-collapse text-sm">
           <THead>
             <TR>
               <TH>Procedimento</TH>
@@ -190,7 +190,7 @@ export function ProceduresClient({ initialProcedures }: { initialProcedures: Pro
               </TR>
             )}
           </TBody>
-        </Table>
+        </table>
 
         <button
           type="button"
