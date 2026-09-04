@@ -7,7 +7,11 @@ export default async function WhatsappPage() {
 
   return (
     <div>
-      <PageHeader title="Inbox" description="Conversas com pacientes." />
+      <PageHeader
+        title="Inbox"
+        eyebrow="Atendimento"
+        description="Conversas com pacientes pelo WhatsApp."
+      />
       <WhatsappClient initialConversations={conversations} />
     </div>
   );
