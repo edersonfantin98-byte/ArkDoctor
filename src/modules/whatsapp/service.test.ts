@@ -12,6 +12,7 @@ import {
   runMediaRetention,
   getConversationMessages,
   handleInboundMessage,
+  importWhatsappHistory,
   getConnectionStatus,
   connectWhatsapp,
   disconnectWhatsapp,
@@ -21,6 +22,7 @@ import {
   personalizeMessage,
   sendBulkMessages,
 } from "./service";
+import type { UazapiChat } from "./provider.uazapi";
 
 describe("whatsapp service", () => {
   it("rejects logging a message on a conversation that doesn't exist", async () => {
@@ -1023,5 +1025,215 @@ describe("runMediaRetention", () => {
     expect(result).toEqual({ expired: 0, errors: 1 });
     const m = (await repo.listMessages("acc-1", conv.id)).find((x) => x.id === a.id)!;
     expect(m.mediaStatus).toBe("stored");
+  });
+});
+
+describe("importWhatsappHistory", () => {
+  const NOW = "2026-09-04T12:00:00.000Z";
+
+  function fakeChat(overrides: Partial<UazapiChat> = {}): UazapiChat {
+    return {
+      chatId: "5511999999999@s.whatsapp.net",
+      phone: "5511999999999",
+      name: "Carla Souza",
+      isGroup: false,
+      lastMessageTimestampMs: Date.parse(NOW) - 24 * 60 * 60 * 1000,
+      ...overrides,
+    };
+  }
+
+  function makeCrmDeps() {
+    const crmRepo = createInMemoryCrmRepository();
+    return {
+      findContactByPhone: (accId: string, phone: string) => crm.findContactByPhone(crmRepo, accId, phone),
+      createContact: (accId: string, input: { name: string; phone: string }) =>
+        crm.createContact(crmRepo, accId, input),
+    };
+  }
+
+  it("creates a conversation and a lead for a new phone, imports its messages", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue([fakeChat()]),
+      findMessages: vi.fn().mockResolvedValue([
+        {
+          fromMe: false,
+          text: "Oi, gostaria de agendar",
+          messageTimestamp: Date.parse(NOW) - 60 * 60 * 1000,
+        },
+        { fromMe: true, text: "Claro, qual dia?", messageTimestamp: Date.parse(NOW) - 30 * 60 * 1000 },
+      ]),
+      downloadMedia: vi.fn(),
+    };
+    const storage = createFakeWhatsappMediaStorage();
+
+    const result = await importWhatsappHistory(
+      repo,
+      makeCrmDeps(),
+      uazapiDeps,
+      storage,
+      "acc-1",
+      NOW,
+    );
+
+    expect(result).toEqual({ imported: 1, skipped: 0, errors: 0, hasMore: false });
+
+    const conversation = await repo.getConversationByPhone("acc-1", "5511999999999");
+    expect(conversation?.historyImportedAt).toBe(NOW);
+    expect(conversation?.contactId).not.toBeNull();
+    expect(conversation?.lastMessagePreview).toBe("Claro, qual dia?");
+
+    const messages = await repo.listMessages("acc-1", conversation!.id);
+    expect(messages).toHaveLength(2);
+    expect(messages.find((m) => m.direction === "inbound")?.body).toBe("Oi, gostaria de agendar");
+    expect(messages.find((m) => m.direction === "outbound")?.body).toBe("Claro, qual dia?");
+  });
+
+  it("skips a conversation already marked as imported", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla Souza",
+      contactPhone: "5511999999999",
+    });
+    await repo.markHistoryImported("acc-1", conversation.id, "2026-09-01T00:00:00.000Z");
+
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue([fakeChat()]),
+      findMessages: vi.fn(),
+      downloadMedia: vi.fn(),
+    };
+
+    const result = await importWhatsappHistory(
+      repo,
+      makeCrmDeps(),
+      uazapiDeps,
+      createFakeWhatsappMediaStorage(),
+      "acc-1",
+      NOW,
+    );
+
+    expect(result).toEqual({ imported: 0, skipped: 1, errors: 0, hasMore: false });
+    expect(uazapiDeps.findMessages).not.toHaveBeenCalled();
+  });
+
+  it("discards chats outside the 60-day window and groups", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue([
+        fakeChat({
+          phone: "5511111111111",
+          chatId: "5511111111111@s.whatsapp.net",
+          lastMessageTimestampMs: Date.parse(NOW) - 61 * 24 * 60 * 60 * 1000,
+        }),
+        fakeChat({ phone: "5511222222222", chatId: "123@g.us", isGroup: true }),
+      ]),
+      findMessages: vi.fn(),
+      downloadMedia: vi.fn(),
+    };
+
+    const result = await importWhatsappHistory(
+      repo,
+      makeCrmDeps(),
+      uazapiDeps,
+      createFakeWhatsappMediaStorage(),
+      "acc-1",
+      NOW,
+    );
+
+    expect(result).toEqual({ imported: 0, skipped: 0, errors: 0, hasMore: false });
+    expect(uazapiDeps.findMessages).not.toHaveBeenCalled();
+  });
+
+  it("processes at most HISTORY_BATCH_SIZE conversations and reports hasMore", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const chats = Array.from({ length: 16 }, (_, i) =>
+      fakeChat({ phone: `551199999${String(i).padStart(4, "0")}`, chatId: `551199999${String(i).padStart(4, "0")}@s.whatsapp.net` }),
+    );
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue(chats),
+      findMessages: vi.fn().mockResolvedValue([]),
+      downloadMedia: vi.fn(),
+    };
+
+    const result = await importWhatsappHistory(
+      repo,
+      makeCrmDeps(),
+      uazapiDeps,
+      createFakeWhatsappMediaStorage(),
+      "acc-1",
+      NOW,
+    );
+
+    expect(result.imported).toBe(15);
+    expect(result.hasMore).toBe(true);
+    expect(uazapiDeps.findMessages).toHaveBeenCalledTimes(15);
+  });
+
+  it("keeps going when one conversation fails, and does not mark it as imported", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue([
+        fakeChat({ phone: "5511111111111", chatId: "5511111111111@s.whatsapp.net" }),
+        fakeChat({ phone: "5511222222222", chatId: "5511222222222@s.whatsapp.net" }),
+      ]),
+      findMessages: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("timeout"))
+        .mockResolvedValueOnce([]),
+      downloadMedia: vi.fn(),
+    };
+
+    const result = await importWhatsappHistory(
+      repo,
+      makeCrmDeps(),
+      uazapiDeps,
+      createFakeWhatsappMediaStorage(),
+      "acc-1",
+      NOW,
+    );
+
+    expect(result).toEqual({ imported: 1, skipped: 0, errors: 1, hasMore: false });
+    const failedConversation = await repo.getConversationByPhone("acc-1", "5511111111111");
+    expect(failedConversation?.historyImportedAt).toBeNull();
+  });
+
+  it("downloads media newer than 30 days and marks older media as expired without downloading", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const uazapiDeps = {
+      findChats: vi.fn().mockResolvedValue([fakeChat()]),
+      findMessages: vi.fn().mockResolvedValue([
+        {
+          fromMe: false,
+          messageType: "ImageMessage",
+          messageid: "recent-img",
+          messageTimestamp: Date.parse(NOW) - 10 * 24 * 60 * 60 * 1000,
+          text: "",
+          content: { mimetype: "image/jpeg", fileLength: 1000 },
+        },
+        {
+          fromMe: false,
+          messageType: "ImageMessage",
+          messageid: "old-img",
+          messageTimestamp: Date.parse(NOW) - 40 * 24 * 60 * 60 * 1000,
+          text: "",
+          content: { mimetype: "image/jpeg", fileLength: 1000 },
+        },
+      ]),
+      downloadMedia: vi.fn().mockResolvedValue({ bytes: new Uint8Array([1, 2, 3]), mime: "image/jpeg" }),
+    };
+    const storage = createFakeWhatsappMediaStorage();
+
+    await importWhatsappHistory(repo, makeCrmDeps(), uazapiDeps, storage, "acc-1", NOW);
+
+    expect(uazapiDeps.downloadMedia).toHaveBeenCalledTimes(1);
+    expect(uazapiDeps.downloadMedia).toHaveBeenCalledWith("acc-1", "recent-img");
+
+    const conversation = await repo.getConversationByPhone("acc-1", "5511999999999");
+    const messages = await repo.listMessages("acc-1", conversation!.id);
+    const recent = messages.find((m) => m.mediaStoragePath !== null);
+    const old = messages.find((m) => m.mediaStoragePath === null);
+    expect(recent?.mediaStatus).toBe("stored");
+    expect(old?.mediaStatus).toBe("expired");
   });
 });

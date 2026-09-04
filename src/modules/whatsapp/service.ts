@@ -5,7 +5,8 @@ import { normalizeWhatsappJid } from "./provider.uazapi";
 import { MAX_MEDIA_BYTES, storagePathFor, safeContentType } from "./media";
 import { mapUazapiMessage } from "./message-mapping";
 import type { WhatsappMediaStorage } from "./storage";
-import type { WhatsappConnection, Message, MediaType } from "./types";
+import type { WhatsappConnection, Message, MediaType, MediaStatus, MessageDirection } from "./types";
+import type { UazapiChat } from "./provider.uazapi";
 import { parseOrThrow } from "@/lib/zod-error";
 
 export type LogMessageResult =
@@ -13,6 +14,12 @@ export type LogMessageResult =
   | { ok: false; error: string };
 
 const DISCONNECTED_ERROR = "WhatsApp desconectado. Conecte para enviar mensagens.";
+
+export const HISTORY_MAX_CONVERSATIONS = 50;
+export const HISTORY_MAX_MESSAGES_PER_CONVERSATION = 30;
+export const HISTORY_WINDOW_DAYS = 60;
+export const HISTORY_BATCH_SIZE = 15;
+const HISTORY_MEDIA_WINDOW_DAYS = 30;
 
 export async function listConversations(repo: WhatsappRepository, accountId: string) {
   return repo.listConversations(accountId);
@@ -153,6 +160,34 @@ export async function runMediaRetention(
   return { expired, errors };
 }
 
+async function ingestMediaBytes(
+  whatsappRepo: WhatsappRepository,
+  storage: WhatsappMediaStorage,
+  downloadMedia: (accountId: string, providerMessageId: string) => Promise<{ bytes: Uint8Array; mime: string }>,
+  accountId: string,
+  conversationId: string,
+  message: Message,
+  media: { providerMessageId: string; type: MediaType; mime: string },
+): Promise<Message> {
+  try {
+    const { bytes, mime } = await downloadMedia(accountId, media.providerMessageId);
+    if (bytes.byteLength > MAX_MEDIA_BYTES) {
+      await whatsappRepo.updateMessageMedia(accountId, message.id, {
+        status: "too_large",
+        storagePath: null,
+      });
+      return { ...message, mediaStatus: "too_large", mediaStoragePath: null };
+    }
+    const path = storagePathFor(accountId, conversationId, message.id, mime || media.mime);
+    await storage.upload(path, bytes, safeContentType(media.type, mime || media.mime));
+    await whatsappRepo.updateMessageMedia(accountId, message.id, { status: "stored", storagePath: path });
+    return { ...message, mediaStatus: "stored", mediaStoragePath: path };
+  } catch (err) {
+    console.error("[whatsapp] ingestão de mídia falhou, marcada como expired", err);
+    return message;
+  }
+}
+
 export async function handleInboundMessage(
   whatsappRepo: WhatsappRepository,
   crmDeps: {
@@ -223,34 +258,15 @@ export async function handleInboundMessage(
       },
     });
     if (!tooLarge) {
-      try {
-        const { bytes, mime } = await mediaDeps.downloadMedia(
-          accountId,
-          input.media.providerMessageId,
-        );
-        if (bytes.byteLength > MAX_MEDIA_BYTES) {
-          await whatsappRepo.updateMessageMedia(accountId, message.id, {
-            status: "too_large",
-            storagePath: null,
-          });
-          message = { ...message, mediaStatus: "too_large", mediaStoragePath: null };
-        } else {
-          const path = storagePathFor(accountId, conversation.id, message.id, mime || input.media.mime);
-          await mediaDeps.storage.upload(
-            path,
-            bytes,
-            safeContentType(input.media.type, mime || input.media.mime),
-          );
-          await whatsappRepo.updateMessageMedia(accountId, message.id, {
-            status: "stored",
-            storagePath: path,
-          });
-          message = { ...message, mediaStatus: "stored", mediaStoragePath: path };
-        }
-      } catch (err) {
-        console.error("[whatsapp] ingestão de mídia falhou, marcada como expired", err);
-        // a mensagem já está gravada como 'expired' — não relança
-      }
+      message = await ingestMediaBytes(
+        whatsappRepo,
+        mediaDeps.storage,
+        mediaDeps.downloadMedia,
+        accountId,
+        conversation.id,
+        message,
+        { providerMessageId: input.media.providerMessageId, type: input.media.type, mime: input.media.mime },
+      );
     }
   } else {
     message = await whatsappRepo.insertMessage(accountId, conversation.id, {
@@ -263,6 +279,162 @@ export async function handleInboundMessage(
   await whatsappRepo.incrementUnreadCount(accountId, conversation.id);
 
   return message;
+}
+
+export interface ImportHistoryResult {
+  imported: number;
+  skipped: number;
+  errors: number;
+  hasMore: boolean;
+}
+
+export async function importWhatsappHistory(
+  whatsappRepo: WhatsappRepository,
+  crmDeps: {
+    findContactByPhone: (accountId: string, phone: string) => Promise<{ id: string; name: string } | null>;
+    createContact: (
+      accountId: string,
+      input: { name: string; phone: string },
+    ) => Promise<{ id: string; name: string }>;
+  },
+  uazapiDeps: {
+    findChats: (accountId: string, limit: number) => Promise<UazapiChat[]>;
+    findMessages: (accountId: string, chatId: string, limit: number) => Promise<unknown[]>;
+    downloadMedia: (
+      accountId: string,
+      providerMessageId: string,
+    ) => Promise<{ bytes: Uint8Array; mime: string }>;
+  },
+  storage: WhatsappMediaStorage,
+  accountId: string,
+  nowIso: string,
+): Promise<ImportHistoryResult> {
+  const nowMs = Date.parse(nowIso);
+  const cutoffMs = nowMs - HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const mediaCutoffMs = nowMs - HISTORY_MEDIA_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+  const allChats = await uazapiDeps.findChats(accountId, HISTORY_MAX_CONVERSATIONS);
+  const chats = allChats.filter((c) => !c.isGroup && c.lastMessageTimestampMs >= cutoffMs);
+
+  let imported = 0;
+  let skipped = 0;
+  let errors = 0;
+  let processed = 0;
+  let hasMore = false;
+
+  for (const chat of chats) {
+    let conversation = await whatsappRepo.getConversationByPhone(accountId, chat.phone);
+    if (conversation?.historyImportedAt) {
+      skipped += 1;
+      continue;
+    }
+
+    if (processed >= HISTORY_BATCH_SIZE) {
+      hasMore = true;
+      continue;
+    }
+    processed += 1;
+
+    try {
+      if (!conversation) {
+        let contact = await crmDeps.findContactByPhone(accountId, chat.phone);
+        if (!contact) {
+          contact = await crmDeps.createContact(accountId, { name: chat.name, phone: chat.phone });
+        }
+        conversation = await whatsappRepo.insertConversation(accountId, {
+          contactId: contact.id,
+          contactName: contact.name,
+          contactPhone: chat.phone,
+        });
+      }
+      const conversationId = conversation.id;
+      const priorLastMessageAt = conversation.lastMessageAt;
+
+      const rawMessages = await uazapiDeps.findMessages(
+        accountId,
+        chat.chatId,
+        HISTORY_MAX_MESSAGES_PER_CONVERSATION,
+      );
+
+      let newestPreview: string | null = null;
+      let newestSentAtMs: number | null = null;
+
+      for (const raw of rawMessages) {
+        const mapped = mapUazapiMessage(raw);
+        if (!mapped) continue;
+
+        const sentAtMs = mapped.timestampMs ?? nowMs;
+        const sentAtIso = new Date(sentAtMs).toISOString();
+        const direction: MessageDirection = mapped.fromMe ? "outbound" : "inbound";
+
+        if (mapped.media) {
+          const withinMediaWindow = sentAtMs >= mediaCutoffMs;
+          const tooLargeByLength = mapped.media.fileLength > MAX_MEDIA_BYTES;
+          const attemptDownload = withinMediaWindow && !tooLargeByLength;
+          const initialStatus: MediaStatus =
+            withinMediaWindow && tooLargeByLength ? "too_large" : "expired";
+
+          let message = await whatsappRepo.insertMessage(accountId, conversationId, {
+            direction,
+            body: mapped.body,
+            sentAt: sentAtIso,
+            media: {
+              type: mapped.media.type,
+              status: initialStatus,
+              mime: mapped.media.mime,
+              filename: mapped.media.filename,
+              storagePath: null,
+            },
+          });
+
+          if (attemptDownload) {
+            message = await ingestMediaBytes(
+              whatsappRepo,
+              storage,
+              uazapiDeps.downloadMedia,
+              accountId,
+              conversationId,
+              message,
+              { providerMessageId: mapped.media.providerMessageId, type: mapped.media.type, mime: mapped.media.mime },
+            );
+          }
+        } else {
+          await whatsappRepo.insertMessage(accountId, conversationId, {
+            direction,
+            body: mapped.body,
+            sentAt: sentAtIso,
+          });
+        }
+
+        if (newestSentAtMs === null || sentAtMs > newestSentAtMs) {
+          newestSentAtMs = sentAtMs;
+          newestPreview =
+            mapped.media && mapped.body === "" ? mediaPreviewLabel(mapped.media.type) : mapped.body;
+        }
+      }
+
+      if (
+        newestSentAtMs !== null &&
+        newestPreview !== null &&
+        (!priorLastMessageAt || newestSentAtMs > Date.parse(priorLastMessageAt))
+      ) {
+        await whatsappRepo.touchConversation(
+          accountId,
+          conversationId,
+          newestPreview,
+          new Date(newestSentAtMs).toISOString(),
+        );
+      }
+
+      await whatsappRepo.markHistoryImported(accountId, conversationId, nowIso);
+      imported += 1;
+    } catch (err) {
+      console.error("[whatsapp] importação de histórico: erro numa conversa, seguindo", chat.chatId, err);
+      errors += 1;
+    }
+  }
+
+  return { imported, skipped, errors, hasMore };
 }
 
 function mediaPreviewLabel(type: MediaType): string {
