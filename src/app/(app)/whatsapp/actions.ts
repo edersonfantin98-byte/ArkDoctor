@@ -11,6 +11,8 @@ import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import { createUazapiProvider } from "@/modules/whatsapp/provider.uazapi";
 import * as whatsapp from "@/modules/whatsapp/service";
 import { MAX_MEDIA_BYTES, mediaTypeFromMime } from "@/modules/whatsapp/media";
+import { createSupabaseCrmRepository } from "@/modules/crm/repository.supabase";
+import * as crm from "@/modules/crm/service";
 
 async function getRepoAndAccount() {
   const supabase = await createServerSupabaseClient();
@@ -178,4 +180,30 @@ export async function sendWhatsappMediaAction(
     return { ok: true };
   }
   return { ok: false, error: result.error };
+}
+
+export async function importWhatsappHistoryAction(): Promise<whatsapp.ImportHistoryResult> {
+  const { repo, accountId } = await getRepoAndAccount();
+  const supabase = await createServerSupabaseClient();
+  const storage = createSupabaseWhatsappMediaStorage(supabase);
+  const crmRepo = createSupabaseCrmRepository(supabase);
+  const uazapi = createUazapiProvider(repo);
+
+  const result = await whatsapp.importWhatsappHistory(
+    repo,
+    {
+      findContactByPhone: (accId, phone) => crm.findContactByPhone(crmRepo, accId, phone),
+      createContact: (accId, input) => crm.createContact(crmRepo, accId, input),
+    },
+    {
+      findChats: (accId, limit) => uazapi.findChats(accId, limit),
+      findMessages: (accId, chatId, limit) => uazapi.findMessages(accId, chatId, limit),
+      downloadMedia: (accId, providerMessageId) => uazapi.downloadMedia(accId, providerMessageId),
+    },
+    storage,
+    accountId,
+    new Date().toISOString(),
+  );
+  revalidatePath("/whatsapp");
+  return result;
 }
