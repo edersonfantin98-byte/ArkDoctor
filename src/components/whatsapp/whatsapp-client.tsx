@@ -29,6 +29,7 @@ import {
   saveUazapiConfigAction,
   getUazapiQrCodeAction,
   getWhatsappConnectionAction,
+  importWhatsappHistoryAction,
   type MessageView,
 } from "@/app/(app)/whatsapp/actions";
 import type { Conversation } from "@/modules/whatsapp/types";
@@ -243,6 +244,11 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [togglingConnection, setTogglingConnection] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [importingHistory, setImportingHistory] = useState(false);
+  const [historyImportError, setHistoryImportError] = useState<string | null>(null);
+  const [historyImportSummary, setHistoryImportSummary] = useState<string | null>(null);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyBannerDismissed, setHistoryBannerDismissed] = useState(false);
 
   useEffect(() => {
     if (!attachment || !attachment.type.startsWith("image/")) {
@@ -303,6 +309,24 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
       setConnectionError(err instanceof Error ? err.message : "Erro ao conectar com o WhatsApp");
     } finally {
       setTogglingConnection(false);
+    }
+  }
+
+  async function handleImportHistory() {
+    setImportingHistory(true);
+    setHistoryImportError(null);
+    try {
+      const result = await importWhatsappHistoryAction();
+      setHistoryImportSummary(
+        `${result.imported} conversas importadas, ${result.skipped} já existentes, ${result.errors} com erro.`,
+      );
+      setHistoryHasMore(result.hasMore);
+      setHistoryBannerDismissed(true);
+      setConversations(await listConversationsAction());
+    } catch (err) {
+      setHistoryImportError(err instanceof Error ? err.message : "Erro ao importar histórico");
+    } finally {
+      setImportingHistory(false);
     }
   }
 
@@ -433,6 +457,10 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId) ?? null;
   const isConnected = connection?.status === "connected";
+  const showHistoryBanner =
+    !historyBannerDismissed &&
+    connection?.status === "connected" &&
+    conversations.every((c) => !c.historyImportedAt);
 
   return (
     <div className="space-y-4 px-6 pb-6">
@@ -458,10 +486,48 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
             {connection?.status === "connected" ? "Desconectar" : "Conectar"}
           </Button>
           <UazapiConfigDialog onSaved={refreshConnection} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={importingHistory || connection?.status !== "connected"}
+            onClick={handleImportHistory}
+          >
+            {importingHistory
+              ? "Importando..."
+              : historyHasMore
+                ? "Continuar importação"
+                : "Importar histórico"}
+          </Button>
         </div>
         <NewConversationDialog onCreated={handleConversationCreated} />
       </div>
       {connectionError && <p className="text-sm text-red-600">{connectionError}</p>}
+      {showHistoryBanner && (
+        <div className="flex items-center justify-between gap-2 rounded-xl border p-3">
+          <p className="text-sm">Conexão feita. Importar as conversas recentes?</p>
+          <div className="flex gap-2">
+            <Button size="sm" disabled={importingHistory} onClick={handleImportHistory}>
+              {importingHistory ? "Importando..." : "Importar"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setHistoryBannerDismissed(true)}
+            >
+              Agora não
+            </Button>
+          </div>
+        </div>
+      )}
+      {historyImportError && <p className="text-sm text-red-600">{historyImportError}</p>}
+      {historyImportSummary && (
+        <p className="text-sm text-muted-foreground">
+          {historyImportSummary}
+          {historyHasMore && " Clique em \"Continuar importação\" pra seguir."}
+        </p>
+      )}
       {qrCode && (
         <div className="flex flex-col items-center gap-2 rounded-xl border p-4">
           <p className="text-sm text-muted-foreground">
