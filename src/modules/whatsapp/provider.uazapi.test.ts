@@ -176,6 +176,126 @@ describe("UazapiProvider", () => {
     expect(connection?.status).toBe("disconnected");
     expect(connection?.qrCode).toBeNull();
   });
+
+  describe("findChats", () => {
+    it("posts to /chat/find, filters groups and normalizes the chat list", async () => {
+      const repo = createInMemoryWhatsappRepository();
+      await seedConfig(repo);
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          chats: [
+            {
+              id: "ra9c738f87b6727",
+              wa_chatid: "556696604575@s.whatsapp.net",
+              phone: "+55 66 9660-4575",
+              wa_isGroup: false,
+              wa_lastMsgTimestamp: 1788445013000,
+              wa_contactName: "Ederson Fernandes",
+            },
+            {
+              wa_chatid: "12036305512345@g.us",
+              wa_isGroup: true,
+              wa_lastMsgTimestamp: 1788445000000,
+            },
+          ],
+          pagination: { limit: 50, offset: 0, totalRecords: 2 },
+        }),
+      });
+
+      const provider = createUazapiProvider(repo);
+      const chats = await provider.findChats("acc-1", 50);
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://minhaclinica.uazapi.com/chat/find",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({ token: "abc123" }),
+          body: JSON.stringify({
+            sort: "-wa_lastMsgTimestamp",
+            limit: 50,
+            offset: 0,
+            wa_isGroup: false,
+          }),
+        }),
+      );
+      expect(chats).toEqual([
+        {
+          chatId: "556696604575@s.whatsapp.net",
+          phone: "556696604575",
+          name: "Ederson Fernandes",
+          isGroup: false,
+          lastMessageTimestampMs: 1788445013000,
+        },
+      ]);
+    });
+
+    it("falls back to the phone digits as name when no contact name is present", async () => {
+      const repo = createInMemoryWhatsappRepository();
+      await seedConfig(repo);
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          chats: [
+            {
+              wa_chatid: "556696604575@s.whatsapp.net",
+              wa_isGroup: false,
+              wa_lastMsgTimestamp: 1788445013000,
+            },
+          ],
+        }),
+      });
+
+      const provider = createUazapiProvider(repo);
+      const chats = await provider.findChats("acc-1", 50);
+      expect(chats[0].name).toBe("556696604575");
+    });
+
+    it("throws when the request fails", async () => {
+      const repo = createInMemoryWhatsappRepository();
+      await seedConfig(repo);
+      fetchMock.mockResolvedValue({ ok: false, status: 500 });
+
+      const provider = createUazapiProvider(repo);
+      await expect(provider.findChats("acc-1", 50)).rejects.toThrow();
+    });
+  });
+
+  describe("findMessages", () => {
+    it("posts to /message/find and returns the raw messages array", async () => {
+      const repo = createInMemoryWhatsappRepository();
+      await seedConfig(repo);
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          messages: [{ fromMe: false, text: "oi", messageTimestamp: 1788445013000 }],
+          hasMore: false,
+        }),
+      });
+
+      const provider = createUazapiProvider(repo);
+      const messages = await provider.findMessages("acc-1", "556696604575@s.whatsapp.net", 30);
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://minhaclinica.uazapi.com/message/find",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ chatid: "556696604575@s.whatsapp.net", limit: 30 }),
+        }),
+      );
+      expect(messages).toEqual([{ fromMe: false, text: "oi", messageTimestamp: 1788445013000 }]);
+    });
+
+    it("returns an empty array when the response has no messages field", async () => {
+      const repo = createInMemoryWhatsappRepository();
+      await seedConfig(repo);
+      fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+
+      const provider = createUazapiProvider(repo);
+      const messages = await provider.findMessages("acc-1", "556696604575@s.whatsapp.net", 30);
+      expect(messages).toEqual([]);
+    });
+  });
 });
 
 async function repoWithUazapi() {

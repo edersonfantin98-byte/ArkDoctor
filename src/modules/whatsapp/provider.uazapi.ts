@@ -2,6 +2,14 @@ import type { WhatsappRepository } from "./repository";
 import type { WhatsappProvider } from "./provider";
 import type { ConnectionStatus, WhatsappConnection, MediaType } from "./types";
 
+export interface UazapiChat {
+  chatId: string;
+  phone: string;
+  name: string;
+  isGroup: boolean;
+  lastMessageTimestampMs: number;
+}
+
 export interface UazapiProvider extends WhatsappProvider {
   getQrCode(accountId: string): Promise<string | null>;
   downloadMedia(
@@ -13,6 +21,8 @@ export interface UazapiProvider extends WhatsappProvider {
     toPhone: string,
     input: { type: MediaType; dataBase64: string; filename: string | null; caption: string },
   ): Promise<{ providerMessageId: string }>;
+  findChats(accountId: string, limit: number): Promise<UazapiChat[]>;
+  findMessages(accountId: string, chatId: string, limit: number): Promise<unknown[]>;
 }
 
 export function normalizeWhatsappJid(jid: string): string {
@@ -193,6 +203,57 @@ export function createUazapiProvider(repo: WhatsappRepository): UazapiProvider {
       }
       const data = await response.json();
       return { providerMessageId: data.messageid ?? data.id ?? "" };
+    },
+
+    async findChats(accountId, limit) {
+      const connection = await repo.getConnection(accountId);
+      const config = getConfig(connection);
+
+      const response = await fetch(`${baseUrl(config.subdomain)}/chat/find`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: config.token },
+        body: JSON.stringify({ sort: "-wa_lastMsgTimestamp", limit, offset: 0, wa_isGroup: false }),
+      });
+      if (!response.ok) {
+        throw new Error(`Falha ao listar conversas na Uazapi (${response.status})`);
+      }
+      const data = await response.json();
+      const chats = Array.isArray(data?.chats) ? (data.chats as Record<string, unknown>[]) : [];
+
+      return chats
+        .filter((c) => c.wa_isGroup !== true && typeof c.wa_chatid === "string")
+        .map((c) => {
+          const chatId = c.wa_chatid as string;
+          const name =
+            (typeof c.wa_contactName === "string" && c.wa_contactName) ||
+            (typeof c.wa_name === "string" && c.wa_name) ||
+            (typeof c.name === "string" && c.name) ||
+            normalizeWhatsappJid(chatId);
+          return {
+            chatId,
+            phone: normalizeWhatsappJid(chatId),
+            name,
+            isGroup: false,
+            lastMessageTimestampMs:
+              typeof c.wa_lastMsgTimestamp === "number" ? c.wa_lastMsgTimestamp : 0,
+          };
+        });
+    },
+
+    async findMessages(accountId, chatId, limit) {
+      const connection = await repo.getConnection(accountId);
+      const config = getConfig(connection);
+
+      const response = await fetch(`${baseUrl(config.subdomain)}/message/find`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token: config.token },
+        body: JSON.stringify({ chatid: chatId, limit }),
+      });
+      if (!response.ok) {
+        throw new Error(`Falha ao listar mensagens na Uazapi (${response.status})`);
+      }
+      const data = await response.json();
+      return Array.isArray(data?.messages) ? data.messages : [];
     },
   };
 }
