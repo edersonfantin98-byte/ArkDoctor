@@ -22,6 +22,7 @@ export interface WhatsappRepository {
     input: {
       direction: "inbound" | "outbound";
       body: string;
+      sentAt?: string;
       media?: {
         type: MediaType;
         status: MediaStatus;
@@ -64,4 +65,9 @@ export interface WhatsappRepository {
     config: Record<string, string>,
   ): Promise<WhatsappConnection>;
   updateConnectionQrCode(accountId: string, qrCode: string | null): Promise<WhatsappConnection>;
+  markHistoryImported(
+    accountId: string,
+    conversationId: string,
+    importedAtIso: string,
+  ): Promise<void>;
 }

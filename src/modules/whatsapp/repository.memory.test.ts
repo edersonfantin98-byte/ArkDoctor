@@ -177,6 +177,48 @@ describe("createInMemoryWhatsappRepository", () => {
     const cleared = await repo.updateConnectionQrCode("acc-1", null);
     expect(cleared.qrCode).toBeNull();
   });
+
+  it("insertMessage uses the provided sentAt instead of now", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla",
+      contactPhone: "5511999999999",
+    });
+    const message = await repo.insertMessage("acc-1", conversation.id, {
+      direction: "inbound",
+      body: "mensagem antiga",
+      sentAt: "2026-01-01T10:00:00.000Z",
+    });
+    expect(message.sentAt).toBe("2026-01-01T10:00:00.000Z");
+  });
+
+  it("markHistoryImported sets historyImportedAt on the conversation", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla",
+      contactPhone: "5511999999999",
+    });
+    expect(conversation.historyImportedAt).toBeNull();
+
+    await repo.markHistoryImported("acc-1", conversation.id, "2026-09-04T12:00:00.000Z");
+
+    const updated = await repo.getConversation("acc-1", conversation.id);
+    expect(updated?.historyImportedAt).toBe("2026-09-04T12:00:00.000Z");
+  });
+
+  it("markHistoryImported does nothing for a conversation from another account", async () => {
+    const repo = createInMemoryWhatsappRepository();
+    const conversation = await repo.insertConversation("acc-1", {
+      contactId: null,
+      contactName: "Carla",
+      contactPhone: "5511999999999",
+    });
+    await repo.markHistoryImported("acc-2", conversation.id, "2026-09-04T12:00:00.000Z");
+    const updated = await repo.getConversation("acc-1", conversation.id);
+    expect(updated?.historyImportedAt).toBeNull();
+  });
 });
 
 describe("listStoredMediaOlderThan", () => {

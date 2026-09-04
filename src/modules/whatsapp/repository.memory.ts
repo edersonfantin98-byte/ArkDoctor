@@ -58,7 +58,7 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
         accountId,
         direction: input.direction,
         body: input.body,
-        sentAt: new Date().toISOString(),
+        sentAt: input.sentAt ?? new Date().toISOString(),
         mediaType: input.media?.type ?? null,
         mediaStatus: input.media?.status ?? null,
         mediaStoragePath: input.media?.storagePath ?? null,
@@ -116,6 +116,12 @@ export function createInMemoryWhatsappRepository(): WhatsappRepository {
       const c = conversations.get(conversationId);
       if (!c || c.accountId !== accountId) return;
       conversations.set(conversationId, { ...c, contactId });
+    },
+
+    async markHistoryImported(accountId, conversationId, importedAtIso) {
+      const c = conversations.get(conversationId);
+      if (!c || c.accountId !== accountId) return;
+      conversations.set(conversationId, { ...c, historyImportedAt: importedAtIso });
     },
 
     async getConnection(accountId) {

@@ -139,6 +139,7 @@ export function createSupabaseWhatsappRepository(
           conversation_id: conversationId,
           direction: input.direction,
           body: input.body,
+          ...(input.sentAt ? { sent_at: input.sentAt } : {}),
           media_type: input.media?.type ?? null,
           media_status: input.media?.status ?? null,
           media_storage_path: input.media?.storagePath ?? null,
@@ -217,6 +218,15 @@ export function createSupabaseWhatsappRepository(
       const { error } = await supabase
         .from("whatsapp_conversations")
         .update({ contact_id: contactId })
+        .eq("account_id", accountId)
+        .eq("id", conversationId);
+      if (error) throwDbError(error);
+    },
+
+    async markHistoryImported(accountId, conversationId, importedAtIso) {
+      const { error } = await supabase
+        .from("whatsapp_conversations")
+        .update({ history_imported_at: importedAtIso })
         .eq("account_id", accountId)
         .eq("id", conversationId);
       if (error) throwDbError(error);
