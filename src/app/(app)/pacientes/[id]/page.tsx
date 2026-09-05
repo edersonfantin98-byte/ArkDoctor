@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { PageHeader } from "@/components/layout/page-header";
 import { PatientDetailClient } from "@/components/patients/patient-detail-client";
+import { Button } from "@/components/ui/button";
 import { getPatientAction, listTreatmentsAction } from "./actions";
 
 export default async function PatientDetailPage({
@@ -42,12 +43,9 @@ export default async function PatientDetailPage({
         title={patient.name}
         description={description}
         action={
-          <Link
-            href={`/pacientes/${patient.id}/documentos`}
-            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[0.8rem] font-medium hover:bg-muted/40"
-          >
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/pacientes/${patient.id}/documentos`} />}>
             Documentos
-          </Link>
+          </Button>
         }
       />
       <PatientDetailClient patient={patient} treatments={treatments} />
