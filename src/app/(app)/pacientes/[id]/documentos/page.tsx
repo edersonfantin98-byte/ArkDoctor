@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { PageHeader } from "@/components/layout/page-header";
 import { ConsentCards } from "@/components/consents/consent-cards";
 import { getConsentPageDataAction } from "../actions";
@@ -28,9 +29,17 @@ export default async function ConsentsPage({
 
   return (
     <div>
+      <Breadcrumbs
+        items={[
+          { label: "Pacientes", href: "/pacientes" },
+          { label: data.patientName, href: `/pacientes/${id}` },
+          { label: "Documentos" },
+        ]}
+      />
       <PageHeader
-        title={`Documentos — ${data.patientName}`}
-        description="Consentimentos assinados pelo paciente."
+        eyebrow="Documentos"
+        title="Consentimentos"
+        description="Termos assinados pela paciente. O PDF guarda a assinatura e a data."
       />
       <div className="px-6 pb-6">
         <ConsentCards

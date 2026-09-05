@@ -330,6 +330,16 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-pos: var(--pos);
+  --color-pos-soft: var(--pos-soft);
+  --color-neg: var(--neg);
+  --color-neg-soft: var(--neg-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-wa: var(--wa);
+  --color-wa-soft: var(--wa-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -358,6 +368,17 @@
   --border: oklch(0.82 0.01 264.531);
   --input: oklch(0.82 0.01 264.531);
   --ring: oklch(0.7216 0.1904 50.15);
+  /* status semânticos — par "fundo pastel + tinta saturada" */
+  --pos: oklch(0.52 0.13 152);
+  --pos-soft: oklch(0.95 0.04 152);
+  --neg: oklch(0.55 0.19 27);
+  --neg-soft: oklch(0.95 0.04 27);
+  --warn: oklch(0.55 0.12 70);
+  --warn-soft: oklch(0.95 0.05 75);
+  --info: oklch(0.52 0.19 262);
+  --info-soft: oklch(0.95 0.04 262);
+  --wa: oklch(0.76 0.17 152);
+  --wa-soft: oklch(0.95 0.05 152);
   --chart-1: oklch(0.7216 0.1904 50.15);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

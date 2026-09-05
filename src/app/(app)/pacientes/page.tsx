@@ -9,7 +9,8 @@ export default async function PatientsPage() {
     <div>
       <PageHeader
         title="Pacientes"
-        description="Cadastre pacientes e envie mensagens em massa pelo WhatsApp."
+        eyebrow="Clínica"
+        description="Cadastro, histórico de tratamentos e mensagens em massa pelo WhatsApp."
       />
       <PatientsClient initialPatients={patients} />
     </div>

@@ -1,13 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, FileText, Image as ImageIcon, Mic, Video, Paperclip, X } from "lucide-react";
+import Link from "next/link";
+import {
+  Plus,
+  FileText,
+  Image as ImageIcon,
+  Mic,
+  Video,
+  Paperclip,
+  X,
+  MessageCircle,
+  MoreHorizontal,
+  Send,
+  Check,
+  ExternalLink,
+  Search,
+  Settings,
+  LogOut,
+  History,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +67,11 @@ function initials(name: string) {
 function formatRelativeTime(date: string | null) {
   if (!date) return "";
   return formatDistanceToNow(new Date(date), { addSuffix: true, locale: ptBR });
+}
+
+function shortTime(date: string | null) {
+  if (!date) return "";
+  return new Date(date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
 function NewConversationDialog({
@@ -119,8 +143,16 @@ function NewConversationDialog({
   );
 }
 
-function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
-  const [open, setOpen] = useState(false);
+function UazapiConfigDialog({
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const setOpen = onOpenChange;
   const [subdomain, setSubdomain] = useState("");
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +174,6 @@ function UazapiConfigDialog({ onSaved }: { onSaved: () => void }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline">Configurar WhatsApp</Button>} />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Configurar WhatsApp</DialogTitle>
@@ -249,6 +280,8 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   const [historyImportSummary, setHistoryImportSummary] = useState<string | null>(null);
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const [historyBannerDismissed, setHistoryBannerDismissed] = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [convQuery, setConvQuery] = useState("");
 
   useEffect(() => {
     if (!attachment || !attachment.type.startsWith("image/")) {
@@ -458,6 +491,11 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
   }
 
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId) ?? null;
+  const visibleConversations = convQuery.trim()
+    ? conversations.filter((c) =>
+        c.contactName.toLowerCase().includes(convQuery.trim().toLowerCase()),
+      )
+    : conversations;
   const isConnected = connection?.status === "connected";
   const showHistoryBanner =
     !historyBannerDismissed &&
@@ -466,47 +504,69 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
 
   return (
     <div className="space-y-4 px-6 pb-6">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Badge
-            className={
-              connection?.status === "connected"
-                ? "bg-[#25D366]/10 text-[#188a44]"
-                : "bg-muted text-muted-foreground"
-            }
-          >
-            {connection?.status === "connected" ? "Conectado" : "Desconectado"}
-          </Badge>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold",
+            isConnected ? "bg-wa-soft text-pos" : "bg-neg-soft text-neg",
+          )}
+        >
+          <span className={cn("size-1.5 rounded-full", isConnected ? "bg-wa" : "bg-neg")} />
+          {isConnected ? "Conectado" : "Desconectado"}
+        </span>
+        {!isConnected && (
           <Button
-            type="button"
-            variant="outline"
             size="sm"
             disabled={togglingConnection || !connection?.isConfigured}
             title={!connection?.isConfigured ? "Configure o WhatsApp antes de conectar" : undefined}
             onClick={handleToggleConnection}
           >
-            {connection?.status === "connected" ? "Desconectar" : "Conectar"}
+            Conectar
           </Button>
-          <UazapiConfigDialog onSaved={refreshConnection} />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={importingHistory || connection?.status !== "connected"}
-            onClick={handleImportHistory}
-          >
-            {importingHistory
-              ? "Importando..."
-              : historyHasMore
-                ? "Continuar importação"
-                : "Importar histórico"}
-          </Button>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <Menu>
+            <MenuTrigger
+              render={
+                <Button variant="ghost" size="icon-sm" aria-label="Opções de conexão">
+                  <MoreHorizontal />
+                </Button>
+              }
+            />
+            <MenuContent>
+              <MenuItem onClick={() => setConfigOpen(true)}>
+                <Settings />
+                Configurar WhatsApp
+              </MenuItem>
+              <MenuItem
+                disabled={importingHistory || connection?.status !== "connected"}
+                onClick={handleImportHistory}
+              >
+                <History />
+                {importingHistory
+                  ? "Importando..."
+                  : historyHasMore
+                    ? "Continuar importação"
+                    : "Importar histórico"}
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem
+                disabled={togglingConnection || !connection?.isConfigured}
+                title={!connection?.isConfigured ? "Configure o WhatsApp antes de conectar" : undefined}
+                onClick={handleToggleConnection}
+              >
+                <LogOut />
+                {isConnected ? "Desconectar" : "Conectar"}
+              </MenuItem>
+            </MenuContent>
+          </Menu>
+          <NewConversationDialog onCreated={handleConversationCreated} />
         </div>
-        <NewConversationDialog onCreated={handleConversationCreated} />
       </div>
+      <UazapiConfigDialog open={configOpen} onOpenChange={setConfigOpen} onSaved={refreshConnection} />
       {connectionError && <p className="text-sm text-red-600">{connectionError}</p>}
       {showHistoryBanner && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border p-3">
+        <div className="flex items-center justify-between gap-2 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
           <p className="text-sm">Conexão feita. Importar as conversas recentes?</p>
           <div className="flex gap-2">
             <Button size="sm" disabled={importingHistory} onClick={handleImportHistory}>
@@ -531,63 +591,135 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
         </p>
       )}
       {qrCode && (
-        <div className="flex flex-col items-center gap-2 rounded-xl border p-4">
-          <p className="text-sm text-muted-foreground">
-            Escaneie o QR code no WhatsApp do celular para conectar
-          </p>
-          {/* eslint-disable-next-line @next/next/no-img-element -- QR code is a data: URL from the provider, not an optimizable static asset */}
-          <img src={qrCode} alt="QR code de conexão do WhatsApp" className="size-48" />
+        <div className="rounded-xl bg-card p-6 ring-1 ring-foreground/10">
+          <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-neg-soft px-2.5 py-1 text-sm font-semibold text-neg">
+              <span className="size-1.5 rounded-full bg-neg" />
+              Desconectado
+            </span>
+            <div className="rounded-xl border bg-white p-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element -- QR code is a data: URL from the provider, not an optimizable static asset */}
+              <img src={qrCode} alt="QR code de conexão do WhatsApp" className="size-40" />
+            </div>
+            <ol className="space-y-2 text-left text-sm">
+              {[
+                "Abra o WhatsApp no celular da clínica.",
+                "Toque em Aparelhos conectados e depois em Conectar aparelho.",
+                "Aponte a câmera para este código. O envio de mensagens volta assim que conectar.",
+              ].map((step, index) => (
+                <li key={step} className="flex gap-2.5">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    {index + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              O código expira em 40 segundos e é gerado de novo automaticamente.
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 overflow-hidden rounded-xl ring-1 ring-foreground/10 md:grid-cols-[320px_1fr]">
-        <div className="flex flex-col border-b md:border-b-0 md:border-r">
+      <div className="grid grid-cols-1 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 md:grid-cols-[320px_1fr] md:min-h-[520px]">
+        <div className="flex min-w-0 flex-col border-b md:border-b-0 md:border-r">
+          <div className="border-b p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={convQuery}
+                onChange={(e) => setConvQuery(e.target.value)}
+                placeholder="Buscar conversa"
+                aria-label="Buscar conversa"
+                className="pl-8"
+              />
+            </div>
+          </div>
           {conversations.length === 0 ? (
-            <p className="p-4 text-sm text-muted-foreground">Nenhuma conversa ainda.</p>
+            <EmptyState
+              icon={MessageCircle}
+              title="Nenhuma conversa ainda"
+              description="As conversas aparecem aqui assim que o WhatsApp receber ou enviar mensagens."
+            />
+          ) : visibleConversations.length === 0 ? (
+            <EmptyState icon={Search} title="Nenhuma conversa encontrada" />
           ) : (
-            <ul className="divide-y overflow-y-auto">
-              {conversations.map((conversation) => (
-                <li key={conversation.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedConversationId(conversation.id)}
-                    className={cn(
-                      "flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50",
-                      conversation.id === selectedConversationId && "bg-muted",
-                    )}
-                  >
-                    <Avatar>
-                      <AvatarFallback>{initials(conversation.contactName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium">{conversation.contactName}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {formatRelativeTime(conversation.lastMessageAt)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-xs text-muted-foreground">
-                          {conversation.lastMessagePreview}
-                        </span>
-                        {conversation.unreadCount > 0 && (
-                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-xs font-medium text-white">
-                            {conversation.unreadCount}
+            <ul className="flex-1 overflow-y-auto">
+              {visibleConversations.map((conversation) => {
+                const isActive = conversation.id === selectedConversationId;
+                return (
+                  <li key={conversation.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedConversationId(conversation.id)}
+                      className={cn(
+                        "relative flex w-full items-center gap-3 border-b px-3.5 py-3 text-left hover:bg-muted/50",
+                        isActive &&
+                          "bg-muted before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary",
+                      )}
+                    >
+                      <Avatar>
+                        <AvatarFallback>{initials(conversation.contactName)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-semibold">
+                            {conversation.contactName}
                           </span>
-                        )}
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {formatRelativeTime(conversation.lastMessageAt)}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex items-center justify-between gap-2">
+                          <span className="truncate text-xs text-muted-foreground">
+                            {conversation.lastMessagePreview}
+                          </span>
+                          {conversation.unreadCount > 0 && (
+                            <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-wa px-1.5 text-[11px] font-bold text-white">
+                              {conversation.unreadCount}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                </li>
-              ))}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex min-w-0 flex-col bg-[#ece7df]">
           {selectedConversation ? (
             <>
-              <div className="flex-1 space-y-2 overflow-y-auto p-4">
+              <div className="flex items-center gap-3 border-b bg-card px-4 py-2.5">
+                <Avatar size="sm">
+                  <AvatarFallback>{initials(selectedConversation.contactName)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {selectedConversation.contactName}
+                  </p>
+                  <p className="truncate text-[11px] text-muted-foreground tabular-nums">
+                    {selectedConversation.contactPhone}
+                  </p>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  {selectedConversation.contactId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={<Link href={`/pacientes/${selectedConversation.contactId}`} />}
+                    >
+                      <ExternalLink />
+                      Abrir prontuário
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
                 {messagesLoading ? (
                   <p className="text-sm text-muted-foreground">Carregando mensagens...</p>
                 ) : messagesError ? (
@@ -605,25 +737,31 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                     >
                       <div
                         className={cn(
-                          "max-w-[70%] space-y-1 rounded-lg px-3 py-2 text-sm shadow-sm",
+                          "max-w-[74%] space-y-1 rounded-lg px-3 py-2 text-sm shadow-sm",
                           message.direction === "outbound" ? "bg-[#d9fdd3]" : "bg-white",
                         )}
                       >
                         {message.mediaType && <MediaBubble message={message} />}
                         {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
+                        <span className="flex items-center justify-end gap-1 text-[10px] text-muted-foreground tabular-nums">
+                          {shortTime(message.sentAt)}
+                          {message.direction === "outbound" && (
+                            <Check className="size-3.5 text-muted-foreground" />
+                          )}
+                        </span>
                       </div>
                     </div>
                   ))
                 )}
               </div>
               {!isConnected && (
-                <p className="px-3 pt-2 text-sm text-amber-700">
+                <p className="bg-card px-3 pt-2 text-sm text-warn">
                   WhatsApp desconectado. Conecte para enviar mensagens.
                 </p>
               )}
-              {sendError && <p className="px-3 text-sm text-red-600">{sendError}</p>}
+              {sendError && <p className="bg-card px-3 pt-2 text-sm text-neg">{sendError}</p>}
               {attachment ? (
-                <div className="space-y-2 border-t p-3">
+                <div className="space-y-2 border-t bg-card p-3">
                   <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-2">
                     {attachmentPreviewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element -- object URL local de preview, não é asset estático
@@ -664,10 +802,10 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 border-t p-3">
+                <div className="flex items-center gap-2 border-t bg-card p-3">
                   <label
                     className={cn(
-                      "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-muted",
+                      "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground",
                       (sending || !isConnected) && "pointer-events-none opacity-50",
                     )}
                     title="Anexar arquivo"
@@ -689,10 +827,12 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSend();
                     }}
-                    placeholder="Digite uma mensagem"
+                    placeholder="Escreva uma mensagem"
                     disabled={sending || !isConnected}
+                    className="rounded-full bg-muted px-4"
                   />
                   <Button onClick={handleSend} disabled={sending || !draft.trim() || !isConnected}>
+                    <Send />
                     Enviar
                   </Button>
                 </div>
@@ -700,7 +840,11 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center p-4">
-              <p className="text-sm text-muted-foreground">Selecione uma conversa para ver as mensagens.</p>
+              <EmptyState
+                icon={MessageCircle}
+                title="Selecione uma conversa"
+                description="Escolha um contato na lista ao lado para ver as mensagens."
+              />
             </div>
           )}
         </div>
