@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { PageHeader } from "@/components/layout/page-header";
 import { TreatmentDetailClient } from "@/components/treatments/treatment-detail-client";
 import {
@@ -35,7 +36,8 @@ export default async function TreatmentDetailPage({
 
   return (
     <div>
-      <PageHeader title="Tratamento" description={treatment.woundTypes} />
+      <Breadcrumbs items={[{ label: "Pacientes", href: "/pacientes" }, { label: "Tratamento" }]} />
+      <PageHeader eyebrow="Tratamento" title={treatment.woundTypes} />
       <TreatmentDetailClient
         contactId={id}
         treatment={treatment}
