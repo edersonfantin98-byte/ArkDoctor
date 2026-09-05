@@ -13,7 +13,7 @@ import {
   MessageCircle,
   MoreHorizontal,
   Send,
-  CheckCheck,
+  Check,
   ExternalLink,
   Search,
   Settings,
@@ -514,6 +514,16 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
           <span className={cn("size-1.5 rounded-full", isConnected ? "bg-wa" : "bg-neg")} />
           {isConnected ? "Conectado" : "Desconectado"}
         </span>
+        {!isConnected && (
+          <Button
+            size="sm"
+            disabled={togglingConnection || !connection?.isConfigured}
+            title={!connection?.isConfigured ? "Configure o WhatsApp antes de conectar" : undefined}
+            onClick={handleToggleConnection}
+          >
+            Conectar
+          </Button>
+        )}
         <div className="ml-auto flex items-center gap-2">
           <Menu>
             <MenuTrigger
@@ -736,7 +746,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                         <span className="flex items-center justify-end gap-1 text-[10px] text-muted-foreground tabular-nums">
                           {shortTime(message.sentAt)}
                           {message.direction === "outbound" && (
-                            <CheckCheck className="size-3.5 text-info" />
+                            <Check className="size-3.5 text-muted-foreground" />
                           )}
                         </span>
                       </div>

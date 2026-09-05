@@ -103,11 +103,11 @@ export function ConsentCards({
         <div className="flex items-start gap-2.5 rounded-lg border border-warn/30 bg-warn-soft px-3.5 py-3 text-sm text-warn">
           <TriangleAlert className="mt-0.5 size-4 shrink-0" />
           <span>
-            Seu registro no conselho ainda não está preenchido. Complete em{" "}
+            Seus dados profissionais ainda não estão preenchidos. Complete em{" "}
             <Link href="/configuracoes" className="font-bold underline">
               Configurações
             </Link>{" "}
-            para que apareça no rodapé dos termos.
+            para que apareçam no rodapé dos termos.
           </span>
         </div>
       )}

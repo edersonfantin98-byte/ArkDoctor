@@ -36,7 +36,13 @@ export default async function TreatmentDetailPage({
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: "Pacientes", href: "/pacientes" }, { label: "Tratamento" }]} />
+      <Breadcrumbs
+        items={[
+          { label: "Pacientes", href: "/pacientes" },
+          { label: "Paciente", href: `/pacientes/${id}` },
+          { label: "Tratamento" },
+        ]}
+      />
       <PageHeader eyebrow="Tratamento" title={treatment.woundTypes} />
       <TreatmentDetailClient
         contactId={id}

@@ -125,7 +125,7 @@ export function ProceduresClient({ initialProcedures }: { initialProcedures: Pro
                         Salvar
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                        Cancelar
+                        Fechar
                       </Button>
                     </div>
                   </TD>
