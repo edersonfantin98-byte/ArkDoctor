@@ -1,5 +1,7 @@
 # ArkDoctor — Tratamento + Relatório Clínico — Design Doc
 
+> **Nota (2026-09-08):** a parte de fotos de evolução (tabela `treatment_photos`, bucket `treatment-photos`, painel "Armazenamento de fotos", pipeline de compressão/HEIC) foi REMOVIDA. Ver `docs/superpowers/plans/2026-09-08-remover-fotos-tratamento.md`. O resto deste documento continua válido.
+
 Status: em design
 Última atualização: 2026-08-28
 
