@@ -31,11 +31,17 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
   const [blockStart, setBlockStart] = useState("");
   const [blockEnd, setBlockEnd] = useState("");
   const [blockReason, setBlockReason] = useState("");
+  const [blockError, setBlockError] = useState<string | null>(null);
 
   const [ruleDay, setRuleDay] = useState("1");
   const [ruleStart, setRuleStart] = useState("12:00");
   const [ruleEnd, setRuleEnd] = useState("13:00");
   const [ruleReason, setRuleReason] = useState("");
+  const [ruleError, setRuleError] = useState<string | null>(null);
+
+  const ruleInvalid = !ruleStart || !ruleEnd || ruleEnd <= ruleStart;
+  const blockInvalid =
+    !blockStart || !blockEnd || new Date(blockEnd).getTime() <= new Date(blockStart).getTime();
 
   async function refresh() {
     setBlocks(await listAvailabilityBlocksAction());
@@ -48,11 +54,21 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
   }, [open]);
 
   async function handleCreateBlock() {
-    await createAvailabilityBlockAction({
-      startsAt: new Date(blockStart).toISOString(),
-      endsAt: new Date(blockEnd).toISOString(),
-      reason: blockReason || undefined,
-    });
+    setBlockError(null);
+    if (blockInvalid) {
+      setBlockError("Informe início e fim, com o fim depois do início.");
+      return;
+    }
+    try {
+      await createAvailabilityBlockAction({
+        startsAt: new Date(blockStart).toISOString(),
+        endsAt: new Date(blockEnd).toISOString(),
+        reason: blockReason || undefined,
+      });
+    } catch (err) {
+      setBlockError(err instanceof Error ? err.message : "Não foi possível adicionar o bloqueio.");
+      return;
+    }
     setBlockStart("");
     setBlockEnd("");
     setBlockReason("");
@@ -61,12 +77,22 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
   }
 
   async function handleCreateRule() {
-    await createAvailabilityRuleAction({
-      dayOfWeek: Number(ruleDay),
-      startTime: ruleStart,
-      endTime: ruleEnd,
-      reason: ruleReason || undefined,
-    });
+    setRuleError(null);
+    if (ruleInvalid) {
+      setRuleError("O fim deve ser depois do início.");
+      return;
+    }
+    try {
+      await createAvailabilityRuleAction({
+        dayOfWeek: Number(ruleDay),
+        startTime: ruleStart,
+        endTime: ruleEnd,
+        reason: ruleReason || undefined,
+      });
+    } catch (err) {
+      setRuleError(err instanceof Error ? err.message : "Não foi possível adicionar o bloqueio.");
+      return;
+    }
     setRuleReason("");
     await refresh();
     onChanged();
@@ -129,8 +155,11 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
               <Label htmlFor="ruleReason">Motivo</Label>
               <Input id="ruleReason" value={ruleReason} onChange={(e) => setRuleReason(e.target.value)} />
             </div>
-            <Button onClick={handleCreateRule}>Adicionar</Button>
+            <Button onClick={handleCreateRule} disabled={ruleInvalid}>
+              Adicionar
+            </Button>
           </div>
+          {ruleError && <p className="text-sm text-destructive">{ruleError}</p>}
         </div>
 
         <div className="space-y-2 border-t pt-3">
@@ -177,8 +206,11 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
               <Label htmlFor="blockReason">Motivo</Label>
               <Input id="blockReason" value={blockReason} onChange={(e) => setBlockReason(e.target.value)} />
             </div>
-            <Button onClick={handleCreateBlock}>Adicionar</Button>
+            <Button onClick={handleCreateBlock} disabled={blockInvalid}>
+              Adicionar
+            </Button>
           </div>
+          {blockError && <p className="text-sm text-destructive">{blockError}</p>}
         </div>
       </DialogContent>
     </Dialog>
