@@ -35,6 +35,15 @@ export function EditEntryDialog({
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+    const amountValue = Number(formData.get("amount"));
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setError("Valor deve ser maior que zero");
+      return;
+    }
+    if (entry!.type === "expense" && !String(formData.get("category") ?? "").trim()) {
+      setError("Categoria é obrigatória para despesas");
+      return;
+    }
     try {
       await updateFinancialEntryAction(entry!.id, {
         amount: Number(formData.get("amount")),
@@ -73,7 +82,7 @@ export function EditEntryDialog({
         <DialogHeader>
           <DialogTitle>{entry.type === "revenue" ? "Editar receita" : "Editar despesa"}</DialogTitle>
         </DialogHeader>
-        <form key={entry.id} action={handleSubmit} className="space-y-3">
+        <form key={entry.id} action={handleSubmit} noValidate className="space-y-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="space-y-1">
             <Label htmlFor="amount">Valor (R$)</Label>

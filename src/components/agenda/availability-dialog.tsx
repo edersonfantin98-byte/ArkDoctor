@@ -111,7 +111,7 @@ export function AvailabilityDialog({ onChanged }: { onChanged: () => void }) {
           {rules.map((rule) => (
             <div key={rule.id} className="flex items-center justify-between rounded border p-2 text-sm">
               <span>
-                {weekdayLabels[rule.dayOfWeek]}, {rule.startTime}–{rule.endTime}
+                {weekdayLabels[rule.dayOfWeek]}, {rule.startTime.slice(0, 5)}–{rule.endTime.slice(0, 5)}
                 {rule.reason ? ` (${rule.reason})` : ""}
               </span>
               <Button

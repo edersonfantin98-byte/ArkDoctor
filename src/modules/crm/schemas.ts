@@ -3,10 +3,12 @@ import { isValidCpf } from "@/lib/cpf";
 
 const cpfCheck = (v: string) => v === "" || isValidCpf(v);
 const CPF_MESSAGE = "CPF inválido";
+const NOME_OBRIGATORIO = "Nome é obrigatório";
+const TELEFONE_CURTO = "Telefone deve ter ao menos 8 dígitos";
 
 export const createContactInputSchema = z.object({
-  name: z.string().trim().min(1, "Nome é obrigatório").max(200),
-  phone: z.string().trim().min(8, "Telefone inválido").max(30),
+  name: z.string().trim().min(1, NOME_OBRIGATORIO).max(200),
+  phone: z.string().trim().min(8, TELEFONE_CURTO).max(30),
   origin: z.string().trim().min(1).max(200).optional(),
   notes: z.string().trim().min(1).max(5000).optional(),
   email: z.string().trim().email("E-mail inválido").max(200).optional(),
@@ -25,8 +27,8 @@ export const createContactInputSchema = z.object({
 export type CreateContactInput = z.infer<typeof createContactInputSchema>;
 
 export const updateContactInputSchema = z.object({
-  name: z.string().trim().min(1).max(200).optional(),
-  phone: z.string().trim().min(8).max(30).optional(),
+  name: z.string().trim().min(1, NOME_OBRIGATORIO).max(200).optional(),
+  phone: z.string().trim().min(8, TELEFONE_CURTO).max(30).optional(),
   origin: z.string().trim().max(200).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   email: z.string().trim().email("E-mail inválido").max(200).nullable().optional(),

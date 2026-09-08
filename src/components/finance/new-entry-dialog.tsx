@@ -50,6 +50,15 @@ export function NewEntryDialog({
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+    const amountValue = Number(formData.get("amount"));
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setError("Valor deve ser maior que zero");
+      return;
+    }
+    if (type === "expense" && !String(formData.get("category") ?? "").trim()) {
+      setError("Categoria é obrigatória para despesas");
+      return;
+    }
     try {
       await createFinancialEntryAction({
         type,
@@ -81,7 +90,7 @@ export function NewEntryDialog({
         <DialogHeader>
           <DialogTitle>Novo lançamento</DialogTitle>
         </DialogHeader>
-        <form action={handleSubmit} className="space-y-3">
+        <form action={handleSubmit} noValidate className="space-y-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="space-y-1">
             <Label htmlFor="type">Tipo</Label>
