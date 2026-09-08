@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { RowActionsMenu } from "@/components/ui/row-actions";
 import { Textarea } from "@/components/ui/textarea";
 import { ConcludeTreatmentDialog } from "./conclude-treatment-dialog";
-import { TreatmentPhotos } from "./treatment-photos";
 import { deleteTreatmentAction, updateTreatmentAction } from "@/app/(app)/pacientes/[id]/actions";
 import type { Treatment, TreatmentSession } from "@/modules/treatments/types";
 
@@ -38,13 +37,11 @@ export function TreatmentDetailClient({
   treatment: initialTreatment,
   sessionCount,
   sessions,
-  photos,
 }: {
   contactId: string;
   treatment: Treatment;
   sessionCount: number;
   sessions: TreatmentSession[];
-  photos: { id: string; url: string; caption: string | null; takenOn: string | null }[];
 }) {
   const [treatment, setTreatment] = useState(initialTreatment);
   const [woundTypes, setWoundTypes] = useState(treatment.woundTypes);
@@ -254,17 +251,6 @@ export function TreatmentDetailClient({
                 ))}
               </ul>
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="px-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Fotos da evolução</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TreatmentPhotos treatmentId={treatment.id} initialPhotos={photos} />
           </CardContent>
         </Card>
       </div>

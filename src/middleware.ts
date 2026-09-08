@@ -17,8 +17,6 @@ function buildCsp(nonce: string, allowTurnstile: boolean) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${devEval}${turnstileScript}`,
     "style-src 'self' 'unsafe-inline'",
-    // heic-to/csp converte foto de iPhone (HEIC) num Web Worker criado via blob:
-    "worker-src 'self' blob:",
     `img-src 'self' data: blob: ${supabaseUrl}`,
     `media-src 'self' ${supabaseUrl}`,
     `connect-src 'self' ${supabaseUrl}${allowTurnstile ? ` ${TURNSTILE_ORIGIN}` : ""}`,

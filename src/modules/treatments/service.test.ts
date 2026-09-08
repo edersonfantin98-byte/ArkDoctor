@@ -91,7 +91,6 @@ describe("assembleReport", () => {
       { appointmentId: "a2", date: "2026-08-10T14:00:00.000Z", notes: "curativo" },
       { appointmentId: "a1", date: "2026-08-03T14:00:00.000Z", notes: null },
     ],
-    photos: [{ url: "https://signed/x", caption: "Sessão 1", takenOn: "2026-08-03" }],
     now: "2026-10-01T12:00:00.000Z",
     ...over,
   });

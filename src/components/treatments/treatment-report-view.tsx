@@ -121,24 +121,6 @@ export function TreatmentReportView({ report }: { report: TreatmentReport }) {
         </section>
       )}
 
-      {report.photos.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-semibold">Fotos</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {report.photos.map((p, i) => (
-              <figure key={i} className="break-inside-avoid space-y-1">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={p.caption ?? "Foto"} className="w-full rounded object-cover" />
-                <figcaption className="text-xs text-neutral-600">
-                  {p.caption ?? "—"}
-                  {p.takenOn ? ` (${formatDate(p.takenOn)})` : ""}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
-      )}
-
       <footer className="border-t pt-8">
         <p>
           Assinatura: ______________________________

@@ -52,20 +52,4 @@ describe("createInMemoryTreatmentsRepository", () => {
       repo.concludeTreatment("acc-1", t.id, { dischargedOn: "2026-09-02", outcome: "alta" }),
     ).rejects.toThrow();
   });
-
-  it("sums photo bytes for the account only", async () => {
-    const repo = createInMemoryTreatmentsRepository();
-    const t = await repo.insertTreatment("acc-1", baseInput());
-    await repo.insertPhoto("acc-1", {
-      treatmentId: t.id, storagePath: "acc-1/x/a.jpg", bytes: 100_000, caption: null, takenOn: null,
-    });
-    await repo.insertPhoto("acc-1", {
-      treatmentId: t.id, storagePath: "acc-1/x/b.jpg", bytes: 50_000, caption: null, takenOn: null,
-    });
-    await repo.insertPhoto("acc-2", {
-      treatmentId: "t2", storagePath: "acc-2/y/c.jpg", bytes: 999_999, caption: null, takenOn: null,
-    });
-
-    expect(await repo.sumPhotoBytes("acc-1")).toBe(150_000);
-  });
 });

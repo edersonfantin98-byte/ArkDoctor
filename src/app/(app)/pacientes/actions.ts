@@ -8,7 +8,6 @@ import { createSupabaseWhatsappRepository } from "@/modules/whatsapp/repository.
 import { getWhatsappProvider } from "@/modules/whatsapp/provider";
 import * as crm from "@/modules/crm/service";
 import { sendBulkMessages } from "@/modules/whatsapp/service";
-import { createSupabaseTreatmentsRepository } from "@/modules/treatments/repository.supabase";
 import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
 
 async function getCrmRepoAndAccount() {
@@ -44,21 +43,6 @@ export async function updatePatientAction(id: string, input: unknown) {
 
 export async function deletePatientAction(id: string) {
   const { repo, accountId, supabase } = await getCrmRepoAndAccount();
-
-  const treatmentsRepo = createSupabaseTreatmentsRepository(supabase);
-  const treatmentsForContact = await treatmentsRepo.listTreatmentsForContact(accountId, id);
-  const paths: string[] = [];
-  for (const t of treatmentsForContact) {
-    const photos = await treatmentsRepo.listPhotos(accountId, t.id);
-    for (const p of photos) paths.push(p.storagePath);
-  }
-  if (paths.length > 0) {
-    const { error } = await supabase.storage.from("treatment-photos").remove(paths);
-    if (error) {
-      console.error("[pacientes/actions] storage remove", error);
-      throw new Error("Não foi possível remover as fotos do armazenamento. Tente novamente.");
-    }
-  }
 
   const consentsRepo = createSupabaseConsentsRepository(supabase);
   const consentRows = await consentsRepo.listConsentsForContact(accountId, id);

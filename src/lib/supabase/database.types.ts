@@ -556,54 +556,6 @@ export type Database = {
           },
         ]
       }
-      treatment_photos: {
-        Row: {
-          account_id: string
-          bytes: number
-          caption: string | null
-          created_at: string
-          id: string
-          storage_path: string
-          taken_on: string | null
-          treatment_id: string
-        }
-        Insert: {
-          account_id: string
-          bytes: number
-          caption?: string | null
-          created_at?: string
-          id?: string
-          storage_path: string
-          taken_on?: string | null
-          treatment_id: string
-        }
-        Update: {
-          account_id?: string
-          bytes?: number
-          caption?: string | null
-          created_at?: string
-          id?: string
-          storage_path?: string
-          taken_on?: string | null
-          treatment_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "treatment_photos_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "treatment_photos_treatment_id_fkey"
-            columns: ["treatment_id"]
-            isOneToOne: false
-            referencedRelation: "treatments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       treatments: {
         Row: {
           account_id: string

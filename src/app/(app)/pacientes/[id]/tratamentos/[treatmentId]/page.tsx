@@ -4,7 +4,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TreatmentDetailClient } from "@/components/treatments/treatment-detail-client";
 import {
   getTreatmentAction,
-  listTreatmentPhotosAction,
   listTreatmentSessionsAction,
 } from "@/app/(app)/pacientes/[id]/actions";
 
@@ -29,10 +28,7 @@ export default async function TreatmentDetailPage({
     );
   }
 
-  const [sessionsData, photos] = await Promise.all([
-    listTreatmentSessionsAction(treatmentId),
-    listTreatmentPhotosAction(treatmentId),
-  ]);
+  const sessionsData = await listTreatmentSessionsAction(treatmentId);
 
   return (
     <div>
@@ -49,7 +45,6 @@ export default async function TreatmentDetailPage({
         treatment={treatment}
         sessionCount={sessionsData.count}
         sessions={sessionsData.sessions}
-        photos={photos}
       />
     </div>
   );

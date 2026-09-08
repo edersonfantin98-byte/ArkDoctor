@@ -9,7 +9,7 @@ export default async function ConfiguracoesPage() {
       <PageHeader
         eyebrow="Clínica"
         title="Configurações"
-        description="Identidade profissional e uso de armazenamento."
+        description="Identidade profissional."
       />
       <SettingsClient initial={settings} />
     </div>

@@ -18,17 +18,6 @@ export interface Treatment {
   updatedAt: string;
 }
 
-export interface TreatmentPhoto {
-  id: string;
-  accountId: string;
-  treatmentId: string;
-  storagePath: string;
-  bytes: number;
-  caption: string | null;
-  takenOn: string | null; // YYYY-MM-DD
-  createdAt: string;
-}
-
 export interface TreatmentSession {
   appointmentId: string;
   date: string; // appointment starts_at (ISO)
@@ -41,7 +30,6 @@ export interface TreatmentReport {
   professional: { clinicName: string; name: string | null; councilId: string | null };
   sessionCount: number;
   sessions: TreatmentSession[];
-  photos: { url: string; caption: string | null; takenOn: string | null }[];
   durationLabel: string; // derived: (dischargedOn ?? today) − startedOn
   generatedAt: string; // ISO
 }
@@ -52,6 +40,5 @@ export interface AssembleReportInput {
   professional: { clinicName: string; name: string | null; councilId: string | null };
   sessionCount: number;
   sessions: TreatmentSession[];
-  photos: { url: string; caption: string | null; takenOn: string | null }[];
   now: string; // ISO — injected for testability
 }

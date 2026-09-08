@@ -3,10 +3,9 @@ import type { TreatmentsRepository } from "./repository";
 import {
   concludeTreatmentInputSchema,
   createTreatmentInputSchema,
-  updatePhotoMetaInputSchema,
   updateTreatmentInputSchema,
 } from "./schemas";
-import type { AssembleReportInput, Treatment, TreatmentPhoto, TreatmentReport } from "./types";
+import type { AssembleReportInput, Treatment, TreatmentReport } from "./types";
 
 export async function createTreatment(
   repo: TreatmentsRepository,
@@ -61,16 +60,6 @@ export async function deleteTreatment(
   await repo.deleteTreatment(accountId, id);
 }
 
-export async function updatePhotoMeta(
-  repo: TreatmentsRepository,
-  accountId: string,
-  photoId: string,
-  rawInput: unknown,
-): Promise<TreatmentPhoto> {
-  const input = parseOrThrow(updatePhotoMetaInputSchema, rawInput);
-  return repo.updatePhotoMeta(accountId, photoId, input);
-}
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function formatDurationLabel(startedOn: string, endOn: string): string {
@@ -103,7 +92,6 @@ export function assembleReport(input: AssembleReportInput): TreatmentReport {
     professional: input.professional,
     sessionCount: input.sessionCount,
     sessions: [...input.sessions].sort((a, b) => a.date.localeCompare(b.date)),
-    photos: input.photos,
     durationLabel: formatDurationLabel(input.treatment.startedOn, endOn),
     generatedAt: input.now,
   };

@@ -1,7 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { TreatmentsRepository } from "./repository";
-import type { Treatment, TreatmentPhoto, TreatmentStatus, WoundOutcome } from "./types";
+import type { Treatment, TreatmentStatus, WoundOutcome } from "./types";
 
 function throwDbError(error: PostgrestError): never {
   console.error("[treatments/repository.supabase]", error);
@@ -24,19 +24,6 @@ function toTreatment(row: Database["public"]["Tables"]["treatments"]["Row"]): Tr
     patientPerception: row.patient_perception,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-  };
-}
-
-function toPhoto(row: Database["public"]["Tables"]["treatment_photos"]["Row"]): TreatmentPhoto {
-  return {
-    id: row.id,
-    accountId: row.account_id,
-    treatmentId: row.treatment_id,
-    storagePath: row.storage_path,
-    bytes: row.bytes,
-    caption: row.caption,
-    takenOn: row.taken_on,
-    createdAt: row.created_at,
   };
 }
 
@@ -143,75 +130,6 @@ export function createSupabaseTreatmentsRepository(
         .eq("account_id", accountId)
         .eq("id", id);
       if (error) throwDbError(error);
-    },
-
-    async insertPhoto(accountId, input) {
-      const { data, error } = await supabase
-        .from("treatment_photos")
-        .insert({
-          account_id: accountId,
-          treatment_id: input.treatmentId,
-          storage_path: input.storagePath,
-          bytes: input.bytes,
-          caption: input.caption,
-          taken_on: input.takenOn,
-        })
-        .select("*")
-        .single();
-      if (error) throwDbError(error);
-      return toPhoto(data);
-    },
-
-    async listPhotos(accountId, treatmentId) {
-      const { data, error } = await supabase
-        .from("treatment_photos")
-        .select("*")
-        .eq("account_id", accountId)
-        .eq("treatment_id", treatmentId)
-        .order("created_at", { ascending: true });
-      if (error) throwDbError(error);
-      return data.map(toPhoto);
-    },
-
-    async getPhoto(accountId, photoId) {
-      const { data, error } = await supabase
-        .from("treatment_photos")
-        .select("*")
-        .eq("account_id", accountId)
-        .eq("id", photoId)
-        .maybeSingle();
-      if (error) throwDbError(error);
-      return data ? toPhoto(data) : null;
-    },
-
-    async updatePhotoMeta(accountId, photoId, input) {
-      const { data, error } = await supabase
-        .from("treatment_photos")
-        .update({ caption: input.caption, taken_on: input.takenOn })
-        .eq("account_id", accountId)
-        .eq("id", photoId)
-        .select("*")
-        .single();
-      if (error) throwDbError(error);
-      return toPhoto(data);
-    },
-
-    async deletePhoto(accountId, photoId) {
-      const { error } = await supabase
-        .from("treatment_photos")
-        .delete()
-        .eq("account_id", accountId)
-        .eq("id", photoId);
-      if (error) throwDbError(error);
-    },
-
-    async sumPhotoBytes(accountId) {
-      const { data, error } = await supabase
-        .from("treatment_photos")
-        .select("bytes")
-        .eq("account_id", accountId);
-      if (error) throwDbError(error);
-      return data.reduce((sum, row) => sum + row.bytes, 0);
     },
   };
 }
