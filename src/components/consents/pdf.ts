@@ -122,8 +122,11 @@ export function layoutBlocks(blocks: Block[], geom: Geom, firstPageReserve: numb
   const pushPrim = (prim: Prim) => {
     const h = primHeight(prim, geom);
     const cur = pages[pages.length - 1];
+    // Assinaturas vêm em bloco no fim do documento; nunca separar uma da
+    // anterior — evita jogar a assinatura fixa sozinha numa página nova.
+    const keepWithPrev = prim.kind === "sig" && cur[cur.length - 1]?.kind === "sig";
     // só pagina se a página atual já tem conteúdo (nunca cria página vazia)
-    if (used + h > geom.usableHeight && cur.length > 0) {
+    if (used + h > geom.usableHeight && cur.length > 0 && !keepWithPrev) {
       pages.push([]);
       used = 0;
       if (prim.kind === "space") return; // descarta o gap no topo da nova página

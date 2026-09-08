@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { checkPublicConflictAction, createPublicBookingAction, listPublicOccupiedIntervalsAction } from "@/app/agendar/actions";
-import { isSlotBusy, dayRangeIso, type OccupiedInterval } from "./slot-availability";
+import { isSlotBusy, isSlotAfterHours, dayRangeIso, type OccupiedInterval } from "./slot-availability";
 import { cn } from "@/lib/utils";
 import type { Procedure } from "@/modules/scheduling/types";
 import { formatCurrency } from "@/lib/format";
@@ -392,12 +392,11 @@ export function PublicBookingWizard({
                 <Label>Horário</Label>
                 <div className="flex flex-wrap gap-2">
                   {availableSlotsForDate(date).map((s) => {
-                    const busy = isSlotBusy(
-                      date,
-                      s,
-                      selectedProcedure?.defaultDurationMinutes ?? SLOT_INTERVAL_MINUTES,
-                      occupiedIntervals,
-                    );
+                    const duration =
+                      selectedProcedure?.defaultDurationMinutes ?? SLOT_INTERVAL_MINUTES;
+                    const busy =
+                      isSlotBusy(date, s, duration, occupiedIntervals) ||
+                      isSlotAfterHours(s, duration, SLOT_END_HOUR);
                     return (
                       <button
                         key={s}

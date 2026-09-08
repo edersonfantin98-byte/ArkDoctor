@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isSlotBusy, dayRangeIso } from "./slot-availability";
+import { isSlotBusy, isSlotAfterHours, dayRangeIso } from "./slot-availability";
 
 describe("isSlotBusy", () => {
   const occupied = [{ startsAt: "2026-09-01T13:00:00.000Z", endsAt: "2026-09-01T13:30:00.000Z" }];
@@ -30,6 +30,25 @@ describe("isSlotBusy", () => {
 
   it("returns false for an empty list of occupied intervals", () => {
     expect(isSlotBusy("2026-09-01", "13:00", 30, [])).toBe(false);
+  });
+});
+
+describe("isSlotAfterHours", () => {
+  it("is false when the procedure ends exactly at the end of the working day", () => {
+    expect(isSlotAfterHours("16:30", 90, 18)).toBe(false);
+  });
+
+  it("is true when a 90-min procedure would run past the end of the working day", () => {
+    expect(isSlotAfterHours("17:00", 90, 18)).toBe(true);
+    expect(isSlotAfterHours("17:30", 90, 18)).toBe(true);
+  });
+
+  it("is false for a 30-min procedure starting in the last slot", () => {
+    expect(isSlotAfterHours("17:30", 30, 18)).toBe(false);
+  });
+
+  it("is true for a 30-min procedure that would end after hours", () => {
+    expect(isSlotAfterHours("17:45", 30, 18)).toBe(true);
   });
 });
 
