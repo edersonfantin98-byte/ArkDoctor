@@ -6,7 +6,7 @@ export default async function WhatsappPage() {
   const conversations = await listConversationsAction();
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <PageHeader
         title="Inbox"
         eyebrow="Atendimento"

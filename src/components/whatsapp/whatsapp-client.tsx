@@ -503,7 +503,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
     conversations.every((c) => !c.historyImportedAt);
 
   return (
-    <div className="space-y-4 px-6 pb-6">
+    <div className="flex min-h-0 flex-1 flex-col space-y-4 px-6 pb-6">
       <div className="flex flex-wrap items-center gap-2.5">
         <span
           className={cn(
@@ -622,8 +622,8 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
         </div>
       )}
 
-      <div className="grid grid-cols-1 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 md:grid-cols-[320px_1fr] md:min-h-[520px]">
-        <div className="flex min-w-0 flex-col border-b md:border-b-0 md:border-r">
+      <div className="grid grid-cols-1 overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 md:grid-cols-[320px_1fr] md:min-h-0 md:flex-1">
+        <div className="flex min-w-0 flex-col border-b md:border-b-0 md:border-r md:min-h-0">
           <div className="border-b p-3">
             <div className="relative">
               <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -690,7 +690,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
           )}
         </div>
 
-        <div className="flex min-w-0 flex-col bg-[#ece7df]">
+        <div className="flex min-w-0 flex-col bg-[#ece7df] md:min-h-0">
           {selectedConversation ? (
             <>
               <div className="flex items-center gap-3 border-b bg-card px-4 py-2.5">
@@ -719,7 +719,7 @@ export function WhatsappClient({ initialConversations }: { initialConversations:
                   )}
                 </div>
               </div>
-              <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
+              <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-4">
                 {messagesLoading ? (
                   <p className="text-sm text-muted-foreground">Carregando mensagens...</p>
                 ) : messagesError ? (
