@@ -12,7 +12,6 @@ import { createSupabaseSchedulingRepository } from "@/modules/scheduling/reposit
 import { createSupabaseTreatmentsRepository } from "@/modules/treatments/repository.supabase";
 import * as treatments from "@/modules/treatments/service";
 import { assembleReport } from "@/modules/treatments/service";
-import { MAX_OUTPUT_BYTES } from "@/components/treatments/prepare-photo";
 import type { TreatmentSession } from "@/modules/treatments/types";
 import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
 import * as consents from "@/modules/consents/service";
@@ -21,7 +20,6 @@ import { renderTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents
 import { docFieldsToContactUpdate } from "@/modules/consents/patient-doc-sync";
 import { signConsentToken } from "@/modules/consents/token";
 
-const BUCKET = "treatment-photos";
 const SIGNED_URL_TTL = 3600;
 const CONSENT_BUCKET = "signed-consents";
 const CONSENT_LINK_TTL_SECONDS = 48 * 60 * 60;
@@ -89,16 +87,6 @@ export async function concludeTreatmentAction(treatmentId: string, input: unknow
 export async function deleteTreatmentAction(treatmentId: string) {
   const c = await ctx();
   const treatment = await ownedTreatment(c, treatmentId);
-  const photos = await c.treatmentsRepo.listPhotos(c.accountId, treatmentId);
-  if (photos.length > 0) {
-    const { error } = await c.supabase.storage
-      .from(BUCKET)
-      .remove(photos.map((p) => p.storagePath));
-    if (error) {
-      console.error("[pacientes/[id]/actions] storage remove", error);
-      throw new Error("Não foi possível remover as fotos do armazenamento. Tente novamente.");
-    }
-  }
   await treatments.deleteTreatment(c.treatmentsRepo, c.accountId, treatmentId);
   revalidatePath(`/pacientes/${treatment.contactId}`);
 }
@@ -121,76 +109,13 @@ export async function listTreatmentSessionsAction(
   };
 }
 
-export async function listTreatmentPhotosAction(treatmentId: string) {
-  const c = await ctx();
-  const photos = await c.treatmentsRepo.listPhotos(c.accountId, treatmentId);
-  if (photos.length === 0) return [];
-  const { data, error } = await c.supabase.storage
-    .from(BUCKET)
-    .createSignedUrls(photos.map((p) => p.storagePath), SIGNED_URL_TTL);
-  if (error) throw new Error("Não foi possível carregar as fotos.");
-  return photos.map((p, i) => ({
-    id: p.id,
-    url: data[i]?.signedUrl ?? "",
-    caption: p.caption,
-    takenOn: p.takenOn,
-  }));
-}
-
-export async function uploadTreatmentPhotoAction(treatmentId: string, formData: FormData) {
-  const c = await ctx();
-  await ownedTreatment(c, treatmentId);
-
-  const file = formData.get("file");
-  if (!(file instanceof Blob)) throw new Error("Arquivo inválido.");
-  if (!file.type.startsWith("image/")) throw new Error("O arquivo não é uma imagem.");
-  if (file.size > MAX_OUTPUT_BYTES) throw new Error("A foto excede o tamanho permitido.");
-
-  const caption = (formData.get("caption") as string | null)?.trim() || null;
-  const takenOnRaw = (formData.get("takenOn") as string | null)?.trim() || null;
-  const takenOn = takenOnRaw && /^\d{4}-\d{2}-\d{2}$/.test(takenOnRaw) ? takenOnRaw : null;
-
-  const path = `${c.accountId}/${treatmentId}/${crypto.randomUUID()}.jpg`;
-  const { error: uploadError } = await c.supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: "image/jpeg", upsert: false });
-  if (uploadError) {
-    console.error("[pacientes/[id]/actions] upload", uploadError);
-    throw new Error("Não foi possível enviar a foto. Tente novamente.");
-  }
-
-  await c.treatmentsRepo.insertPhoto(c.accountId, {
-    treatmentId,
-    storagePath: path,
-    bytes: file.size,
-    caption,
-    takenOn,
-  });
-  const treatment = await ownedTreatment(c, treatmentId);
-  revalidatePath(`/pacientes/${treatment.contactId}/tratamentos/${treatmentId}`);
-}
-
-export async function updatePhotoMetaAction(photoId: string, input: unknown) {
-  const { treatmentsRepo, accountId } = await ctx();
-  await treatments.updatePhotoMeta(treatmentsRepo, accountId, photoId, input);
-}
-
-export async function deleteTreatmentPhotoAction(photoId: string) {
-  const c = await ctx();
-  const photo = await c.treatmentsRepo.getPhoto(c.accountId, photoId);
-  if (!photo) throw new Error("Foto não encontrada");
-  await c.supabase.storage.from(BUCKET).remove([photo.storagePath]);
-  await c.treatmentsRepo.deletePhoto(c.accountId, photoId);
-}
-
 export async function getTreatmentReportDataAction(treatmentId: string) {
   const c = await ctx();
   const treatment = await ownedTreatment(c, treatmentId);
-  const [contact, identity, sessionsData, photos] = await Promise.all([
+  const [contact, identity, sessionsData] = await Promise.all([
     c.crmRepo.getContact(c.accountId, treatment.contactId),
     getAccountProfessionalIdentity(c.supabase, c.accountId),
     listTreatmentSessionsAction(treatmentId),
-    listTreatmentPhotosAction(treatmentId),
   ]);
   if (!contact) throw new Error("Paciente não encontrado");
 
@@ -204,7 +129,6 @@ export async function getTreatmentReportDataAction(treatmentId: string) {
     },
     sessionCount: sessionsData.count,
     sessions: sessionsData.sessions,
-    photos: photos.map((p) => ({ url: p.url, caption: p.caption, takenOn: p.takenOn })),
     now: new Date().toISOString(),
   });
 }

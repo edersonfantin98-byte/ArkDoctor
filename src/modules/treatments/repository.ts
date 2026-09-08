@@ -1,4 +1,4 @@
-import type { Treatment, TreatmentPhoto, WoundOutcome } from "./types";
+import type { Treatment, WoundOutcome } from "./types";
 
 export interface TreatmentsRepository {
   insertTreatment(
@@ -33,24 +33,4 @@ export interface TreatmentsRepository {
   getTreatment(accountId: string, id: string): Promise<Treatment | null>;
   listTreatmentsForContact(accountId: string, contactId: string): Promise<Treatment[]>;
   deleteTreatment(accountId: string, id: string): Promise<void>;
-
-  insertPhoto(
-    accountId: string,
-    input: {
-      treatmentId: string;
-      storagePath: string;
-      bytes: number;
-      caption: string | null;
-      takenOn: string | null;
-    },
-  ): Promise<TreatmentPhoto>;
-  listPhotos(accountId: string, treatmentId: string): Promise<TreatmentPhoto[]>;
-  getPhoto(accountId: string, photoId: string): Promise<TreatmentPhoto | null>;
-  updatePhotoMeta(
-    accountId: string,
-    photoId: string,
-    input: { caption: string | null; takenOn: string | null },
-  ): Promise<TreatmentPhoto>;
-  deletePhoto(accountId: string, photoId: string): Promise<void>;
-  sumPhotoBytes(accountId: string): Promise<number>;
 }

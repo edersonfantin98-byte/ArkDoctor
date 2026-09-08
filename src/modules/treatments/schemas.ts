@@ -30,9 +30,3 @@ export const concludeTreatmentInputSchema = z.object({
   outcome: z.enum(["cicatrizacao", "alta", "abandono", "encaminhamento"]),
 });
 export type ConcludeTreatmentInput = z.infer<typeof concludeTreatmentInputSchema>;
-
-export const updatePhotoMetaInputSchema = z.object({
-  caption: shortText.nullable(),
-  takenOn: dateString.nullable(),
-});
-export type UpdatePhotoMetaInput = z.infer<typeof updatePhotoMetaInputSchema>;

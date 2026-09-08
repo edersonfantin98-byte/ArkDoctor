@@ -1,9 +1,8 @@
 import type { TreatmentsRepository } from "./repository";
-import type { Treatment, TreatmentPhoto } from "./types";
+import type { Treatment } from "./types";
 
 export function createInMemoryTreatmentsRepository(): TreatmentsRepository {
   const treatments = new Map<string, Treatment>();
-  const photos = new Map<string, TreatmentPhoto>();
 
   function owned<T extends { accountId: string }>(row: T | undefined, accountId: string): T | null {
     return row && row.accountId === accountId ? row : null;
@@ -83,59 +82,6 @@ export function createInMemoryTreatmentsRepository(): TreatmentsRepository {
       const current = owned(treatments.get(id), accountId);
       if (!current) throw new Error("Treatment not found");
       treatments.delete(id);
-      for (const [photoId, p] of photos) {
-        if (p.treatmentId === id) photos.delete(photoId);
-      }
-    },
-
-    async insertPhoto(accountId, input) {
-      const id = crypto.randomUUID();
-      const photo: TreatmentPhoto = {
-        id,
-        accountId,
-        treatmentId: input.treatmentId,
-        storagePath: input.storagePath,
-        bytes: input.bytes,
-        caption: input.caption,
-        takenOn: input.takenOn,
-        createdAt: new Date().toISOString(),
-      };
-      photos.set(id, photo);
-      return photo;
-    },
-
-    async listPhotos(accountId, treatmentId) {
-      return [...photos.values()]
-        .filter((p) => p.accountId === accountId && p.treatmentId === treatmentId)
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    },
-
-    async getPhoto(accountId, photoId) {
-      return owned(photos.get(photoId), accountId);
-    },
-
-    async updatePhotoMeta(accountId, photoId, input) {
-      const current = owned(photos.get(photoId), accountId);
-      if (!current) throw new Error("Photo not found");
-      const updated: TreatmentPhoto = {
-        ...current,
-        caption: input.caption,
-        takenOn: input.takenOn,
-      };
-      photos.set(photoId, updated);
-      return updated;
-    },
-
-    async deletePhoto(accountId, photoId) {
-      const current = owned(photos.get(photoId), accountId);
-      if (!current) throw new Error("Photo not found");
-      photos.delete(photoId);
-    },
-
-    async sumPhotoBytes(accountId) {
-      return [...photos.values()]
-        .filter((p) => p.accountId === accountId)
-        .reduce((sum, p) => sum + p.bytes, 0);
     },
   };
 }

@@ -7,7 +7,6 @@ import {
   getAccountProfessionalIdentity,
   getCurrentAccountId,
 } from "@/lib/supabase/account";
-import { createSupabaseTreatmentsRepository } from "@/modules/treatments/repository.supabase";
 import { parseOrThrow } from "@/lib/zod-error";
 
 const identitySchema = z.object({
@@ -19,9 +18,7 @@ export async function getClinicSettingsAction() {
   const supabase = await createServerSupabaseClient();
   const accountId = await getCurrentAccountId(supabase);
   const identity = await getAccountProfessionalIdentity(supabase, accountId);
-  const treatmentsRepo = createSupabaseTreatmentsRepository(supabase);
-  const storageBytes = await treatmentsRepo.sumPhotoBytes(accountId);
-  return { ...identity, storageBytes };
+  return identity;
 }
 
 export async function updateProfessionalIdentityAction(input: unknown) {

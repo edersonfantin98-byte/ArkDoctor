@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Meter } from "@/components/ui/meter";
 import { updateProfessionalIdentityAction } from "@/app/(app)/configuracoes/actions";
-
-const GB = 1024 * 1024 * 1024;
 
 export function SettingsClient({
   initial,
@@ -17,7 +14,6 @@ export function SettingsClient({
   initial: {
     professionalName: string | null;
     councilId: string | null;
-    storageBytes: number;
   };
 }) {
   const [professionalName, setProfessionalName] = useState(initial.professionalName ?? "");
@@ -25,10 +21,6 @@ export function SettingsClient({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const usedMb = initial.storageBytes / (1024 * 1024);
-  const usedPct = Math.min(100, (initial.storageBytes / GB) * 100);
-  const nearLimit = usedPct >= 80;
 
   async function handleSave() {
     setSaving(true);
@@ -91,27 +83,8 @@ export function SettingsClient({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Armazenamento de fotos</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 pt-4">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold tabular-nums">
-              {usedMb.toFixed(usedMb < 10 ? 1 : 0)} MB
-            </span>
-            <span className="text-sm text-muted-foreground">de 1 GB</span>
-          </div>
-          <Meter value={initial.storageBytes} max={GB} tone={nearLimit ? "danger" : "primary"} />
-          <p className="text-xs text-muted-foreground">
-            Fotos de evolução dos tratamentos. Ao chegar a 1 GB, o envio de novas fotos é bloqueado
-            até você liberar espaço.
-          </p>
-        </CardContent>
-      </Card>
-
       {/* TODO card Conta: precisa de e-mail/plano nas props (getClinicSettingsAction hoje
-          retorna só professionalName/councilId/storageBytes) */}
+          retorna só professionalName/councilId) */}
     </div>
   );
 }
