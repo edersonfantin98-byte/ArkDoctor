@@ -63,6 +63,7 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
   const [responsavelTelefone, setResponsavelTelefone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSignature, setHasSignature] = useState(false);
   const padRef = useRef<SignaturePadHandle>(null);
 
   // Campos de documento do paciente que este termo usa (RG, CPF, endereço,
@@ -99,12 +100,13 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
 
   const canSubmit = useMemo(() => {
     if (busy || !effectiveSignerName || docFieldsMissing) return false;
-    if (isTcle) {
-      if (autoriza === "") return false;
-      if (comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim() || !responsavelTelefone.trim())) return false;
-    }
+    if (isTcle && autoriza === "") return false;
+    // "Não autorizo": botão habilitado só para exibir o aviso de que nada será registrado.
+    if (isTcle && autoriza === "nao") return true;
+    if (!hasSignature) return false;
+    if (isTcle && comoResponsavel && (!responsavelNome.trim() || !responsavelRg.trim() || !responsavelTelefone.trim())) return false;
     return true;
-  }, [busy, effectiveSignerName, docFieldsMissing, isTcle, autoriza, comoResponsavel, responsavelNome, responsavelRg, responsavelTelefone]);
+  }, [busy, effectiveSignerName, docFieldsMissing, hasSignature, isTcle, autoriza, comoResponsavel, responsavelNome, responsavelRg, responsavelTelefone]);
 
   async function handleSubmit() {
     if (busy) return;
@@ -286,7 +288,11 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
 
       <div className="space-y-1">
         <span className="text-sm text-muted-foreground">Assinatura</span>
-        <SignaturePad ref={padRef} className="h-40 w-full touch-none rounded-md border bg-white" />
+        <SignaturePad
+          ref={padRef}
+          onChange={(isEmpty) => setHasSignature(!isEmpty)}
+          className="h-40 w-full touch-none rounded-md border bg-white"
+        />
         <button
           type="button"
           className="text-xs text-muted-foreground hover:underline"
