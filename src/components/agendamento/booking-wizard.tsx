@@ -12,7 +12,7 @@ import {
   listOccupiedIntervalsAction,
 } from "@/app/(app)/agenda/actions";
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
-import { isSlotBusy, dayRangeIso, type OccupiedInterval } from "./slot-availability";
+import { isSlotBusy, isSlotAfterHours, dayRangeIso, type OccupiedInterval } from "./slot-availability";
 import { cn } from "@/lib/utils";
 import type { Contact } from "@/modules/crm/types";
 import type { Procedure } from "@/modules/scheduling/types";
@@ -335,12 +335,11 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
                 <Label>Horário</Label>
                 <div className="flex flex-wrap gap-2">
                   {SLOTS.map((s) => {
-                    const busy = isSlotBusy(
-                      date,
-                      s,
-                      selectedProcedure?.defaultDurationMinutes ?? SLOT_INTERVAL_MINUTES,
-                      occupiedIntervals,
-                    );
+                    const duration =
+                      selectedProcedure?.defaultDurationMinutes ?? SLOT_INTERVAL_MINUTES;
+                    const busy =
+                      isSlotBusy(date, s, duration, occupiedIntervals) ||
+                      isSlotAfterHours(s, duration, SLOT_END_HOUR);
                     return (
                       <button
                         key={s}

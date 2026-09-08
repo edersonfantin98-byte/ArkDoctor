@@ -52,7 +52,7 @@ describe("createContact", () => {
       phone: "11999990000",
       email: "ana@example.com",
       birthDate: "1990-05-10",
-      cpf: "12345678900",
+      cpf: "12345678909",
       sex: "F",
       guardianName: "Maria",
       guardianPhone: "11988887777",
@@ -62,6 +62,13 @@ describe("createContact", () => {
     expect(contact.email).toBe("ana@example.com");
     expect(contact.sex).toBe("F");
     expect(contact.guardianRelationship).toBe("mãe");
+  });
+
+  it("rejects an invalid CPF", async () => {
+    const repo = createInMemoryCrmRepository();
+    await expect(
+      createContact(repo, "acc-1", { name: "Ana", phone: "11999990000", cpf: "123" }),
+    ).rejects.toThrow("CPF inválido");
   });
 
   it("rejects an invalid sex value", async () => {
@@ -330,8 +337,8 @@ describe("updateContact patient fields", () => {
     const repo = createInMemoryCrmRepository();
     const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
 
-    const updated = await updateContact(repo, "acc-1", contact.id, { cpf: "12345678900" });
-    expect(updated.cpf).toBe("12345678900");
+    const updated = await updateContact(repo, "acc-1", contact.id, { cpf: "12345678909" });
+    expect(updated.cpf).toBe("12345678909");
 
     const cleared = await updateContact(repo, "acc-1", contact.id, { cpf: null });
     expect(cleared.cpf).toBeNull();

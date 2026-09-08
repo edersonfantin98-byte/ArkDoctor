@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { isValidCpf } from "@/lib/cpf";
+
+const cpfCheck = (v: string) => v === "" || isValidCpf(v);
+const CPF_MESSAGE = "CPF inválido";
 
 export const createContactInputSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório").max(200),
@@ -7,7 +11,7 @@ export const createContactInputSchema = z.object({
   notes: z.string().trim().min(1).max(5000).optional(),
   email: z.string().trim().email("E-mail inválido").max(200).optional(),
   birthDate: z.string().trim().min(1).max(30).optional(),
-  cpf: z.string().trim().min(1).max(20).optional(),
+  cpf: z.string().trim().min(1).max(20).refine(cpfCheck, CPF_MESSAGE).optional(),
   sex: z.enum(["M", "F"]).optional(),
   guardianName: z.string().trim().min(1).max(200).optional(),
   guardianPhone: z.string().trim().min(1).max(30).optional(),
@@ -27,7 +31,7 @@ export const updateContactInputSchema = z.object({
   notes: z.string().trim().max(5000).nullable().optional(),
   email: z.string().trim().email("E-mail inválido").max(200).nullable().optional(),
   birthDate: z.string().trim().max(30).nullable().optional(),
-  cpf: z.string().trim().max(20).nullable().optional(),
+  cpf: z.string().trim().max(20).refine(cpfCheck, CPF_MESSAGE).nullable().optional(),
   sex: z.enum(["M", "F"]).nullable().optional(),
   guardianName: z.string().trim().max(200).nullable().optional(),
   guardianPhone: z.string().trim().max(30).nullable().optional(),

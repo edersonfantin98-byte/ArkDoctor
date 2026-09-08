@@ -139,6 +139,7 @@ function buildTcle(ctx: TemplateContext): Block[] {
 }
 
 function buildImagem(ctx: TemplateContext): Block[] {
+  const asResponsavel = Boolean(nonEmpty(ctx.responsavelNome));
   return [
     { type: "field", label: "Eu", value: nonEmpty(ctx.pacienteNome) },
     { type: "field", label: "RG", value: nonEmpty(ctx.pacienteRg), key: "pacienteRg" },
@@ -153,7 +154,11 @@ function buildImagem(ctx: TemplateContext): Block[] {
     { type: "paragraph", text: "Este documento registra a manifestação livre, informada e inequívoca, conforme disposto no Art. 5º, XII, Lei 13.709/2018 (LGPD – Lei Geral de Proteção de Dados), e poderá ser revogado pelo titular, a qualquer momento, mediante solicitação via e-mail à empresa." },
     { type: "paragraph", text: "Por esta ser a expressão da minha vontade declaro que autorizo o uso acima descrito sem que nada haja a ser reclamado a título de direitos conexos à minha imagem ou a qualquer outro." },
 
-    { type: "signature", who: "electronic", label: "Assinatura do Responsável" },
+    {
+      type: "signature",
+      who: "electronic",
+      label: asResponsavel ? "Assinatura do responsável legal" : "Assinatura do titular",
+    },
     { type: "signature", who: "fixed", label: "Assinatura do Responsável da Empresa" },
   ];
 }

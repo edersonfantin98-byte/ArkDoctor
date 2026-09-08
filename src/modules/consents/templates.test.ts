@@ -138,6 +138,18 @@ describe("renderTemplate", () => {
     expect(blocks.filter((b) => b.type === "signature")).toHaveLength(2);
   });
 
+  it("imagem: assinatura do titular quando é o próprio paciente; do responsável legal quando não", () => {
+    const eletronica = (c: TemplateContext) =>
+      renderTemplate("imagem", c).blocks.find(
+        (b): b is Extract<Block, { type: "signature" }> =>
+          b.type === "signature" && b.who === "electronic",
+      )?.label;
+    expect(eletronica(ctx)).toBe("Assinatura do titular");
+    expect(eletronica({ ...ctx, responsavelNome: "Maria Mãe" })).toBe(
+      "Assinatura do responsável legal",
+    );
+  });
+
   it("laser: sem campos de enfermeira; 2 assinaturas; corpo menciona laserterapia", () => {
     const { title, blocks } = renderTemplate("laser", ctx);
     expect(title).toBe("PROTOCOLO DE LASERTERAPIA");

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createPatientAction, updatePatientAction } from "@/app/(app)/pacientes/actions";
+import { isValidCpf } from "@/lib/cpf";
 import { buildContactInput } from "./build-contact-input";
 import type { Contact } from "@/modules/crm/types";
 
@@ -53,6 +54,8 @@ export function PatientFormDialog({
   const [guardianRg, setGuardianRg] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const cpfInvalid = cpf.trim() !== "" && !isValidCpf(cpf);
 
   useEffect(() => {
     if (!open) return;
@@ -165,6 +168,7 @@ export function PatientFormDialog({
           <div className="space-y-1">
             <Label htmlFor="cpf">CPF</Label>
             <Input id="cpf" value={cpf} onChange={(e) => setCpf(e.target.value)} />
+            {cpfInvalid && <p className="text-sm text-red-600">CPF inválido</p>}
           </div>
 
           <div className="space-y-1">
@@ -230,7 +234,7 @@ export function PatientFormDialog({
           <Button
             type="submit"
             className="w-full"
-            disabled={!name.trim() || !phone.trim()}
+            disabled={!name.trim() || !phone.trim() || cpfInvalid}
           >
             Salvar
           </Button>

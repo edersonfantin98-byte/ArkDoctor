@@ -19,6 +19,17 @@ export function isSlotBusy(
   });
 }
 
+// Verdadeiro quando um procedimento que começa em `slot` e dura
+// `durationMinutes` termina depois do fim do expediente (`endHour`, hora cheia).
+export function isSlotAfterHours(
+  slot: string,
+  durationMinutes: number,
+  endHour: number,
+): boolean {
+  const [hours, minutes] = slot.split(":").map(Number);
+  return hours * 60 + minutes + durationMinutes > endHour * 60;
+}
+
 export function dayRangeIso(date: string): { from: string; to: string } {
   const from = new Date(`${date}T00:00:00`);
   const to = new Date(from);
