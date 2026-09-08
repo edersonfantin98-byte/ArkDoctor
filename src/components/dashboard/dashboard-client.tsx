@@ -292,7 +292,7 @@ export function DashboardClient({
           </CardHeader>
           <CardContent>
             <div className="h-64" key={printTick}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={256} minHeight={256}>
                 <AreaChart data={overview.revenueHistory}>
                   <defs>
                     <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
@@ -429,7 +429,7 @@ export function DashboardClient({
         </CardHeader>
         <CardContent>
           <div className="h-64" key={printTick}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={256} minHeight={256}>
               <BarChart data={overview.revenueExpenseHistory}>
                 <XAxis dataKey="month" axisLine={false} tickLine={false} />
                 <YAxis hide />

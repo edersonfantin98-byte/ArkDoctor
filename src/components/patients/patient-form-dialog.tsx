@@ -56,6 +56,9 @@ export function PatientFormDialog({
   const [error, setError] = useState<string | null>(null);
 
   const cpfInvalid = cpf.trim() !== "" && !isValidCpf(cpf);
+  const phoneInvalid = phone.trim() !== "" && phone.trim().length < 8;
+  const emailInvalid =
+    email.trim() !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   useEffect(() => {
     if (!open) return;
@@ -117,7 +120,7 @@ export function PatientFormDialog({
         <DialogHeader>
           <DialogTitle>{editingPatient ? "Editar paciente" : "Novo paciente"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} noValidate className="space-y-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="space-y-1">
@@ -128,11 +131,15 @@ export function PatientFormDialog({
           <div className="space-y-1">
             <Label htmlFor="phone">Telefone</Label>
             <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            {phoneInvalid && (
+              <p className="text-sm text-red-600">Telefone deve ter ao menos 8 dígitos</p>
+            )}
           </div>
 
           <div className="space-y-1">
             <Label htmlFor="email">E-mail</Label>
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            {emailInvalid && <p className="text-sm text-red-600">E-mail inválido</p>}
           </div>
 
           <div className="space-y-1">
@@ -234,7 +241,7 @@ export function PatientFormDialog({
           <Button
             type="submit"
             className="w-full"
-            disabled={!name.trim() || !phone.trim() || cpfInvalid}
+            disabled={!name.trim() || !phone.trim() || cpfInvalid || phoneInvalid || emailInvalid}
           >
             Salvar
           </Button>

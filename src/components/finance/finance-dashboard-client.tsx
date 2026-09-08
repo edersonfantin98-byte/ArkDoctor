@@ -153,7 +153,7 @@ export function FinanceDashboardClient({ initialMetrics }: { initialMetrics: Das
         </CardHeader>
         <CardContent>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={256} minHeight={256}>
               <BarChart data={metrics.revenueExpenseHistory}>
                 <XAxis dataKey="month" axisLine={false} tickLine={false} />
                 <YAxis hide />
