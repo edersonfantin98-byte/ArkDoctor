@@ -96,6 +96,37 @@ describe("renderTemplate", () => {
     }
   });
 
+  const fixedSigLabel = (kind: "tcle" | "laser", c: TemplateContext) => {
+    const { blocks } = renderTemplate(kind, c);
+    return blocks
+      .filter((b): b is Extract<Block, { type: "signature" }> => b.type === "signature")
+      .find((s) => s.who === "fixed")!.label;
+  };
+
+  it("rótulo da assinatura fixa usa nome + conselho das Configurações quando preenchidos", () => {
+    expect(fixedSigLabel("tcle", ctx)).toBe(
+      "Assinatura e Carimbo do Profissional da Saúde — Silvana Lopes — COREN-MT 481743",
+    );
+    expect(fixedSigLabel("laser", ctx)).toBe(
+      "Assinatura do Profissional — Silvana Lopes — COREN-MT 481743",
+    );
+  });
+
+  it("rótulo da assinatura fixa cai no texto original quando nome e conselho estão vazios", () => {
+    const semIdentidade = { ...ctx, profissionalNome: null, profissionalConselho: null };
+    expect(fixedSigLabel("tcle", semIdentidade)).toBe(
+      "Assinatura e Carimbo do Profissional da Saúde",
+    );
+    expect(fixedSigLabel("laser", semIdentidade)).toBe(
+      "Assinatura do Profissional — Silvana Lopes | Enfermeira | Especialista em Feridas | COREN-MT nº 481743",
+    );
+  });
+
+  it("só nome preenchido: rótulo inclui só o nome", () => {
+    const soNome = { ...ctx, profissionalConselho: null };
+    expect(fixedSigLabel("laser", soNome)).toBe("Assinatura do Profissional — Silvana Lopes");
+  });
+
   it("imagem: sem campos preenchidos por enfermeira; CNPJ no corpo; 2 assinaturas", () => {
     const { title, blocks } = renderTemplate("imagem", ctx);
     expect(title).toBe("TERMO DE AUTORIZAÇÃO DE USO DE IMAGEM E VOZ");

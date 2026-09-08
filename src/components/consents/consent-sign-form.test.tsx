@@ -7,8 +7,21 @@ import type { Block } from "@/modules/consents/templates";
 
 vi.mock("./pdf", () => ({ buildConsentPdf: vi.fn(async () => new Uint8Array([1, 2, 3])) }));
 vi.mock("./signature-pad", () => ({
-  SignaturePad: () => <div data-testid="pad" />,
+  SignaturePad: ({ onChange }: { onChange?: (isEmpty: boolean) => void }) => (
+    <div>
+      <div data-testid="pad" />
+      <button type="button" onClick={() => onChange?.(false)}>
+        [test] desenhar assinatura
+      </button>
+      <button type="button" onClick={() => onChange?.(true)}>
+        [test] limpar assinatura
+      </button>
+    </div>
+  ),
 }));
+
+const drawSignature = () =>
+  userEvent.click(screen.getByRole("button", { name: "[test] desenhar assinatura" }));
 
 const mockBuild = vi.mocked(buildConsentPdf);
 
@@ -180,7 +193,28 @@ describe("ConsentSignForm — imagem/laser", () => {
     await userEvent.type(screen.getByLabelText("Endereço"), "Rua A, 10");
     expect(button).toBeDisabled();
     await userEvent.type(screen.getByLabelText("Município / UF"), "Cuiabá / MT");
+    expect(button).toBeDisabled(); // ainda falta o traço da assinatura
+    await drawSignature();
     expect(button).toBeEnabled();
+  });
+
+  it("assinatura: botão só habilita após desenhar; 'Limpar' volta a desabilitar", async () => {
+    render(
+      <ConsentSignForm
+        kind="laser"
+        documentTitle="Laser"
+        blocks={laserBlocks}
+        defaultSignerName="Maria"
+        submitLabel="Confirmar"
+        onComplete={async () => ({ ok: true })}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Confirmar" });
+    expect(button).toBeDisabled();
+    await drawSignature();
+    expect(button).toBeEnabled();
+    await userEvent.click(screen.getByRole("button", { name: "[test] limpar assinatura" }));
+    expect(button).toBeDisabled();
   });
 
   it("bloqueia submit quando o nome está vazio", () => {
