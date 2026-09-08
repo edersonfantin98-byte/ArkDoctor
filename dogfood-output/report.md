@@ -38,6 +38,36 @@ e "Bruno Henrique Cardoso – Tratamento de Canal 10/09 17:30"; bloqueio recorre
 (Almoco QA)"; paciente "Paciente Teste QA / 11987654321"; CPF da Ana Beatriz Santos trocado para "123";
 1 foto no tratamento "lesão por diabetes" da Ana; endereço/tipo de ferida preenchidos nesse tratamento.
 
+## Status de correção — 2026-09-08
+
+Plano: `docs/superpowers/plans/2026-09-08-correcoes-dogfood.md`. **As 3 fases foram executadas e
+mergeadas em `main` local** (não pushado — deploy automático Cloudflare quebrado até o upgrade).
+`npx vitest run` → 358 ✅ · `npx tsc --noEmit` limpo.
+
+| ISSUE | Sev | Status | Onde |
+|-------|-----|--------|------|
+| 001 — Zod em inglês no form de paciente | med | ✅ corrigido | `e97abdb` (Fase 3.1) |
+| 002 — CPF sem validação | med | ✅ corrigido | `730678d` (Fase 2.1) — falta reverter o CPF "123" da Ana (dado) |
+| 003 — "Sexo" Masculino por padrão | low | ⏭️ sem código — dado de seed no Supabase; import de WhatsApp não grava `sex`. Resolve ao zerar a base |
+| 004 — inputs nativos seguem locale do navegador | low | ✅ corrigido (parcial) | `e97abdb` (Fase 3.1) — `noValidate` + checagem pt-BR nos forms de paciente e financeiro; date picker nativo mantido (decisão) |
+| 005 — "Idade" em branco no PDF | med | ⏭️ falso-positivo — PDF salvo antigo; toda geração passa a idade. Verificar re-assinando |
+| 006 — prévia do termo "sem vírgulas" | low | ⏭️ falso-positivo — prévia = `templates.ts` verbatim; PDF do teste era seed antigo |
+| 007 — "Confirmar assinatura" sem traço | med | ✅ corrigido | `86031c3` (Fase 1.3) |
+| 008 — Nome/CNPJ de "outra empresa" | — | ❌ descartado — a empresa é da Silvana |
+| 009 — identidade da profissional em 4 formas | high | ✅ corrigido | `6797fba` (Fase 1.2) |
+| 010 — sem config de marca/logo | med | ⏭️ decisão: rodapé/timbre ficam fixos. Conferir os valores com a Dra. |
+| 011 — termo de Imagem: rótulo "responsável" + página em branco | low | ✅ corrigido | `730678d` (Fase 2.5) |
+| 012 — agendamento estoura o expediente | med | ✅ corrigido | `730678d` (Fase 2.3) — falta apagar o agendamento de teste (dado) |
+| 013 — bloqueio de agenda com input inválido = erro não tratado | high | ✅ corrigido | `32b7824` (Fase 1.1) |
+| 014 — Recharts width(0)/height(0) | low | ✅ corrigido | `e97abdb` (Fase 3.3) |
+| 015 — horário do bloqueio com segundos | low | ✅ corrigido | `e97abdb` (Fase 3.4) |
+| 016 — procedimentos odontológicos numa clínica de feridas | low | ⏭️ sem código — dados de runtime. Cadastrar procedimentos reais ao zerar a base |
+| 017 — sessão caiu para /login 2x | — | ❓ não confirmado — verificação manual pendente (havia 2 sessões de navegador no teste) |
+
+**Pendências não-código:** zerar a base de dev + cadastrar procedimentos reais; limpar os dados
+deste teste (lista acima); conferir rodapé com a Dra.; verificações manuais (017, assinatura com
+traço real, re-assinar termo da Ana p/ 005); `git push` quando a Cloudflare for atualizada.
+
 ## Issues
 
 ### ISSUE-001: Mensagem de validação crua do Zod em inglês no formulário de paciente
