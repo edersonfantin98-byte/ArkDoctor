@@ -66,6 +66,20 @@ export function ageFromIsoDate(iso: string | null | undefined, ref: Date = new D
 // consentimentos PDF 02.pdf"). Não corrigir gramática, pontuação, caixa,
 // concordância nem formatação de CNPJ. Só os campos de dados (Nome, RG, CPF,
 // endereço) são separados/rotulados para o preenchimento automático.
+// Rótulo da assinatura fixa da profissional. Quando a Identidade profissional
+// está preenchida em Configurações, o rótulo passa a ser "<base> — <nome> — <conselho>"
+// (mesmo formato do relatório clínico); vazio, cai no texto fixo original.
+function fixedProfessionalSignature(
+  ctx: TemplateContext,
+  base: string,
+  fallbackLabel: string,
+): Extract<Block, { type: "signature" }> {
+  const ident = [nonEmpty(ctx.profissionalNome), nonEmpty(ctx.profissionalConselho)]
+    .filter(Boolean)
+    .join(" — ");
+  return { type: "signature", who: "fixed", label: ident ? `${base} — ${ident}` : fallbackLabel };
+}
+
 function buildTcle(ctx: TemplateContext): Block[] {
   const asResponsavel = Boolean(nonEmpty(ctx.responsavelNome));
   return [
@@ -116,7 +130,11 @@ function buildTcle(ctx: TemplateContext): Block[] {
     { type: "heading", text: "PREENCHIMENTO EXCLUSIVO PROFISSIONAL DE SAÚDE" },
     { type: "paragraph", text: "Afirmo, para os devidos fins legais, que expliquei detalhadamente todos os esclarecimentos necessários e que paciente e/ou acompanhante compreendeu sobre benefícios, riscos e alternativas, tendo respondido às perguntas formuladas pelo(s) mesmo(s) e assegurei-me de que houve um período de reflexão suficiente para a tomada da decisão. De acordo com o meu entendimento, o(a) paciente e/ou seu responsável, está em condições de compreender o que lhes foi informado e que a qualquer tempo, pode mudar de opinião e desistir da realização do procedimento." },
     { type: "field", label: "Data", value: nonEmpty(ctx.data) },
-    { type: "signature", who: "fixed", label: "Assinatura e Carimbo do Profissional da Saúde" },
+    fixedProfessionalSignature(
+      ctx,
+      "Assinatura e Carimbo do Profissional da Saúde",
+      "Assinatura e Carimbo do Profissional da Saúde",
+    ),
   ];
 }
 
@@ -158,7 +176,11 @@ function buildLaser(ctx: TemplateContext): Block[] {
     { type: "paragraph", text: "As normas de Biossegurança e uso de EPIs serão adotadas durante todas as etapas do tratamento, tanto para o operador quanto para o paciente." },
 
     { type: "signature", who: "electronic", label: "Assinatura do paciente" },
-    { type: "signature", who: "fixed", label: "Assinatura do Profissional — Silvana Lopes | Enfermeira | Especialista em Feridas | COREN-MT nº 481743" },
+    fixedProfessionalSignature(
+      ctx,
+      "Assinatura do Profissional",
+      "Assinatura do Profissional — Silvana Lopes | Enfermeira | Especialista em Feridas | COREN-MT nº 481743",
+    ),
   ];
 }
 
