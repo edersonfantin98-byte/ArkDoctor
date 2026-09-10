@@ -444,3 +444,10 @@
 @page {
   margin: 16mm;
 }
+
+/* Relatório clínico: zera a margem da página para o navegador não desenhar
+   cabeçalho/rodapé automático (nome do site, URL, data, número de página).
+   A margem visível do documento vem do padding de impressão no componente. */
+@page report {
+  margin: 0;
+}

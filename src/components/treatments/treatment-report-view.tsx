@@ -36,7 +36,7 @@ export function TreatmentReportView({ report }: { report: TreatmentReport }) {
   const age = calcAge(contact.birthDate);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6 text-sm text-black">
+    <div className="mx-auto max-w-3xl space-y-6 p-6 text-sm text-black [page:report] print:p-[16mm]">
       <div className="flex items-center gap-2 print:hidden">
         <Button type="button" onClick={() => window.print()}>
           Imprimir / Salvar PDF
