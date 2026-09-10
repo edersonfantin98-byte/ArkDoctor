@@ -445,9 +445,8 @@
   margin: 16mm;
 }
 
-/* Relatório clínico: zera a margem da página para o navegador não desenhar
-   cabeçalho/rodapé automático (nome do site, URL, data, número de página).
-   A margem visível do documento vem do padding de impressão no componente. */
+/* Relatório clínico: margem maior em todas as páginas, inclusive a de baixo
+   (o conteúdo do relatório costuma encher a folha até a borda). */
 @page report {
-  margin: 0;
+  margin: 18mm;
 }
