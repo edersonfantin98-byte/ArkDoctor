@@ -1,7 +1,7 @@
 # ArkDoctor — Design Doc
 
-Status: implementado (as 4 fases descritas abaixo estão construídas); ver `docs/prd/arkdoctor-prd.md` seção "Estado Atual da Implementação" para divergências e gaps
-Última atualização: 2026-08-22
+Status: implementado (as 4 fases descritas abaixo estão construídas) + módulos posteriores de Tratamentos/Relatório clínico e Consentimentos assinados; ver `docs/prd/arkdoctor-prd.md` seção "Estado Atual da Implementação" para divergências e gaps
+Última atualização: 2026-09-08
 
 ## Visão Geral
 
@@ -23,12 +23,9 @@ ArkDoctor é um sistema centralizado de gestão para profissionais de saúde aut
 ## Stack Técnica
 
 - **Frontend/Backend**: Next.js (App Router)
-- **Deploy**: Cloudflare (Pages, via adapter OpenNext)
+- **Deploy**: Cloudflare **Workers** (via `@opennextjs/cloudflare`). Desde 2026-08-30 o deploy é **automático no `git push origin main`** pela Git integration da Cloudflare — o `wrangler deploy` manual deixou de ser o caminho normal. As variáveis de ambiente passaram a ser geridas no painel da Cloudflare / `wrangler.toml`, não mais só via CLI.
 - **Banco de dados & Auth**: Supabase (Postgres + Supabase Auth)
-- **Integração WhatsApp**: camada de abstração (adapter pattern) suportando:
-  - API Oficial (WhatsApp Business Platform) — estável, sem risco de bloqueio, custo por mensagem
-  - Não-oficial (ex: Evolution API/Baileys) — sem custo por mensagem, risco de bloqueio do número
-  - Provedor configurável por conta, sem acoplar o resto do sistema a um provedor específico
+- **Integração WhatsApp**: camada de abstração (adapter pattern). O `WhatsappProvider` (`src/modules/whatsapp/provider.ts`) é a interface; a factory `getWhatsappProvider` liga hoje só `fake` (testes) e **`uazapi`** (produção — provedor não-oficial, baseado em Baileys, sem custo por mensagem e com risco de bloqueio do número que a usuária assume conscientemente). Existe um `provider.evolution.ts` escrito, mas **não está plugado na factory** — código morto mantido como referência. A API Oficial (WhatsApp Business Platform) segue prevista pelo desenho mas nunca foi implementada.
 
 ## Ordem de Construção (fases)
 
@@ -41,15 +38,17 @@ Racional: cada fase entrega valor sozinha; WhatsApp fica isolado por ser a peça
 
 ## Modelo de Dados (entidades principais)
 
-- **Account/Clínica**: entidade raiz; todos os dados pertencem a uma conta
-- **Contact (Cliente/Lead)**: nome, telefone (WhatsApp), origem, notas; vinculado ao pipeline
+- **Account/Clínica**: entidade raiz; todos os dados pertencem a uma conta. Guarda também a identidade profissional (`professional_name`, `professional_council_id`) usada nos relatórios e consentimentos
+- **Contact (Cliente/Lead)**: nome, telefone (WhatsApp), origem, notas; vinculado ao pipeline. Estendido com campos clínicos opcionais — e-mail, data de nascimento, CPF, sexo, dados de responsável (migrações 0010 e 0015)
 - **PipelineStage**: etapas do funil, configurável. Padrão: Novo Lead → Em Negociação → Agendado → Atendido → Follow-up → Perdido
 - **Deal/Oportunidade**: instância de um contato dentro do pipeline, associada a um estágio + histórico de movimentação
 - **Procedure (Procedimento/Serviço)**: nome, valor padrão, categoria — cadastro fixo, editável
 - **Appointment (Agendamento)**: contato, procedimento, data/hora, status (agendado, confirmado, concluído, não compareceu, cancelado), notas/prontuário simples (texto livre), vinculado opcionalmente a um Deal
 - **AvailabilityBlock (Bloqueio de Agenda)**: intervalos bloqueados (folga, almoço, etc.)
 - **FinancialEntry (Lançamento Financeiro)**: tipo (receita/despesa), valor padrão do procedimento vs. valor efetivamente cobrado (permite desconto), categoria, data, origem (gerado a partir de Appointment concluído — sugerido, não automático — ou lançamento manual de despesa)
-- **Conversation/Message (WhatsApp)**: thread de mensagens vinculada a um Contact, histórico sincronizado via adapter
+- **Conversation/Message (WhatsApp)**: thread de mensagens vinculada a um Contact, histórico sincronizado via adapter. Mensagens carregam mídia opcional (imagem/áudio/vídeo/documento) guardada em bucket privado `whatsapp-media`, com status `stored`/`too_large`/`expired`; a conversa registra `history_imported_at` quando o histórico foi importado
+- **Treatment (Tratamento)**: uma ferida/condição por linha, vinculada a um Contact — tipos de ferida, detalhes, tipo de tratamento, data de início, status (`em_andamento`/`concluido`), data e desfecho de alta (`cicatrizacao`/`alta`/`abandono`/`encaminhamento`), avaliação profissional e percepção do paciente. `Appointment` tem link fraco `treatment_id` (as "sessões" do tratamento). Gera um **relatório clínico** imprimível (`/pacientes/[id]/tratamentos/[treatmentId]/relatorio`). Fotos de evolução chegaram a existir e foram removidas em 2026-09-08 (migração 0017)
+- **SignedConsent (Consentimento assinado)**: um PDF assinado por documento, anexado ao Contact — `kind` (`tcle`/`imagem`/`laser`), caminho no bucket privado `signed-consents`, nome do signatário, via de assinatura (`inline` na tela ou `link` público `/assinar/[token]`) e data. PDF montado com `pdf-lib` + assinatura capturada com `signature_pad`
 
 ## Funcionalidades por Módulo
 
@@ -74,9 +73,21 @@ Racional: cada fase entrega valor sozinha; WhatsApp fica isolado por ser a peça
 - Fora de escopo (por ora): métricas de clientes recorrentes vs. novos
 
 ### 4. WhatsApp Inbox
-- Conexão via adapter (oficial ou não-oficial, configurável por conta)
+- Conexão via adapter (hoje só Uazapi), com pareamento por QR code e aviso quando a conexão cai
 - Inbox completo de conversas vinculado a Contact (ler/enviar mensagens dentro do sistema)
 - Nova conversa de número desconhecido cria automaticamente novo Contact/Lead no pipeline
+- Mídia: recebe e envia imagem/áudio/vídeo/documento; retenção via cron diário que expira mídia guardada há mais de 30 dias (`src/app/api/whatsapp/media-retention/route.ts`)
+- Importação de histórico das conversas existentes sob demanda (a partir de um botão na UI após conectar)
+
+### 5. Tratamentos + Relatório clínico
+- Cadastro de tratamentos por ferida dentro da ficha do paciente, com avaliação profissional e percepção do paciente
+- Agendamentos podem ser vinculados a um tratamento (viram as "sessões")
+- Relatório clínico imprimível por tratamento (dados do paciente, do profissional, contagem e lista de sessões, duração)
+
+### 6. Consentimentos
+- Termos por paciente (TCLE, uso de imagem, laserterapia), assinados na tela ou por link público enviado ao paciente
+- Cada assinatura gera um PDF anexado ao paciente, guardado em bucket privado
+- O rótulo de assinatura usa nome e conselho do profissional das Configurações
 
 ## Casos de Borda / Tratamento de Erros
 
@@ -100,7 +111,7 @@ Pesquisa em sistemas similares (Feegow Clinic, Trinks, iClinic, GestãoDS) confi
 
 ## Decisões em Aberto / Pendentes
 
-- (nenhuma no momento — todas as decisões técnicas principais foram fechadas)
+- **Tamanho do Worker**: o bundle passou de 3 MiB, limite do plano Free da Cloudflare, o que bloqueia o deploy automático em produção até a conta ser migrada para o plano Paid. Desenvolvimento e smoke-tests seguem contra Supabase/Uazapi reais localmente.
 
 ## Fora de Escopo (MVP)
 
@@ -108,4 +119,4 @@ Pesquisa em sistemas similares (Feegow Clinic, Trinks, iClinic, GestãoDS) confi
 - App mobile nativo (web responsivo cobre celular + desktop)
 - Métricas de clientes recorrentes vs. novos no dashboard
 - Multiusuário/permissões (modelo de dados preparado, mas não implementado no MVP)
-- Prontuário eletrônico completo (só notas simples de texto por atendimento)
+- Prontuário eletrônico completo com campos regulatórios (CID, anexos exigidos por conselho). O módulo de Tratamentos captura dados clínicos estruturados por ferida, mas não é um prontuário regulatório.

@@ -65,6 +65,9 @@ Essas diretrizes estão funcionando se houver: menos alterações desnecessária
 
 Não necessário em toda sessão; abrir apenas quando a tarefa exigir.
 
-- `docs/prd/arkdoctor-prd.md` — PRD completo: problema, solução, user stories, decisões de implementação/teste, fora de escopo.
+- `docs/prd/arkdoctor-prd.md` — PRD completo: problema, solução, user stories, decisões de implementação/teste, fora de escopo. A seção "Estado Atual da Implementação" lista o que já foi além do PRD original.
 - `docs/superpowers/specs/2026-08-20-arkdoctor-design.md` — design doc técnico: stack, modelo de dados, módulos, casos de borda.
 - `docs/superpowers/specs/2026-08-20-arkdoctor-visual-design.md` — design system: cores, tipografia, bordas, componentes. Atualizar conforme o visual evoluir.
+- Módulos posteriores têm spec própria datada em `docs/superpowers/specs/` — ex.: Tratamentos/Relatório clínico (`2026-08-27-...`), Consentimentos (`2026-08-30-...`), WhatsApp mídia/histórico (`2026-09-03-...`). As demais specs/plans datados são registro histórico de execução, não docs vivos.
+
+Deploy: Cloudflare Workers, automático no `git push origin main`. Provedor de WhatsApp em produção: só Uazapi.

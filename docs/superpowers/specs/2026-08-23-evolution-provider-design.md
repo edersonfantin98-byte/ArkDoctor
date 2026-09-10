@@ -1,5 +1,7 @@
 # Evolution API Provider — Design
 
+> **Nota (2026-09-08):** o provider Evolution foi desligado da fiação em 2026-08-27 e nunca entrou em produção. `provider.evolution.ts` e seus testes seguem no repositório, mas `getWhatsappProvider` só liga `fake` e `uazapi`. Ver `docs/ops/whatsapp-provider-evolution.md`. Documento mantido como registro do desenho.
+
 Status: implementado, **não testado contra um servidor Evolution API real** — validado só com `fetch` mockado (nenhum servidor estava disponível durante a implementação). Antes de usar em produção: subir uma instância (ex.: Oracle Cloud Free Tier) e validar contra ela os dois pontos já marcados como suposição na seção "Pesquisa da API" (formato de `POST /webhook/set/{instanceName}` e comportamento de `DELETE /instance/logout/{instanceName}`), além do fluxo de conexão/QR code de ponta a ponta.
 Última atualização: 2026-08-23
 

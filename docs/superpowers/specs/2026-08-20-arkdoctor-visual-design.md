@@ -1,7 +1,7 @@
 # ArkDoctor — Design System (Fundação Visual)
 
 Status: aprovado como base inicial — sujeito a ajustes conforme a implementação avança
-Última atualização: 2026-08-22
+Última atualização: 2026-09-08 (redesenho de telas — WhatsApp, Pacientes e telas internas, Tratamento, Documentos, Procedimentos e Configurações repassadas no padrão atual; eyebrow de cabeçalho removido)
 
 ## Origem
 
@@ -11,6 +11,7 @@ Este design system herda o DNA visual de dois produtos irmãos já em produção
 
 - **Tailwind CSS** para estilização
 - **shadcn/ui** como base de componentes (Button, Card, Badge, Tabs, Sheet, etc.)
+- **@base-ui/react** para primitivos interativos (Menu, Dialog, etc.), com wrappers locais em `src/components/ui`
 - **lucide-react** para ícones
 - **Recharts** para gráficos do dashboard financeiro
 
@@ -20,7 +21,7 @@ Este design system herda o DNA visual de dois produtos irmãos já em produção
 
 | Papel | Valor | Uso |
 |---|---|---|
-| Primária (laranja) | `#FF7900` | item de menu ativo, eyebrow de cabeçalho, botões de ação primária, foco de inputs, ícones de destaque |
+| Primária (laranja) | `#FF7900` | item de menu ativo, botões de ação primária, foco de inputs, ícones de destaque |
 | Primária suave | `primary/10` (opacidade) | fundos de faixas de aviso/destaque |
 
 ### Neutras
@@ -54,16 +55,15 @@ Regra geral: paleta enxuta por princípio — laranja + cinza/preto + branco com
 ## Tipografia
 
 - **Fonte**: Inter (ou Geist Sans, mesma família funcional dos produtos irmãos) em títulos, corpo, menus e botões.
-- **Fonte mono**: reservada a três usos recorrentes, sempre uppercase + tracking largo quando é rótulo:
-  - eyebrow do cabeçalho de página
-  - label de grupo do menu lateral
+- **Fonte mono**: reservada a dois usos recorrentes, sempre uppercase + tracking largo quando é rótulo:
+  - label de grupo do menu lateral (e cabeçalhos de coluna do pipeline, mesmo estilo)
   - códigos/IDs em tabelas (sem uppercase/tracking nesse caso — é dado, não rótulo)
 
 ### Escala de tamanhos
 
 | Uso | Tamanho | Peso | Observação |
 |---|---|---|---|
-| Label uppercase (eyebrow, grupo de menu) | 10px (`0.625rem`–`0.6875rem`) | bold | uppercase, `tracking-[0.18em]` a `tracking-[0.2em]`, cor apagada ou laranja |
+| Label uppercase (grupo de menu, header de coluna) | 10px (`0.625rem`–`0.6875rem`) | bold | uppercase, `tracking-[0.18em]` a `tracking-[0.2em]`, cor apagada |
 | Texto secundário / descrição | 12–14px | regular | `text-muted-foreground` |
 | Corpo padrão | 14px | regular | texto de tabela, formulários |
 | Título de card/seção | 16–18px | semibold | |
@@ -90,13 +90,13 @@ Regra geral: paleta enxuta por princípio — laranja + cinza/preto + branco com
 ### Sidebar
 Fundo escuro (`bg-foreground`), texto branco. Logo no topo com padding generoso. Grupos com label mono (10px, uppercase, tracking largo, opacidade baixa). Item de menu: `rounded-lg`, ícone 16px + label, `px-3 py-2`. Ativo = fundo laranja sólido + texto branco. Inativo = texto semi-apagado, hover com fundo sutil. Rodapé fixo com avatar + email + botão de sair. Mobile: vira barra superior + drawer lateral (Sheet).
 
-Módulos do ArkDoctor na sidebar (implementação atual, 2026-08-24): grupo "Geral" — Dashboard, Financeiro, Agenda; grupo "Atendimento" — WhatsApp, Pipeline; grupo "Clínica" — Pacientes, Procedimentos, Agendamento. O item "Configurações" (planejado como hub futuro desabilitado) foi removido por não ter nenhuma tela por trás.
+Módulos do ArkDoctor na sidebar (implementação atual, 2026-09-08): grupo "Geral" — Dashboard, Financeiro, Agenda; grupo "Atendimento" — WhatsApp, Pipeline; grupo "Clínica" — Pacientes, Procedimentos, Agendamento, Configurações.
 
 ### Cabeçalho de página (padrão em toda tela)
-Eyebrow mono laranja com tracinho (`h-0.5 w-6 rounded-full bg-primary`) antes do texto → título `text-2xl font-bold tracking-tight` → descrição `text-sm text-muted-foreground`. Ação/botão principal alinhado à direita, mesma linha de base do título.
+Título `text-2xl font-bold tracking-tight` → descrição `text-sm text-muted-foreground`. Ação/botão principal alinhado à direita, mesma linha de base do título. Nas telas internas (detalhe de paciente, tratamento, documentos) o cabeçalho é precedido de breadcrumbs.
 
 ### Cards e listagens
-Card branco, `rounded-lg`, sombra sutil, sem borda pesada. Badges usam `variant="outline"` para categoria/tipo neutro, e o par pastel/saturado para status. Célula de imagem/avatar em `rounded-md` ou `rounded-full` conforme o contexto.
+Card branco, `rounded-lg`, sombra sutil, sem borda pesada. Badges usam `variant="outline"` para categoria/tipo neutro, e o par pastel/saturado para status. Célula de imagem/avatar em `rounded-md` ou `rounded-full` conforme o contexto. Tabelas com header cinza, linha de ~44px e ações de linha (`RowActionsMenu`) reveladas no hover; seleção múltipla via `SelectionBar`; estado vazio via `EmptyState`; barra de progresso via `Meter`.
 
 ### Pipeline (kanban)
 Colunas = estágios do funil. Cards de contato com avatar circular + nome + badge de status pastel (cor conforme tabela semântica acima).
@@ -129,7 +129,7 @@ lucide-react em todo o sistema, sempre dentro de um chip colorido (fundo pastel 
 2. Neutro dominante: sidebar escura + fundo de página cinza-claro + cards brancos. Sem dark mode.
 3. Semântica de cor é sempre par pastel-fundo + saturado-texto/ícone — nunca cor sólida de fundo grande fora do laranja.
 4. Vermelho é reservado — só para negativo real (cancelado, despesa, excluir) e nunca decorativo.
-5. Mono só para rótulos/eyebrows/códigos — nunca para corpo de texto.
+5. Mono só para rótulos/códigos — nunca para corpo de texto.
 6. Raio consistente por categoria de elemento (14px cards, 10px inputs/chips, full para pílulas/avatares) — nunca raio arbitrário.
 
 ## Decisões em Aberto

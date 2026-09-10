@@ -1,5 +1,7 @@
 # Evolution API Provider Implementation Plan
 
+> **Nota (2026-09-08):** executado, mas o provider foi desligado da fiação em 2026-08-27 e nunca entrou em produção — `getWhatsappProvider` só liga `fake` e `uazapi`. Plano mantido como registro histórico. Ver `docs/ops/whatsapp-provider-evolution.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a third `WhatsappProvider` — `EvolutionProvider` — that talks to a self-hosted Evolution API instance (open-source, Baileys-based, no per-message or subscription cost), selectable per account alongside the existing `fake` and `uazapi` providers, with no changes to the rest of the app.

@@ -1,7 +1,7 @@
 # ArkDoctor — PRD
 
-Status: MVP construído e em uso; ver "Estado Atual da Implementação" para o que diverge ou vai além deste PRD original
-Última atualização: 2026-08-24
+Status: MVP construído e em uso, mais módulos posteriores (Tratamentos/Relatório clínico, Consentimentos assinados, WhatsApp com mídia e importação de histórico); ver "Estado Atual da Implementação" para o que diverge ou vai além deste PRD original
+Última atualização: 2026-09-08
 
 ## Problem Statement
 
@@ -30,9 +30,15 @@ As quatro frentes (CRM/Pipeline, Agendamento/Calendário, Financeiro/Dashboard, 
 - **Autoagendamento público** (`/agendar/[accountId]`, sem login) — resolve o gap que existia aqui antes: um link público, sem autenticação, onde o próprio paciente escolhe procedimento/dia/horário e informa nome+telefone; se o telefone (normalizado para o formato E.164 sem o `+`, ex. `55` + DDD + número) já existir como contato — inclusive um contato criado via WhatsApp — o agendamento é vinculado a ele em vez de duplicar; caso contrário cria um novo contato. A profissional logada copia esse link a partir de um botão em `/agendamento`. Usa a service-role key do Supabase no servidor (sem sessão de usuário), então `SUPABASE_SERVICE_ROLE_KEY` passou a ser uma variável obrigatória, não só usada pelo webhook do WhatsApp. Ver `docs/superpowers/specs/2026-08-24-autoagendamento-publico-design.md`.
 - **Tela dedicada de Pacientes** (`/pacientes`, grupo "Clínica" no menu) — estende o `Contact` existente com campos clínicos opcionais (e-mail, data de nascimento, CPF, sexo, dados de responsável) e adiciona busca, edição, exclusão e um fluxo de envio de mensagem de WhatsApp em massa para os contatos selecionados (com atraso aleatório entre envios). Não corresponde a nenhuma story original. Ver `docs/superpowers/specs/2026-08-24-tela-pacientes-design.md`.
 - **Relatório em PDF via impressão** — o botão de exportar do Dashboard (`/dashboard`) não gera mais CSV; aciona `window.print()` sobre uma versão só-impressão da própria página (cabeçalho com nome da clínica/período/timestamp, resumo financeiro com despesa/saldo/procedimento mais vendido, sidebar e controles ocultos), e o usuário salva como PDF pelo diálogo de impressão do navegador. Não há geração de PDF no servidor (o deploy roda em Cloudflare Workers, que não roda Chrome headless). Ver `docs/superpowers/specs/2026-08-24-relatorio-impressao-design.md`.
+- **Tratamentos + Relatório clínico** (`/pacientes/[id]/tratamentos/...`, grupo "Clínica") — cadastro de tratamentos por ferida dentro da ficha do paciente (tipo de ferida, tipo de tratamento, avaliação profissional, percepção do paciente, desfecho de alta), com agendamentos vinculados como "sessões" e um relatório clínico imprimível por tratamento. Adiciona `professional_name`/`professional_council_id` à conta (identidade profissional, editada em Configurações). Fotos de evolução da ferida foram implementadas e depois removidas (2026-09-08). Ver `docs/superpowers/specs/2026-08-27-tratamento-relatorio-clinico-design.md`.
+- **Consentimentos assinados** (`/pacientes/[id]/documentos`, e link público `/assinar/[token]`) — termos por paciente (TCLE, uso de imagem, laserterapia) assinados na tela ou por link enviado ao paciente; cada assinatura gera um PDF anexado ao paciente em bucket privado. Ver `docs/superpowers/specs/2026-08-30-assinatura-consentimentos-design.md`.
+- **WhatsApp: mídia e importação de histórico** — o inbox passou a receber e enviar mídia (imagem/áudio/vídeo/documento) com bucket privado e cron de retenção de 30 dias, pareamento por QR code, aviso de queda de conexão e importação sob demanda do histórico das conversas. Ver `docs/superpowers/specs/2026-09-03-whatsapp-midia-historico-design.md`.
+- **Tela de Configurações** (`/configuracoes`, grupo "Clínica") — identidade profissional (nome, conselho) usada nos relatórios e consentimentos. O PRD original não previa tela de configurações.
+- **Redesenho de telas** (2026-09-08) — WhatsApp, Pacientes (e telas internas), Tratamento, Documentos, Procedimentos e Configurações repassadas no padrão visual atual.
 
 **Divergências de implementação:**
 - `Procedure` não tem o campo `active` (soft-delete) mencionado nas specs técnicas de Financeiro — a remoção implementada é definitiva (hard delete), bloqueada quando há agendamento vinculado. Ver `docs/superpowers/specs/2026-08-20-arkdoctor-agendamento-design.md`.
+- O adapter de WhatsApp continua sendo a arquitetura, mas só o provedor **Uazapi** (não-oficial, baseado em Baileys) está plugado. A API Oficial e o provedor Evolution foram desenhados/esboçados mas nunca entraram em produção — `provider.evolution.ts` existe como código morto.
 
 ## User Stories
 
@@ -90,7 +96,7 @@ As quatro frentes (CRM/Pipeline, Agendamento/Calendário, Financeiro/Dashboard, 
 
 ## Implementation Decisions
 
-- **Stack**: Next.js (App Router) como framework fullstack; deploy no Cloudflare (Pages, via adapter OpenNext); Supabase como banco de dados (Postgres) e provedor de autenticação (login/senha fornecidos previamente pelo desenvolvedor, sem necessidade de fluxo de cadastro/recuperação de senha self-service no MVP).
+- **Stack**: Next.js (App Router) como framework fullstack; deploy no Cloudflare **Workers** (via `@opennextjs/cloudflare`), automático no `git push origin main` desde 2026-08-30 (Git integration da Cloudflare); Supabase como banco de dados (Postgres) e provedor de autenticação (login/senha fornecidos previamente pelo desenvolvedor, sem necessidade de fluxo de cadastro/recuperação de senha self-service no MVP).
 - **Modelo de conta**: entidade raiz "Account/Clínica" à qual todos os dados pertencem (Contact, Appointment, FinancialEntry, etc.), em vez de vincular dados diretamente a um usuário individual — isso evita retrabalho de schema quando o produto expandir para múltiplos usuários por conta.
 - **Entidades principais**: Account, Contact, PipelineStage, Deal, Procedure, Appointment, AvailabilityBlock, FinancialEntry, Conversation/Message.
 - **Pipeline configurável**: estágios padrão (Novo Lead → Em Negociação → Agendado → Atendido → Follow-up → Perdido), mas editáveis pela usuária (renomear/reordenar).
@@ -100,6 +106,7 @@ As quatro frentes (CRM/Pipeline, Agendamento/Calendário, Financeiro/Dashboard, 
   - API Oficial (WhatsApp Business Platform): estável, sem risco de bloqueio, custo por mensagem/conversa.
   - Não-oficial (ex: Evolution API/Baileys, via QR code): sem custo por mensagem, mas viola termos de uso do WhatsApp e carrega risco real de bloqueio do número.
   - A escolha do provedor é uma decisão de configuração por conta, não uma reescrita de código.
+  - Na prática, só o provedor **Uazapi** (não-oficial) foi plugado até agora; a API Oficial e o provedor Evolution ficaram no desenho.
 - **Resiliência da integração WhatsApp**: falha de conexão do provedor não deve impactar a disponibilidade de CRM, Agenda ou Financeiro — o inbox deve degradar isoladamente (estado "desconectado" com opção de reconexão).
 - **Notas/prontuário simples**: campo de texto livre no `Appointment`, sem estrutura clínica formal (sem CID, sem campos regulatórios) — atende ao caso de uso de "pequenos serviços", não de prontuário médico completo.
 - **Ordem de construção recomendada** (fases, cada uma entregando valor isoladamente):
