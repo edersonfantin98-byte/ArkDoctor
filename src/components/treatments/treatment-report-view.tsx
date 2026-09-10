@@ -36,8 +36,8 @@ export function TreatmentReportView({ report }: { report: TreatmentReport }) {
   const age = calcAge(contact.birthDate);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6 text-sm text-black [page:report]">
-      <div className="flex items-center gap-2 print:hidden">
+    <div className="mx-auto max-w-3xl p-6 text-sm text-black [page:report] print:max-w-none print:p-0">
+      <div className="mb-6 flex items-center gap-2 print:hidden">
         <Button type="button" onClick={() => window.print()}>
           Imprimir / Salvar PDF
         </Button>
@@ -51,6 +51,26 @@ export function TreatmentReportView({ report }: { report: TreatmentReport }) {
         </label>
       </div>
 
+      {/* thead/tfoot espaçadores repetem em toda página impressa e recriam a
+          margem de cima e de baixo que o @page zerado tira. */}
+      <table className="w-full border-collapse">
+        <thead className="hidden print:table-header-group">
+          <tr>
+            <td>
+              <div className="h-[16mm]" />
+            </td>
+          </tr>
+        </thead>
+        <tfoot className="hidden print:table-footer-group">
+          <tr>
+            <td>
+              <div className="h-[16mm]" />
+            </td>
+          </tr>
+        </tfoot>
+        <tbody>
+          <tr>
+            <td className="space-y-6 align-top print:px-[16mm]">
       <header className="space-y-1 border-b pb-3">
         <h1 className="text-lg font-bold">{professional.clinicName}</h1>
         {professional.name && (
@@ -128,6 +148,10 @@ export function TreatmentReportView({ report }: { report: TreatmentReport }) {
           {professional.councilId ? ` — ${professional.councilId}` : ""}
         </p>
       </footer>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

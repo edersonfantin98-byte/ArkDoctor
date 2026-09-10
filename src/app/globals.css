@@ -445,8 +445,10 @@
   margin: 16mm;
 }
 
-/* Relatório clínico: margem maior em todas as páginas, inclusive a de baixo
-   (o conteúdo do relatório costuma encher a folha até a borda). */
+/* Relatório clínico: margem zero na página para nenhum navegador (Chrome ou
+   Firefox) desenhar cabeçalho/rodapé automático. A margem visível — inclusive
+   em cima e embaixo de TODA página — é recriada por thead/tfoot espaçadores
+   dentro da tabela em treatment-report-view.tsx. */
 @page report {
-  margin: 18mm;
+  margin: 0;
 }
