@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAccountId, getCurrentAccountName } from "@/lib/supabase/account";
-import { Sidebar } from "@/components/layout/sidebar";
+import { MobileNav, Sidebar } from "@/components/layout/sidebar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
@@ -11,9 +11,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const accountId = await getCurrentAccountId(supabase);
   const accountName = await getCurrentAccountName(supabase, accountId);
 
+  const userEmail = user?.email ?? "";
+
   return (
-    <div className="flex h-screen print:h-auto">
-      <Sidebar userEmail={user?.email ?? ""} accountName={accountName} />
+    <div className="flex h-screen flex-col md:flex-row print:h-auto">
+      <Sidebar userEmail={userEmail} accountName={accountName} />
+      <MobileNav userEmail={userEmail} accountName={accountName} />
       <main className="min-w-0 flex-1 overflow-y-auto bg-background print:overflow-visible">{children}</main>
     </div>
   );
