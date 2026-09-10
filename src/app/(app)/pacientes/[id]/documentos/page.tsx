@@ -37,7 +37,6 @@ export default async function ConsentsPage({
         ]}
       />
       <PageHeader
-        eyebrow="Documentos"
         title="Consentimentos"
         description="Termos assinados pela paciente. O PDF guarda a assinatura e a data."
       />

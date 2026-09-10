@@ -8,14 +8,4 @@ describe("PageHeader", () => {
     expect(screen.getByRole("heading", { name: "Pacientes" })).toBeInTheDocument();
     expect(screen.getByText("Cadastro e histórico")).toBeInTheDocument();
   });
-
-  it("renderiza o eyebrow quando fornecido", () => {
-    render(<PageHeader title="Inbox" eyebrow="Atendimento" />);
-    expect(screen.getByText("Atendimento")).toBeInTheDocument();
-  });
-
-  it("não renderiza eyebrow quando ausente", () => {
-    const { container } = render(<PageHeader title="Inbox" />);
-    expect(container.querySelector("[data-slot=eyebrow]")).toBeNull();
-  });
 });

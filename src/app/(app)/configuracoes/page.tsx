@@ -7,7 +7,6 @@ export default async function ConfiguracoesPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Clínica"
         title="Configurações"
         description="Identidade profissional."
       />

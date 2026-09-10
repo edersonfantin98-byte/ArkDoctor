@@ -39,7 +39,6 @@ export default async function PatientDetailPage({
     <div>
       <Breadcrumbs items={[{ label: "Pacientes", href: "/pacientes" }, { label: patient.name }]} />
       <PageHeader
-        eyebrow="Paciente"
         title={patient.name}
         description={description}
         action={

@@ -39,7 +39,7 @@ export default async function TreatmentDetailPage({
           { label: "Tratamento" },
         ]}
       />
-      <PageHeader eyebrow="Tratamento" title={treatment.woundTypes} />
+      <PageHeader title={treatment.woundTypes} />
       <TreatmentDetailClient
         contactId={id}
         treatment={treatment}

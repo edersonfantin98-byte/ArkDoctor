@@ -9,7 +9,6 @@ export default async function WhatsappPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title="Inbox"
-        eyebrow="Atendimento"
         description="Conversas com pacientes pelo WhatsApp."
       />
       <WhatsappClient initialConversations={conversations} />

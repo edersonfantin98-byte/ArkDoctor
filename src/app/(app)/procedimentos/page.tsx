@@ -9,7 +9,6 @@ export default async function ProceduresPage() {
     <div>
       <PageHeader
         title="Procedimentos"
-        eyebrow="Clínica"
         description="Valor e duração padrão de cada procedimento. Usados como sugestão ao agendar e ao lançar no financeiro."
       />
       <ProceduresClient initialProcedures={procedures} />
