@@ -7,7 +7,7 @@ Status: aprovado
 
 A Feature de assinatura eletrônica de consentimentos (`docs/superpowers/specs/2026-08-30-assinatura-consentimentos-design.md`, já implementada) usa o mesmo formulário (`ConsentSignForm`) tanto para o fluxo presencial (enfermeira com o próprio aparelho) quanto para o fluxo de link (paciente assina no próprio celular).
 
-O TCLE (`kind: 'tcle'`) tem um campo "Tipo de ferida" que hoje é um `<input>` de texto livre nos dois fluxos. Isso é um problema no fluxo de link: é um dado clínico que só a enfermeira sabe — o paciente não deveria conseguir escrevê-lo (nem por engano, nem por má-fé) no próprio celular antes de assinar.
+O TCLE (`kind: 'tcle'`) tem um campo "Tipo de ferida" que hoje é um `<input>` de texto livre nos dois fluxos. Isso é um problema no fluxo de link: é um dado clínico que só a enfermeira sabe — o paciente não deveria conseguir escrevê-lo no próprio celular antes de assinar — nem por engano, preenchendo o campo errado.
 
 ## Decisão
 
@@ -61,6 +61,7 @@ Escopo: **só o TCLE**, **só o campo "Tipo de ferida"**. Os outros dois documen
 - Qualquer alteração nos campos "Autoriza tratamento", "Responsável legal" etc. do TCLE — continuam preenchidos por quem assina (paciente/responsável), inclusive no fluxo de link, porque são declarações do próprio signatário, não dado clínico.
 - Vínculo estrutural entre `treatments.woundTypes` e o TCLE além do prefill do dialog (ex.: travar o TCLE ao tratamento, sincronizar edições). O prefill é só conveniência; o valor gravado no PDF é o que a enfermeira confirmar no dialog.
 - Mudança no fluxo presencial.
+- Validação server-side do conteúdo do PDF assinado contra o valor do token — o PDF é montado no cliente e enviado como bytes opacos (arquitetura pré-existente da feature de consentimentos); o token trava o que aparece na tela e impede adulteração do valor em trânsito, mas não impede alguém com acesso ao devtools de montar um PDF diferente do que a tela mostrou.
 
 ## Testes
 
