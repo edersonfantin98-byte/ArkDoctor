@@ -1,0 +1,50 @@
+name: Backup semanal do banco
+
+on:
+  schedule:
+    - cron: '0 3 * * 0' # todo domingo às 03:00 UTC (00:00 em Brasília)
+  workflow_dispatch: {} # permite rodar manualmente pela aba Actions do GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instala cliente do Postgres
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Gera o dump do banco
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          pg_dump "$DATABASE_URL" --no-owner --no-privileges -f dump.sql
+
+      - name: Criptografa o dump
+        env:
+          PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -salt \
+            -in dump.sql -out "backup-$(date +%F).sql.enc" \
+            -pass env:PASSPHRASE
+          rm dump.sql
+
+      - name: Configura AWS CLI para o Cloudflare R2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.R2_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+
+      - name: Envia o backup para o R2
+        env:
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          aws s3 cp "backup-$(date +%F).sql.enc" \
+            "s3://${{ secrets.R2_BUCKET_NAME }}/backup-$(date +%F).sql.enc" \
+            --endpoint-url "$R2_ENDPOINT"
+
+      - name: Apaga backups antigos (mantém só os últimos 12)
+        env:
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          aws s3 ls "s3://${{ secrets.R2_BUCKET_NAME }}/" --endpoint-url "$R2_ENDPOINT" \
+            | awk '{print $4}' | sort | head -n -12 | while read -r file; do
+              [ -n "$file" ] && aws s3 rm "s3://${{ secrets.R2_BUCKET_NAME }}/$file" --endpoint-url "$R2_ENDPOINT"
+            done
