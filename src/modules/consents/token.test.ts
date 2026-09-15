@@ -44,4 +44,17 @@ describe("consent token", () => {
     expect(await verifyConsentToken("not-a-token")).toBeNull();
     expect(await verifyConsentToken("")).toBeNull();
   });
+
+  it("round-trips claims com tipoFerida", async () => {
+    const claimsComFerida: ConsentClaims = { ...claims, tipoFerida: "Lesão por pressão" };
+    const token = await signConsentToken(claimsComFerida, 3600);
+    expect(await verifyConsentToken(token)).toEqual(claimsComFerida);
+  });
+
+  it("round-trip sem tipoFerida não inclui a chave no resultado", async () => {
+    const token = await signConsentToken(claims, 3600);
+    const result = await verifyConsentToken(token);
+    expect(result).toEqual(claims);
+    expect(result?.tipoFerida).toBeUndefined();
+  });
 });
