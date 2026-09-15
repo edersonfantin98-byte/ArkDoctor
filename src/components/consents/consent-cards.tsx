@@ -37,17 +37,21 @@ export function ConsentCards({
   professionalMissing,
   docs,
   initialConsents,
+  activeTreatmentWoundTypes,
 }: {
   contactId: string;
   patientName: string;
   professionalMissing: boolean;
   docs: Doc[];
   initialConsents: ConsentRow[];
+  activeTreatmentWoundTypes: string | null;
 }) {
   const [consents, setConsents] = useState<ConsentRow[]>(initialConsents);
   const [signing, setSigning] = useState<Doc | null>(null);
   const [linkState, setLinkState] = useState<{ doc: Doc; url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tipoFeridaPrompt, setTipoFeridaPrompt] = useState<{ doc: Doc; value: string } | null>(null);
+  const [tipoFeridaError, setTipoFeridaError] = useState<string | null>(null);
 
   async function refresh() {
     setConsents(await listConsentsAction(contactId));
@@ -89,11 +93,32 @@ export function ConsentCards({
 
   async function handleLink(doc: Doc) {
     setError(null);
+    if (doc.kind === "tcle") {
+      setTipoFeridaError(null);
+      setTipoFeridaPrompt({ doc, value: activeTreatmentWoundTypes ?? "" });
+      return;
+    }
     try {
       const { url } = await createConsentLinkAction(contactId, doc.kind);
       setLinkState({ doc, url });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar link");
+    }
+  }
+
+  async function handleConfirmTipoFeridaLink() {
+    if (!tipoFeridaPrompt) return;
+    const value = tipoFeridaPrompt.value.trim();
+    if (!value) {
+      setTipoFeridaError("Informe o tipo de ferida.");
+      return;
+    }
+    try {
+      const { url } = await createConsentLinkAction(contactId, tipoFeridaPrompt.doc.kind, value);
+      setLinkState({ doc: tipoFeridaPrompt.doc, url });
+      setTipoFeridaPrompt(null);
+    } catch (err) {
+      setTipoFeridaError(err instanceof Error ? err.message : "Erro ao gerar link");
     }
   }
 
@@ -221,6 +246,39 @@ export function ConsentCards({
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={tipoFeridaPrompt !== null}
+        onOpenChange={(open) => !open && setTipoFeridaPrompt(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tipo de ferida</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Esse dado vai travado no link — o paciente não poderá alterá-lo ao assinar pelo celular.
+            </p>
+            <label className="block text-sm">
+              <span className="text-muted-foreground">Tipo de ferida</span>
+              <input
+                autoFocus
+                value={tipoFeridaPrompt?.value ?? ""}
+                onChange={(e) =>
+                  setTipoFeridaPrompt((prev) => (prev ? { ...prev, value: e.target.value } : prev))
+                }
+                className="mt-1 w-full rounded border px-2 py-1"
+              />
+            </label>
+            {tipoFeridaError && (
+              <p role="alert" className="text-sm text-red-600">{tipoFeridaError}</p>
+            )}
+            <Button type="button" onClick={handleConfirmTipoFeridaLink}>
+              Gerar link
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

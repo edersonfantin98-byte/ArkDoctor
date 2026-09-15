@@ -47,6 +47,7 @@ export default async function ConsentsPage({
           professionalMissing={data.professionalMissing}
           docs={data.docs}
           initialConsents={data.consents}
+          activeTreatmentWoundTypes={data.activeTreatmentWoundTypes}
         />
       </div>
     </div>

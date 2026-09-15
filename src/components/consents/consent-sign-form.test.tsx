@@ -127,6 +127,22 @@ describe("ConsentSignForm — TCLE", () => {
     expect(screen.getByLabelText(/Nome do responsável/i)).toHaveValue("João");
   });
 
+  it("com lockedTipoFerida, não mostra o input e usa o valor travado", () => {
+    render(
+      <ConsentSignForm
+        kind="tcle"
+        documentTitle="TCLE"
+        blocks={tcleBlocks}
+        defaultSignerName="Maria"
+        submitLabel="Confirmar"
+        lockedTipoFerida="Lesão por pressão"
+        onComplete={async () => ({ ok: true })}
+      />,
+    );
+    expect(screen.queryByLabelText(/^Tipo de ferida$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Tipo de ferida:\s*Lesão por pressão/i)).toBeInTheDocument();
+  });
+
 });
 
 describe("ConsentSignForm — imagem/laser", () => {
