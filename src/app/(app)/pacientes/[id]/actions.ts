@@ -210,13 +210,24 @@ export async function deleteConsentAction(consentId: string) {
   revalidatePath(`/pacientes/${row.contactId}/documentos`);
 }
 
-export async function createConsentLinkAction(contactId: string, kind: string) {
+export async function createConsentLinkAction(contactId: string, kind: string, tipoFerida?: string) {
   assertConsentKind(kind);
   const c = await ctx();
   const contact = await c.crmRepo.getContact(c.accountId, contactId);
   if (!contact) throw new Error("Paciente não encontrado");
+
+  const tipoFeridaTrimmed = tipoFerida?.trim();
+  if (kind === "tcle" && !tipoFeridaTrimmed) {
+    throw new Error("Informe o tipo de ferida.");
+  }
+
   const token = await signConsentToken(
-    { accountId: c.accountId, contactId, kind },
+    {
+      accountId: c.accountId,
+      contactId,
+      kind,
+      ...(kind === "tcle" ? { tipoFerida: tipoFeridaTrimmed } : {}),
+    },
     CONSENT_LINK_TTL_SECONDS,
   );
   const h = await headers();
@@ -227,12 +238,20 @@ export async function createConsentLinkAction(contactId: string, kind: string) {
 
 export async function getConsentPageDataAction(contactId: string) {
   const c = await ctx();
-  const [contact, identity, consentRows] = await Promise.all([
+  const [contact, identity, consentRows, patientTreatments] = await Promise.all([
     c.crmRepo.getContact(c.accountId, contactId),
     getAccountProfessionalIdentity(c.supabase, c.accountId),
     listConsentsAction(contactId),
+    treatments.listTreatmentsForContact(c.treatmentsRepo, c.accountId, contactId),
   ]);
   if (!contact) throw new Error("Paciente não encontrado");
+
+  const activeTreatmentWoundTypes =
+    [...patientTreatments]
+      .sort((a, b) => {
+        if (a.status !== b.status) return a.status === "em_andamento" ? -1 : 1;
+        return b.startedOn.localeCompare(a.startedOn);
+      })[0]?.woundTypes ?? null;
 
   const templateCtx = {
     pacienteNome: contact.name,
@@ -259,5 +278,6 @@ export async function getConsentPageDataAction(contactId: string) {
     professionalMissing: !identity.professionalName,
     docs,
     consents: consentRows,
+    activeTreatmentWoundTypes,
   };
 }
