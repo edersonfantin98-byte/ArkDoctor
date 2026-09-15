@@ -20,6 +20,7 @@ export interface ConsentSignFormProps {
   blocks: Block[];
   defaultSignerName: string;
   submitLabel: string;
+  lockedTipoFerida?: string;
   onComplete: (args: {
     pdfBytes: Uint8Array;
     signerName: string;
@@ -55,7 +56,7 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
   const isTcle = props.kind === "tcle";
 
   const [signerName, setSignerName] = useState(props.defaultSignerName);
-  const [tipoFerida, setTipoFerida] = useState("");
+  const [tipoFerida, setTipoFerida] = useState(props.lockedTipoFerida ?? "");
   const [autoriza, setAutoriza] = useState<"" | "sim" | "nao">("");
   const [comoResponsavel, setComoResponsavel] = useState(false);
   const [responsavelNome, setResponsavelNome] = useState("");
@@ -204,14 +205,20 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
 
       {isTcle && (
         <div className="space-y-3 rounded-md border p-3">
-          <label className="block text-sm">
-            <span className="text-muted-foreground">Tipo de ferida</span>
-            <input
-              value={tipoFerida}
-              onChange={(e) => setTipoFerida(e.target.value)}
-              className="mt-1 w-full rounded border px-2 py-1"
-            />
-          </label>
+          {props.lockedTipoFerida !== undefined ? (
+            <p className="text-sm">
+              <span className="text-muted-foreground">Tipo de ferida:</span> {props.lockedTipoFerida || "—"}
+            </p>
+          ) : (
+            <label className="block text-sm">
+              <span className="text-muted-foreground">Tipo de ferida</span>
+              <input
+                value={tipoFerida}
+                onChange={(e) => setTipoFerida(e.target.value)}
+                className="mt-1 w-full rounded border px-2 py-1"
+              />
+            </label>
+          )}
 
           <fieldset className="space-y-1 text-sm">
             <legend className="text-muted-foreground">Sobre o tratamento proposto</legend>
