@@ -66,3 +66,28 @@ export async function getDashboardMetricsAction(period: { from: string; to: stri
   const procedures = await listProcedures(schedulingRepo, accountId);
   return finance.getDashboardMetrics(repo, accountId, period, procedures);
 }
+
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
+export async function createInstallmentPurchaseAction(input: unknown) {
+  const { repo, accountId } = await getRepoAndAccount();
+  const entries = await finance.createInstallmentPurchase(repo, accountId, input);
+  revalidatePath("/financeiro");
+  revalidatePath("/financeiro/lancamentos");
+  return entries;
+}
+
+export async function getInstallmentPlanSummaryAction(planId: string) {
+  const { repo, accountId } = await getRepoAndAccount();
+  return finance.getInstallmentPlanSummary(repo, accountId, planId, todayIso());
+}
+
+export async function deleteInstallmentPlanEntriesAction(
+  planId: string,
+  scope: "future" | "all",
+) {
+  const { repo, accountId } = await getRepoAndAccount();
+  await finance.deleteInstallmentPlanEntries(repo, accountId, planId, scope, todayIso());
+  revalidatePath("/financeiro");
+  revalidatePath("/financeiro/lancamentos");
+}
