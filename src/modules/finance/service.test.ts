@@ -5,6 +5,9 @@ import {
   listFinancialEntries,
   getDashboardMetrics,
   getFinancialEntryByAppointmentId,
+  createInstallmentPurchase,
+  getInstallmentPlanSummary,
+  deleteInstallmentPlanEntries,
 } from "./service";
 
 describe("createFinancialEntry", () => {
@@ -453,5 +456,83 @@ describe("getDashboardMetrics", () => {
     });
     const june = metrics.revenueExpenseHistory.find((m) => m.month === "Jun");
     expect(june).toEqual({ month: "Jun", revenue: 100, expense: 30 });
+  });
+});
+
+describe("despesas parceladas", () => {
+  const input = {
+    description: "Boleto fornecedor",
+    category: "Material",
+    totalAmount: 300,
+    installments: 3,
+    firstDueDate: "2026-10-10",
+  };
+
+  it("gera uma despesa por parcela com o vencimento e a descrição certos", async () => {
+    const repo = createInMemoryFinanceRepository();
+    const entries = await createInstallmentPurchase(repo, "acc-1", input);
+
+    expect(entries).toHaveLength(3);
+    expect(entries.every((e) => e.type === "expense" && e.planId === entries[0].planId)).toBe(true);
+    expect(entries.map((e) => e.occurredAt)).toEqual(["2026-10-10", "2026-11-10", "2026-12-10"]);
+    expect(entries.map((e) => e.description)).toEqual([
+      "Boleto fornecedor (1/3)",
+      "Boleto fornecedor (2/3)",
+      "Boleto fornecedor (3/3)",
+    ]);
+  });
+
+  it("rejeita total que dá menos de 1 centavo por parcela", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await expect(
+      createInstallmentPurchase(repo, "acc-1", { ...input, totalAmount: 0.3, installments: 48 }),
+    ).rejects.toThrow();
+    await expect(
+      createInstallmentPurchase(repo, "acc-1", { ...input, totalAmount: 0.48, installments: 48 }),
+    ).resolves.toHaveLength(48);
+  });
+
+  it("cada parcela só aparece no período do seu mês", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await createInstallmentPurchase(repo, "acc-1", input);
+    const nov = await listFinancialEntries(repo, "acc-1", { from: "2026-11-01", to: "2026-11-30" });
+    expect(nov).toHaveLength(1);
+    expect(nov[0].installmentNumber).toBe(2);
+  });
+
+  it("rejeita 1 parcela, 49 parcelas e categoria vazia", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await expect(createInstallmentPurchase(repo, "acc-1", { ...input, installments: 1 })).rejects.toThrow();
+    await expect(createInstallmentPurchase(repo, "acc-1", { ...input, installments: 49 })).rejects.toThrow();
+    await expect(createInstallmentPurchase(repo, "acc-1", { ...input, category: "" })).rejects.toThrow();
+  });
+
+  it("resumo separa vencidas e restantes", async () => {
+    const repo = createInMemoryFinanceRepository();
+    const [first] = await createInstallmentPurchase(repo, "acc-1", input);
+    const summary = await getInstallmentPlanSummary(repo, "acc-1", first.planId!, "2026-11-15");
+    expect(summary).toEqual({
+      planId: first.planId,
+      totalAmount: 300,
+      count: 3,
+      elapsedCount: 2,
+      elapsedAmount: 200,
+      remainingAmount: 100,
+    });
+  });
+
+  it("excluir 'futuras' mantém as já vencidas", async () => {
+    const repo = createInMemoryFinanceRepository();
+    const [first] = await createInstallmentPurchase(repo, "acc-1", input);
+    await deleteInstallmentPlanEntries(repo, "acc-1", first.planId!, "future", "2026-11-15");
+    const left = await repo.listEntriesByPlan("acc-1", first.planId!);
+    expect(left.map((e) => e.installmentNumber)).toEqual([1, 2]);
+  });
+
+  it("excluir 'todas' remove tudo", async () => {
+    const repo = createInMemoryFinanceRepository();
+    const [first] = await createInstallmentPurchase(repo, "acc-1", input);
+    await deleteInstallmentPlanEntries(repo, "acc-1", first.planId!, "all", "2026-11-15");
+    expect(await repo.listEntriesByPlan("acc-1", first.planId!)).toEqual([]);
   });
 });

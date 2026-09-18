@@ -12,7 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createFinancialEntryAction } from "@/app/(app)/financeiro/actions";
+import {
+  createFinancialEntryAction,
+  createInstallmentPurchaseAction,
+} from "@/app/(app)/financeiro/actions";
+import { formatCurrency } from "@/lib/format";
 import type { Procedure } from "@/modules/scheduling/types";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -29,6 +33,8 @@ export function NewEntryDialog({
   const [procedureId, setProcedureId] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
+  const [installmentsOn, setInstallmentsOn] = useState(false);
+  const [installments, setInstallments] = useState("3");
   const [error, setError] = useState<string | null>(null);
 
   function resetForm() {
@@ -36,6 +42,8 @@ export function NewEntryDialog({
     setProcedureId("");
     setAmount("");
     setCategory("");
+    setInstallmentsOn(false);
+    setInstallments("3");
     setError(null);
   }
 
@@ -60,14 +68,24 @@ export function NewEntryDialog({
       return;
     }
     try {
-      await createFinancialEntryAction({
-        type,
-        amount: Number(formData.get("amount")),
-        category: String(formData.get("category") ?? "") || undefined,
-        procedureId: type === "revenue" && procedureId ? procedureId : undefined,
-        description: String(formData.get("description") ?? "") || undefined,
-        occurredAt: String(formData.get("occurredAt") ?? today()),
-      });
+      if (type === "expense" && installmentsOn) {
+        await createInstallmentPurchaseAction({
+          description: String(formData.get("description") ?? "") || undefined,
+          category: String(formData.get("category") ?? ""),
+          totalAmount: amountValue,
+          installments: Number(installments),
+          firstDueDate: String(formData.get("occurredAt") ?? today()),
+        });
+      } else {
+        await createFinancialEntryAction({
+          type,
+          amount: Number(formData.get("amount")),
+          category: String(formData.get("category") ?? "") || undefined,
+          procedureId: type === "revenue" && procedureId ? procedureId : undefined,
+          description: String(formData.get("description") ?? "") || undefined,
+          occurredAt: String(formData.get("occurredAt") ?? today()),
+        });
+      }
       setOpen(false);
       resetForm();
       onCreated();
@@ -100,6 +118,7 @@ export function NewEntryDialog({
               onChange={(e) => {
                 setType(e.target.value as "revenue" | "expense");
                 setProcedureId("");
+                setInstallmentsOn(false);
               }}
               className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
             >
@@ -148,8 +167,40 @@ export function NewEntryDialog({
               required={type === "expense"}
             />
           </div>
+          {type === "expense" && (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={installmentsOn}
+                  onChange={(e) => setInstallmentsOn(e.target.checked)}
+                />
+                Parcelar (o valor informado é o total)
+              </label>
+              {installmentsOn && (
+                <div className="space-y-1">
+                  <Label htmlFor="installments">Número de parcelas (2 a 48)</Label>
+                  <Input
+                    id="installments"
+                    type="number"
+                    min="2"
+                    max="48"
+                    step="1"
+                    value={installments}
+                    onChange={(e) => setInstallments(e.target.value)}
+                  />
+                  {Number(installments) >= 2 && Number(amount) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {installments}x de aproximadamente{" "}
+                      {formatCurrency(Number(amount) / Number(installments))}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="space-y-1">
-            <Label htmlFor="occurredAt">Data</Label>
+            <Label htmlFor="occurredAt">{installmentsOn ? "Vencimento da 1ª parcela" : "Data"}</Label>
             <Input id="occurredAt" name="occurredAt" type="date" defaultValue={today()} required />
           </div>
           <div className="space-y-1">

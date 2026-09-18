@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   deleteFinancialEntryAction,
+  deleteInstallmentPlanEntriesAction,
+  getInstallmentPlanSummaryAction,
   updateFinancialEntryAction,
 } from "@/app/(app)/financeiro/actions";
-import type { FinancialEntry } from "@/modules/finance/types";
+import { formatCurrency } from "@/lib/format";
+import type { FinancialEntry, InstallmentPlanSummary } from "@/modules/finance/types";
 
 export function EditEntryDialog({
   entry,
@@ -30,8 +33,31 @@ export function EditEntryDialog({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pendingPlanScope, setPendingPlanScope] = useState<"future" | "all" | null>(null);
+
+  const [summary, setSummary] = useState<InstallmentPlanSummary | null>(null);
+  const planId = entry?.planId ?? null;
+
+  useEffect(() => {
+    if (!open || !planId) return;
+    getInstallmentPlanSummaryAction(planId).then(setSummary).catch(() => setSummary(null));
+  }, [open, planId]);
+  const activeSummary = open && summary && summary.planId === planId ? summary : null;
 
   if (!entry) return null;
+
+  async function handleDeletePlan(scope: "future" | "all") {
+    setError(null);
+    try {
+      await deleteInstallmentPlanEntriesAction(entry!.planId!, scope);
+      setPendingPlanScope(null);
+      onOpenChange(false);
+      onChanged();
+    } catch (err) {
+      setPendingPlanScope(null);
+      setError(err instanceof Error ? err.message : "Erro ao excluir parcelas");
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -74,7 +100,10 @@ export function EditEntryDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) setConfirmingDelete(false);
+        if (!next) {
+          setConfirmingDelete(false);
+          setPendingPlanScope(null);
+        }
         onOpenChange(next);
       }}
     >
@@ -123,6 +152,44 @@ export function EditEntryDialog({
             Salvar
           </Button>
         </form>
+        {activeSummary && (
+          <div className="space-y-2 rounded-md border border-border p-3 text-sm">
+            <p className="font-medium">Compra parcelada ({activeSummary.count} parcelas)</p>
+            <p className="text-muted-foreground">
+              Total {formatCurrency(activeSummary.totalAmount)} · já vencido{" "}
+              {formatCurrency(activeSummary.elapsedAmount)} ({activeSummary.elapsedCount}) · restante{" "}
+              {formatCurrency(activeSummary.remainingAmount)}
+            </p>
+            {pendingPlanScope ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-auto text-sm text-muted-foreground">
+                  {pendingPlanScope === "future"
+                    ? "Excluir as parcelas futuras desta compra?"
+                    : "Excluir TODAS as parcelas desta compra?"}
+                </span>
+                <Button variant="outline" size="sm" onClick={() => setPendingPlanScope(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeletePlan(pendingPlanScope)}
+                >
+                  Confirmar exclusão
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPendingPlanScope("future")}>
+                  Excluir parcelas futuras
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setPendingPlanScope("all")}>
+                  Excluir todas as parcelas
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
         <DialogFooter>
           {confirmingDelete ? (
             <>

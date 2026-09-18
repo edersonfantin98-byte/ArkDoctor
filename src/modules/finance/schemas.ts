@@ -13,6 +13,18 @@ export const createFinancialEntryInputSchema = z.object({
 });
 export type CreateFinancialEntryInput = z.infer<typeof createFinancialEntryInputSchema>;
 
+export const createInstallmentPurchaseInputSchema = z.object({
+  description: z.string().trim().max(2000).optional(),
+  category: z.string().trim().min(1, "Categoria é obrigatória").max(200),
+  totalAmount: z.number().positive("Valor deve ser maior que zero"),
+  installments: z.number().int().min(2, "Mínimo de 2 parcelas").max(48, "Máximo de 48 parcelas"),
+  firstDueDate: isoDate,
+}).refine((v) => Math.round(v.totalAmount * 100) >= v.installments, {
+  message: "Valor total muito baixo para este número de parcelas",
+  path: ["totalAmount"],
+});
+export type CreateInstallmentPurchaseInput = z.infer<typeof createInstallmentPurchaseInputSchema>;
+
 export const updateFinancialEntryInputSchema = z.object({
   amount: z.number().positive("Valor deve ser maior que zero"),
   category: z.string().trim().min(1).max(200).optional(),

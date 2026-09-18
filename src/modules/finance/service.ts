@@ -1,10 +1,18 @@
 import type { FinanceRepository } from "./repository";
 import {
   createFinancialEntryInputSchema,
+  createInstallmentPurchaseInputSchema,
   dashboardPeriodSchema,
   updateFinancialEntryInputSchema,
 } from "./schemas";
-import type { DashboardMetrics, FinancialEntry, FinancialEntryType, ProcedureSalesSummary } from "./types";
+import type {
+  DashboardMetrics,
+  FinancialEntry,
+  FinancialEntryType,
+  InstallmentPlanSummary,
+  ProcedureSalesSummary,
+} from "./types";
+import { buildInstallments } from "./installments";
 import { parseOrThrow } from "@/lib/zod-error";
 
 const MONTH_LABELS = [
@@ -199,4 +207,63 @@ function summarizeByProcedure(
       count: v.count,
     }))
     .sort((a, b) => b.totalAmount - a.totalAmount);
+}
+
+export async function createInstallmentPurchase(
+  repo: FinanceRepository,
+  accountId: string,
+  rawInput: unknown,
+): Promise<FinancialEntry[]> {
+  const input = parseOrThrow(createInstallmentPurchaseInputSchema, rawInput);
+  const parcels = buildInstallments(input.totalAmount, input.installments, input.firstDueDate);
+  const base = input.description ?? input.category;
+
+  return repo.insertInstallmentPurchase(
+    accountId,
+    {
+      description: input.description ?? null,
+      category: input.category,
+      totalAmount: input.totalAmount,
+      installments: input.installments,
+      firstDueDate: input.firstDueDate,
+    },
+    parcels.map((p) => ({
+      amount: p.amount,
+      description: `${base} (${p.number}/${input.installments})`,
+      occurredAt: p.dueDate,
+      installmentNumber: p.number,
+    })),
+  );
+}
+
+export async function getInstallmentPlanSummary(
+  repo: FinanceRepository,
+  accountId: string,
+  planId: string,
+  today: string,
+): Promise<InstallmentPlanSummary> {
+  const entries = await repo.listEntriesByPlan(accountId, planId);
+  const elapsed = entries.filter((e) => e.occurredAt <= today);
+  const sum = (list: FinancialEntry[]) =>
+    Math.round(list.reduce((s, e) => s + e.amount * 100, 0)) / 100;
+  return {
+    planId,
+    totalAmount: sum(entries),
+    count: entries.length,
+    elapsedCount: elapsed.length,
+    elapsedAmount: sum(elapsed),
+    remainingAmount: sum(entries.filter((e) => e.occurredAt > today)),
+  };
+}
+
+export async function deleteInstallmentPlanEntries(
+  repo: FinanceRepository,
+  accountId: string,
+  planId: string,
+  scope: "future" | "all",
+  today: string,
+): Promise<void> {
+  await repo.deleteEntriesByPlan(accountId, planId, scope === "all" ? null : today);
+  const left = await repo.listEntriesByPlan(accountId, planId);
+  if (left.length === 0) await repo.deleteInstallmentPlan(accountId, planId);
 }

@@ -33,4 +33,23 @@ export interface FinanceRepository {
     },
   ): Promise<FinancialEntry>;
   deleteFinancialEntry(accountId: string, id: string): Promise<void>;
+  insertInstallmentPurchase(
+    accountId: string,
+    plan: {
+      description: string | null;
+      category: string;
+      totalAmount: number;
+      installments: number;
+      firstDueDate: string;
+    },
+    entries: {
+      amount: number;
+      description: string;
+      occurredAt: string;
+      installmentNumber: number;
+    }[],
+  ): Promise<FinancialEntry[]>;
+  listEntriesByPlan(accountId: string, planId: string): Promise<FinancialEntry[]>;
+  deleteEntriesByPlan(accountId: string, planId: string, afterDate: string | null): Promise<void>;
+  deleteInstallmentPlan(accountId: string, planId: string): Promise<void>;
 }

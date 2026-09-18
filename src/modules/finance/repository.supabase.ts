@@ -21,6 +21,8 @@ function toFinancialEntry(
     procedureId: row.procedure_id,
     appointmentId: row.appointment_id,
     description: row.description,
+    planId: row.plan_id,
+    installmentNumber: row.installment_number,
     occurredAt: row.occurred_at,
     createdAt: row.created_at,
   };
@@ -96,6 +98,74 @@ export function createSupabaseFinanceRepository(
         .delete()
         .eq("account_id", accountId)
         .eq("id", id);
+      if (error) throwDbError(error);
+    },
+
+    async insertInstallmentPurchase(accountId, plan, planEntries) {
+      const { data: planRow, error: planError } = await supabase
+        .from("installment_plans")
+        .insert({
+          account_id: accountId,
+          description: plan.description,
+          category: plan.category,
+          total_amount: plan.totalAmount,
+          installments: plan.installments,
+          first_due_date: plan.firstDueDate,
+        })
+        .select("id")
+        .single();
+      if (planError) throwDbError(planError);
+
+      const { data, error } = await supabase
+        .from("financial_entries")
+        .insert(
+          planEntries.map((e) => ({
+            account_id: accountId,
+            type: "expense",
+            amount: e.amount,
+            category: plan.category,
+            description: e.description,
+            occurred_at: e.occurredAt,
+            plan_id: planRow.id,
+            installment_number: e.installmentNumber,
+          })),
+        )
+        .select("*");
+      if (error) {
+        await supabase.from("installment_plans").delete().eq("id", planRow.id).eq("account_id", accountId);
+        throwDbError(error);
+      }
+      return data.map(toFinancialEntry);
+    },
+
+    async listEntriesByPlan(accountId, planId) {
+      const { data, error } = await supabase
+        .from("financial_entries")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("plan_id", planId)
+        .order("occurred_at", { ascending: true });
+      if (error) throwDbError(error);
+      return data.map(toFinancialEntry);
+    },
+
+    async deleteEntriesByPlan(accountId, planId, afterDate) {
+      let query = supabase
+        .from("financial_entries")
+        .delete()
+        .eq("account_id", accountId)
+        .eq("plan_id", planId);
+      if (afterDate !== null) query = query.gt("occurred_at", afterDate);
+      const { error } = await query;
+      if (error) throwDbError(error);
+    },
+
+    async deleteInstallmentPlan(accountId, planId) {
+      const { error } = await supabase
+        .from("installment_plans")
+        .delete()
+        .eq("account_id", accountId)
+        .eq("id", planId);
       if (error) throwDbError(error);
     },
   };
