@@ -10,6 +10,8 @@ export interface FinancialEntry {
   procedureId: string | null;
   appointmentId: string | null;
   description: string | null;
+  planId: string | null;
+  installmentNumber: number | null;
   occurredAt: string;
   createdAt: string;
 }
@@ -34,4 +36,13 @@ export interface DashboardMetrics {
   expenseByCategory: { category: string; total: number }[];
   revenueExpenseHistory: { month: string; revenue: number; expense: number }[];
   cancellationRate: CancellationRateMetric;
+}
+
+export interface InstallmentPlanSummary {
+  planId: string;
+  totalAmount: number;
+  count: number;
+  elapsedCount: number;
+  elapsedAmount: number;
+  remainingAmount: number;
 }

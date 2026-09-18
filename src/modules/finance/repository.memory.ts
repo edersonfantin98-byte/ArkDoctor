@@ -3,6 +3,7 @@ import type { FinancialEntry } from "./types";
 
 export function createInMemoryFinanceRepository(): FinanceRepository {
   const entries = new Map<string, FinancialEntry>();
+  const plans = new Set<string>();
 
   return {
     async insertFinancialEntry(accountId, input) {
@@ -17,6 +18,8 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
         procedureId: input.procedureId,
         appointmentId: input.appointmentId,
         description: input.description,
+        planId: null,
+        installmentNumber: null,
         occurredAt: input.occurredAt,
         createdAt: new Date().toISOString(),
       };
@@ -60,6 +63,47 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
       const existing = entries.get(id);
       if (!existing || existing.accountId !== accountId) return;
       entries.delete(id);
+    },
+
+    async insertInstallmentPurchase(accountId, plan, planEntries) {
+      const planId = crypto.randomUUID();
+      plans.add(planId);
+      return planEntries.map((input) => {
+        const entry: FinancialEntry = {
+          id: crypto.randomUUID(),
+          accountId,
+          type: "expense",
+          amount: input.amount,
+          defaultAmount: null,
+          category: plan.category,
+          procedureId: null,
+          appointmentId: null,
+          description: input.description,
+          occurredAt: input.occurredAt,
+          planId,
+          installmentNumber: input.installmentNumber,
+          createdAt: new Date().toISOString(),
+        };
+        entries.set(entry.id, entry);
+        return entry;
+      });
+    },
+
+    async listEntriesByPlan(accountId, planId) {
+      return [...entries.values()]
+        .filter((e) => e.accountId === accountId && e.planId === planId)
+        .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+    },
+
+    async deleteEntriesByPlan(accountId, planId, afterDate) {
+      for (const [id, e] of entries) {
+        if (e.accountId !== accountId || e.planId !== planId) continue;
+        if (afterDate === null || e.occurredAt > afterDate) entries.delete(id);
+      }
+    },
+
+    async deleteInstallmentPlan(_accountId, planId) {
+      plans.delete(planId);
     },
   };
 }
