@@ -391,7 +391,9 @@ export type Database = {
           default_amount: number | null
           description: string | null
           id: string
+          installment_number: number | null
           occurred_at: string
+          plan_id: string | null
           procedure_id: string | null
           type: string
         }
@@ -404,7 +406,9 @@ export type Database = {
           default_amount?: number | null
           description?: string | null
           id?: string
+          installment_number?: number | null
           occurred_at: string
+          plan_id?: string | null
           procedure_id?: string | null
           type: string
         }
@@ -417,7 +421,9 @@ export type Database = {
           default_amount?: number | null
           description?: string | null
           id?: string
+          installment_number?: number | null
           occurred_at?: string
+          plan_id?: string | null
           procedure_id?: string | null
           type?: string
         }
@@ -430,11 +436,59 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "financial_entries_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "installment_plans"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "financial_entries_procedure_same_account"
             columns: ["procedure_id", "account_id"]
             isOneToOne: false
             referencedRelation: "procedures"
             referencedColumns: ["id", "account_id"]
+          },
+        ]
+      }
+      installment_plans: {
+        Row: {
+          account_id: string
+          category: string
+          created_at: string
+          description: string | null
+          first_due_date: string
+          id: string
+          installments: number
+          total_amount: number
+        }
+        Insert: {
+          account_id: string
+          category: string
+          created_at?: string
+          description?: string | null
+          first_due_date: string
+          id?: string
+          installments: number
+          total_amount: number
+        }
+        Update: {
+          account_id?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          first_due_date?: string
+          id?: string
+          installments?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installment_plans_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
           },
         ]
       }
