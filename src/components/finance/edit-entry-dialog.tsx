@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   deleteFinancialEntryAction,
+  deleteInstallmentPlanEntriesAction,
+  getInstallmentPlanSummaryAction,
   updateFinancialEntryAction,
 } from "@/app/(app)/financeiro/actions";
-import type { FinancialEntry } from "@/modules/finance/types";
+import { formatCurrency } from "@/lib/format";
+import type { FinancialEntry, InstallmentPlanSummary } from "@/modules/finance/types";
 
 export function EditEntryDialog({
   entry,
@@ -31,7 +34,27 @@ export function EditEntryDialog({
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const [summary, setSummary] = useState<InstallmentPlanSummary | null>(null);
+  const planId = entry?.planId ?? null;
+
+  useEffect(() => {
+    if (!open || !planId) return;
+    getInstallmentPlanSummaryAction(planId).then(setSummary).catch(() => setSummary(null));
+  }, [open, planId]);
+  const activeSummary = open && summary && summary.planId === planId ? summary : null;
+
   if (!entry) return null;
+
+  async function handleDeletePlan(scope: "future" | "all") {
+    setError(null);
+    try {
+      await deleteInstallmentPlanEntriesAction(entry!.planId!, scope);
+      onOpenChange(false);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir parcelas");
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -123,6 +146,24 @@ export function EditEntryDialog({
             Salvar
           </Button>
         </form>
+        {activeSummary && (
+          <div className="space-y-2 rounded-md border border-border p-3 text-sm">
+            <p className="font-medium">Compra parcelada ({activeSummary.count} parcelas)</p>
+            <p className="text-muted-foreground">
+              Total {formatCurrency(activeSummary.totalAmount)} · já vencido{" "}
+              {formatCurrency(activeSummary.elapsedAmount)} ({activeSummary.elapsedCount}) · restante{" "}
+              {formatCurrency(activeSummary.remainingAmount)}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleDeletePlan("future")}>
+                Excluir parcelas futuras
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => handleDeletePlan("all")}>
+                Excluir todas as parcelas
+              </Button>
+            </div>
+          </div>
+        )}
         <DialogFooter>
           {confirmingDelete ? (
             <>
