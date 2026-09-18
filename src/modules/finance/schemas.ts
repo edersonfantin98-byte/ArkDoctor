@@ -19,6 +19,9 @@ export const createInstallmentPurchaseInputSchema = z.object({
   totalAmount: z.number().positive("Valor deve ser maior que zero"),
   installments: z.number().int().min(2, "Mínimo de 2 parcelas").max(48, "Máximo de 48 parcelas"),
   firstDueDate: isoDate,
+}).refine((v) => Math.round(v.totalAmount * 100) >= v.installments, {
+  message: "Valor total muito baixo para este número de parcelas",
+  path: ["totalAmount"],
 });
 export type CreateInstallmentPurchaseInput = z.infer<typeof createInstallmentPurchaseInputSchema>;
 

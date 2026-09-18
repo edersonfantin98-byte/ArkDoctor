@@ -482,6 +482,16 @@ describe("despesas parceladas", () => {
     ]);
   });
 
+  it("rejeita total que dá menos de 1 centavo por parcela", async () => {
+    const repo = createInMemoryFinanceRepository();
+    await expect(
+      createInstallmentPurchase(repo, "acc-1", { ...input, totalAmount: 0.3, installments: 48 }),
+    ).rejects.toThrow();
+    await expect(
+      createInstallmentPurchase(repo, "acc-1", { ...input, totalAmount: 0.48, installments: 48 }),
+    ).resolves.toHaveLength(48);
+  });
+
   it("cada parcela só aparece no período do seu mês", async () => {
     const repo = createInMemoryFinanceRepository();
     await createInstallmentPurchase(repo, "acc-1", input);

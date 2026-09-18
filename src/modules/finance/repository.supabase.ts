@@ -132,7 +132,7 @@ export function createSupabaseFinanceRepository(
         )
         .select("*");
       if (error) {
-        await supabase.from("installment_plans").delete().eq("id", planRow.id);
+        await supabase.from("installment_plans").delete().eq("id", planRow.id).eq("account_id", accountId);
         throwDbError(error);
       }
       return data.map(toFinancialEntry);

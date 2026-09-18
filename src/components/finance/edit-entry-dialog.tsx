@@ -33,6 +33,7 @@ export function EditEntryDialog({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pendingPlanScope, setPendingPlanScope] = useState<"future" | "all" | null>(null);
 
   const [summary, setSummary] = useState<InstallmentPlanSummary | null>(null);
   const planId = entry?.planId ?? null;
@@ -49,9 +50,11 @@ export function EditEntryDialog({
     setError(null);
     try {
       await deleteInstallmentPlanEntriesAction(entry!.planId!, scope);
+      setPendingPlanScope(null);
       onOpenChange(false);
       onChanged();
     } catch (err) {
+      setPendingPlanScope(null);
       setError(err instanceof Error ? err.message : "Erro ao excluir parcelas");
     }
   }
@@ -97,7 +100,10 @@ export function EditEntryDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) setConfirmingDelete(false);
+        if (!next) {
+          setConfirmingDelete(false);
+          setPendingPlanScope(null);
+        }
         onOpenChange(next);
       }}
     >
@@ -154,14 +160,34 @@ export function EditEntryDialog({
               {formatCurrency(activeSummary.elapsedAmount)} ({activeSummary.elapsedCount}) · restante{" "}
               {formatCurrency(activeSummary.remainingAmount)}
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleDeletePlan("future")}>
-                Excluir parcelas futuras
-              </Button>
-              <Button variant="destructive" size="sm" onClick={() => handleDeletePlan("all")}>
-                Excluir todas as parcelas
-              </Button>
-            </div>
+            {pendingPlanScope ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-auto text-sm text-muted-foreground">
+                  {pendingPlanScope === "future"
+                    ? "Excluir as parcelas futuras desta compra?"
+                    : "Excluir TODAS as parcelas desta compra?"}
+                </span>
+                <Button variant="outline" size="sm" onClick={() => setPendingPlanScope(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeletePlan(pendingPlanScope)}
+                >
+                  Confirmar exclusão
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => setPendingPlanScope("future")}>
+                  Excluir parcelas futuras
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setPendingPlanScope("all")}>
+                  Excluir todas as parcelas
+                </Button>
+              </div>
+            )}
           </div>
         )}
         <DialogFooter>

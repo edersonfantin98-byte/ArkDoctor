@@ -3,7 +3,6 @@ import type { FinancialEntry } from "./types";
 
 export function createInMemoryFinanceRepository(): FinanceRepository {
   const entries = new Map<string, FinancialEntry>();
-  const plans = new Set<string>();
 
   return {
     async insertFinancialEntry(accountId, input) {
@@ -67,7 +66,6 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
 
     async insertInstallmentPurchase(accountId, plan, planEntries) {
       const planId = crypto.randomUUID();
-      plans.add(planId);
       return planEntries.map((input) => {
         const entry: FinancialEntry = {
           id: crypto.randomUUID(),
@@ -102,8 +100,6 @@ export function createInMemoryFinanceRepository(): FinanceRepository {
       }
     },
 
-    async deleteInstallmentPlan(_accountId, planId) {
-      plans.delete(planId);
-    },
+    async deleteInstallmentPlan() {},
   };
 }
