@@ -9,6 +9,7 @@ import {
   getOpenDealForContact,
   getStages,
   listPipeline,
+  mergeContacts,
   moveDeal,
   renameStage,
   reorderStages,
@@ -342,5 +343,74 @@ describe("updateContact patient fields", () => {
 
     const cleared = await updateContact(repo, "acc-1", contact.id, { cpf: null });
     expect(cleared.cpf).toBeNull();
+  });
+});
+
+describe("needsReview e mergeContacts", () => {
+  it("cria contato marcado para conferir e permite limpar a marca", async () => {
+    const repo = createInMemoryCrmRepository();
+
+    const contact = await createContact(repo, "acc-1", {
+      name: "Ana",
+      phone: "11999990000",
+      needsReview: true,
+    });
+    expect(contact.needsReview).toBe(true);
+
+    const confirmed = await updateContact(repo, "acc-1", contact.id, { needsReview: false });
+    expect(confirmed.needsReview).toBe(false);
+  });
+
+  it("contato criado sem a marca não precisa de conferência", async () => {
+    const repo = createInMemoryCrmRepository();
+    const contact = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+    expect(contact.needsReview).toBe(false);
+  });
+
+  it("junta o duplicado no paciente: apaga o duplicado e descarta o negócio aberto dele", async () => {
+    const repo = createInMemoryCrmRepository();
+    const target = await createContact(repo, "acc-1", { name: "Ana Silva", phone: "11999990000" });
+    const source = await createContact(repo, "acc-1", {
+      name: "Aninha",
+      phone: "11988880000",
+      needsReview: true,
+    });
+
+    await mergeContacts(repo, "acc-1", source.id, target.id);
+
+    expect(await repo.getContact("acc-1", source.id)).toBeNull();
+    expect(await repo.getContact("acc-1", target.id)).not.toBeNull();
+    expect(await repo.getDealsForContact("acc-1", source.id)).toHaveLength(0);
+    expect(await repo.getDealsForContact("acc-1", target.id)).toHaveLength(1);
+  });
+
+  it("move os negócios fechados do duplicado para o paciente", async () => {
+    const repo = createInMemoryCrmRepository();
+    const target = await createContact(repo, "acc-1", { name: "Ana Silva", phone: "11999990000" });
+    const source = await createContact(repo, "acc-1", { name: "Aninha", phone: "11988880000" });
+    const [firstStage] = await repo.getStages("acc-1");
+    const sourceDeal = (await repo.getDealsForContact("acc-1", source.id))[0];
+    await repo.updateDealStage("acc-1", sourceDeal.id, firstStage.id, new Date().toISOString());
+
+    await mergeContacts(repo, "acc-1", source.id, target.id);
+
+    const deals = await repo.getDealsForContact("acc-1", target.id);
+    expect(deals).toHaveLength(2);
+  });
+
+  it("recusa juntar o contato com ele mesmo ou com contato inexistente", async () => {
+    const repo = createInMemoryCrmRepository();
+    const a = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+
+    await expect(mergeContacts(repo, "acc-1", a.id, a.id)).rejects.toThrow();
+    await expect(mergeContacts(repo, "acc-1", a.id, crypto.randomUUID())).rejects.toThrow();
+  });
+
+  it("recusa juntar contatos de contas diferentes", async () => {
+    const repo = createInMemoryCrmRepository();
+    const a = await createContact(repo, "acc-1", { name: "Ana", phone: "11999990000" });
+    const b = await createContact(repo, "acc-2", { name: "Bia", phone: "11988880000" });
+
+    await expect(mergeContacts(repo, "acc-1", a.id, b.id)).rejects.toThrow();
   });
 });

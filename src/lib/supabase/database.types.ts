@@ -225,6 +225,7 @@ export type Database = {
           guardian_phone: string | null
           guardian_relationship: string | null
           guardian_rg: string | null
+          needs_review: boolean
           id: string
           name: string
           notes: string | null
@@ -246,6 +247,7 @@ export type Database = {
           guardian_phone?: string | null
           guardian_relationship?: string | null
           guardian_rg?: string | null
+          needs_review?: boolean
           id?: string
           name: string
           notes?: string | null
@@ -267,6 +269,7 @@ export type Database = {
           guardian_phone?: string | null
           guardian_relationship?: string | null
           guardian_rg?: string | null
+          needs_review?: boolean
           id?: string
           name?: string
           notes?: string | null
@@ -827,6 +830,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      merge_contacts: {
+        Args: { p_source: string; p_target: string }
+        Returns: undefined
+      }
       seed_default_pipeline_stages: {
         Args: { target_account_id: string }
         Returns: undefined

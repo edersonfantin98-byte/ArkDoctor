@@ -33,6 +33,7 @@ export interface CrmRepository {
       address?: string;
       cityState?: string;
       guardianRg?: string;
+      needsReview?: boolean;
     },
   ): Promise<Contact>;
   updateContact(
@@ -54,11 +55,13 @@ export interface CrmRepository {
       address?: string | null;
       cityState?: string | null;
       guardianRg?: string | null;
+      needsReview?: boolean;
     },
   ): Promise<Contact>;
   searchContacts(accountId: string, query: string): Promise<Contact[]>;
   findContactByPhone(accountId: string, phone: string): Promise<Contact | null>;
   deleteContact(accountId: string, contactId: string): Promise<void>;
+  mergeContacts(accountId: string, sourceId: string, targetId: string): Promise<void>;
   countNewContacts(accountId: string, sinceIso: string, untilIso?: string): Promise<number>;
   listContacts(accountId: string): Promise<Contact[]>;
   getContact(accountId: string, contactId: string): Promise<Contact | null>;

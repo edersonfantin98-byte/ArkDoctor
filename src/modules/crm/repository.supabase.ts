@@ -36,6 +36,7 @@ function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contac
     address: row.address,
     cityState: row.city_state,
     guardianRg: row.guardian_rg,
+    needsReview: row.needs_review,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -179,6 +180,7 @@ export function createSupabaseCrmRepository(
           address: input.address ?? null,
           city_state: input.cityState ?? null,
           guardian_rg: input.guardianRg ?? null,
+          needs_review: input.needsReview ?? false,
         })
         .select("*")
         .single();
@@ -207,6 +209,7 @@ export function createSupabaseCrmRepository(
           ...(input.address !== undefined ? { address: input.address } : {}),
           ...(input.cityState !== undefined ? { city_state: input.cityState } : {}),
           ...(input.guardianRg !== undefined ? { guardian_rg: input.guardianRg } : {}),
+          ...(input.needsReview !== undefined ? { needs_review: input.needsReview } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq("account_id", accountId)
@@ -248,6 +251,23 @@ export function createSupabaseCrmRepository(
         .delete()
         .eq("account_id", accountId)
         .eq("id", contactId);
+      if (error) throwDbError(error);
+    },
+
+    async mergeContacts(accountId, sourceId, targetId) {
+      // O RLS restringe a função à conta do chamador; a checagem de conta aqui evita
+      // juntar contatos de contas diferentes mesmo com ids forjados.
+      const { data: rows, error: readError } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("account_id", accountId)
+        .in("id", [sourceId, targetId]);
+      if (readError) throwDbError(readError);
+      if (rows.length !== 2) throw new Error("Contato não encontrado");
+      const { error } = await supabase.rpc("merge_contacts", {
+        p_source: sourceId,
+        p_target: targetId,
+      });
       if (error) throwDbError(error);
     },
 

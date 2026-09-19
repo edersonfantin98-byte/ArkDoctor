@@ -26,6 +26,7 @@ export interface Contact {
   address: string | null;
   cityState: string | null;
   guardianRg: string | null;
+  needsReview: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -41,6 +41,13 @@ export async function updatePatientAction(id: string, input: unknown) {
   return contact;
 }
 
+export async function mergePatientAction(sourceId: string, targetId: string) {
+  const { repo, accountId } = await getCrmRepoAndAccount();
+  await crm.mergeContacts(repo, accountId, sourceId, targetId);
+  revalidatePath("/pacientes");
+  revalidatePath("/agenda");
+}
+
 export async function deletePatientAction(id: string) {
   const { repo, accountId, supabase } = await getCrmRepoAndAccount();
 

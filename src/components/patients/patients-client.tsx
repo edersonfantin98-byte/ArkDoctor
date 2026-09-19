@@ -183,6 +183,7 @@ export function PatientsClient({ initialPatients }: { initialPatients: Contact[]
                     <Link href={`/pacientes/${patient.id}`} className="block font-medium hover:underline">
                       {patient.name}
                     </Link>
+                    {patient.needsReview && (<span className="mb-0.5 block w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">conferir cadastro</span>)}
                     <span className="block text-xs text-muted-foreground tabular-nums">{patient.phone}</span>
                   </div>
                 </div>

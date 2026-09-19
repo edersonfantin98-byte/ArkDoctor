@@ -22,6 +22,7 @@ export const createContactInputSchema = z.object({
   address: z.string().trim().min(1).max(300).optional(),
   cityState: z.string().trim().min(1).max(120).optional(),
   guardianRg: z.string().trim().min(1).max(40).optional(),
+  needsReview: z.boolean().optional(),
 });
 
 export type CreateContactInput = z.infer<typeof createContactInputSchema>;
@@ -42,6 +43,7 @@ export const updateContactInputSchema = z.object({
   address: z.string().trim().max(300).nullable().optional(),
   cityState: z.string().trim().max(120).nullable().optional(),
   guardianRg: z.string().trim().max(40).nullable().optional(),
+  needsReview: z.boolean().optional(),
 });
 
 export type UpdateContactInput = z.infer<typeof updateContactInputSchema>;
