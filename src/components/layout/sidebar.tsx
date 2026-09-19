@@ -150,7 +150,7 @@ function NavBody({
 
 export function Sidebar({ userEmail, accountName }: { userEmail: string; accountName: string }) {
   return (
-    <aside className="hidden w-[232px] shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex print:hidden">
+    <aside className="hidden w-[232px] shrink-0 flex-col bg-sidebar text-sidebar-foreground lg:flex print:hidden">
       <div className="flex justify-center px-5 pt-6 pb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo/arkdoctor-mark.webp" alt="ArkDoctor" className="h-9 w-auto" />
@@ -170,20 +170,20 @@ export function MobileNav({ userEmail, accountName }: { userEmail: string; accou
   }, [pathname]);
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background px-3 md:hidden print:hidden">
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground lg:hidden print:hidden">
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Trigger
           aria-label="Abrir menu"
-          className="rounded-lg p-2 text-foreground hover:bg-muted"
+          className="rounded-lg p-2 hover:bg-sidebar-accent"
         >
           <Menu className="size-5" />
         </DialogPrimitive.Trigger>
 
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/50 duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 md:hidden print:hidden" />
+          <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/50 duration-200 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 lg:hidden print:hidden" />
           <DialogPrimitive.Popup
             aria-label="Menu de navegação"
-            className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[82%] flex-col bg-sidebar text-sidebar-foreground outline-none duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left md:hidden print:hidden"
+            className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[82%] flex-col bg-sidebar text-sidebar-foreground outline-none duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left lg:hidden print:hidden"
           >
             <div className="flex items-center justify-between px-4 py-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}

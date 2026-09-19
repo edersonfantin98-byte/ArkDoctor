@@ -225,6 +225,12 @@
   letter-spacing: 0.08em;
   color: var(--muted-foreground);
 }
+@media (max-width: 639px) {
+  .ark-day-header-name {
+    font-size: 0.5625rem;
+    letter-spacing: 0;
+  }
+}
 .ark-day-header-num {
   font-size: 1.0625rem;
   font-weight: 700;
@@ -438,6 +444,13 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Notebooks (ex.: 1366x768): o tamanho de monitor grande ocupa muita altura. Tailwind usa rem, então isto encolhe tudo junto. */
+@media (min-width: 1024px) and (max-width: 1440px) {
+  html {
+    font-size: 90%;
   }
 }
 
