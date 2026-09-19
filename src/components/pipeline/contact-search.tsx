@@ -27,7 +27,7 @@ export function ContactSearch({ onResults }: { onResults: (contacts: Contact[] |
       value={query}
       onChange={(e) => handleChange(e.target.value)}
       aria-busy={isPending}
-      className="max-w-sm"
+      className="w-full max-w-sm"
     />
   );
 }

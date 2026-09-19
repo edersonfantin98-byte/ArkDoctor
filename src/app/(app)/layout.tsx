@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const userEmail = user?.email ?? "";
 
   return (
-    <div className="flex h-screen flex-col md:flex-row print:h-auto">
+    <div className="flex h-screen flex-col lg:flex-row print:h-auto">
       <Sidebar userEmail={userEmail} accountName={accountName} />
       <MobileNav userEmail={userEmail} accountName={accountName} />
       <main className="min-w-0 flex-1 overflow-y-auto bg-background print:overflow-visible">{children}</main>

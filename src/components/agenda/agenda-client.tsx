@@ -91,6 +91,11 @@ export function AgendaClient({
   }, [date, view]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- no celular a semana fica apertada; abre na visão Dia (só na montagem, depois o usuário escolhe)
+    if (window.innerWidth < 640) setView("day");
+  }, []);
+
+  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetches on mount/date/view change, not deriving state from a prop
     refetch();
   }, [refetch]);
@@ -111,13 +116,13 @@ export function AgendaClient({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 pb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-6 pb-2">
         {pendingStatusCount > 0 && (
-          <p className="px-6 text-sm text-amber-700">
+          <p className="text-sm text-amber-700">
             {pendingStatusCount} agendamento(s) sem status definido após o horário previsto
           </p>
         )}
-        <div className="flex justify-end gap-2 px-6">
+        <div className="ml-auto flex flex-wrap justify-end gap-2">
           <AvailabilityDialog onChanged={refetch} />
           <Button
             onClick={() => {
