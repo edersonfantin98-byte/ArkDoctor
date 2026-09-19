@@ -170,7 +170,7 @@ export function MobileNav({ userEmail, accountName }: { userEmail: string; accou
   }, [pathname]);
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground lg:hidden print:hidden">
+    <header className="flex h-14 shrink-0 items-center gap-2 sticky top-0 z-40 border-b border-sidebar-border bg-sidebar px-3 text-sidebar-foreground lg:hidden print:hidden">
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Trigger
           aria-label="Abrir menu"
