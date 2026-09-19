@@ -14,7 +14,7 @@ import { formatCurrency } from "@/lib/format";
 type TurnstileOptions = {
   sitekey: string;
   callback: (token: string) => void;
-  "error-callback"?: () => void;
+  "error-callback"?: (errorCode: string) => void;
   "expired-callback"?: () => void;
 };
 
@@ -160,6 +160,7 @@ export function PublicBookingWizard({
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetId = useRef<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!turnstileSiteKey || step !== "confirm" || confirmed) return;
@@ -175,8 +176,14 @@ export function PublicBookingWizard({
       if (turnstileWidgetId.current) return;
       turnstileWidgetId.current = window.turnstile.render(el, {
         sitekey: turnstileSiteKey,
-        callback: (token) => setTurnstileToken(token),
-        "error-callback": () => setTurnstileToken(null),
+        callback: (token) => {
+          setTurnstileToken(token);
+          setTurnstileError(null);
+        },
+        "error-callback": (code) => {
+          setTurnstileToken(null);
+          setTurnstileError(code);
+        },
         "expired-callback": () => setTurnstileToken(null),
       });
     }
@@ -189,6 +196,7 @@ export function PublicBookingWizard({
       }
       turnstileWidgetId.current = null;
       setTurnstileToken(null);
+      setTurnstileError(null);
     };
   }, [turnstileSiteKey, step, confirmed]);
 
@@ -449,6 +457,29 @@ export function PublicBookingWizard({
                 <p className="text-sm text-red-600">{conflictCheckError}</p>
               )}
               {turnstileSiteKey && <div ref={turnstileRef} className="min-h-[65px]" />}
+              {turnstileError && (
+                <div className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <p>
+                    Não conseguimos fazer a verificação de segurança. Tente de novo. Se continuar,
+                    abra este link direto no Chrome ou Safari (fora do WhatsApp ou Instagram) e
+                    desligue VPN ou bloqueador de anúncios.
+                  </p>
+                  <p className="text-xs text-red-600">Código do erro: {turnstileError}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (turnstileWidgetId.current && window.turnstile) {
+                        window.turnstile.reset(turnstileWidgetId.current);
+                      }
+                      setTurnstileError(null);
+                    }}
+                  >
+                    Tentar novamente
+                  </Button>
+                </div>
+              )}
               <Button type="button" variant="outline" onClick={() => setStep("datetime")}>
                 Voltar
               </Button>
