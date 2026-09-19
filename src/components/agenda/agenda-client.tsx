@@ -100,6 +100,7 @@ export function AgendaClient({
     refetch();
   }, [refetch]);
 
+  const reviewCount = appointments.filter((a) => a.contact.needsReview).length;
   const backgroundEvents = materializeBackgroundEvents(blocks, rules, visibleRange(date, view));
 
   function handleSelectSlot(newSlot: { start: Date; end: Date }) {
@@ -117,6 +118,11 @@ export function AgendaClient({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2 px-6 pb-2">
+        {reviewCount > 0 && (
+          <p className="text-sm text-amber-700">
+            ⚠ {reviewCount} agendamento(s) do link para conferir o cadastro (neste período)
+          </p>
+        )}
         {pendingStatusCount > 0 && (
           <p className="text-sm text-amber-700">
             {pendingStatusCount} agendamento(s) sem status definido após o horário previsto

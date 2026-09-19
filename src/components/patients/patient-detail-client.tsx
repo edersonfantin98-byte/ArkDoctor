@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight, FileText, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { DescriptionList, DLRow } from "@/components/ui/description-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionLabel } from "@/components/layout/section-label";
 import { PatientFormDialog } from "./patient-form-dialog";
+import { ReviewContactBanner } from "./review-contact-banner";
 import { TreatmentFormDialog } from "@/components/treatments/treatment-form-dialog";
 import type { Contact } from "@/modules/crm/types";
 import type { Treatment } from "@/modules/treatments/types";
@@ -49,6 +51,7 @@ export function PatientDetailClient({
   patient: Contact;
   treatments: Treatment[];
 }) {
+  const router = useRouter();
   const [patient, setPatient] = useState(initialPatient);
   const [treatments, setTreatments] = useState(initialTreatments);
   const [editOpen, setEditOpen] = useState(false);
@@ -56,6 +59,19 @@ export function PatientDetailClient({
 
   return (
     <>
+      {patient.needsReview && (
+        <div className="px-6 pb-3">
+          <ReviewContactBanner
+            contactId={patient.id}
+            contactName={patient.name}
+            onConfirmed={(updated) => {
+              setPatient(updated);
+              router.refresh();
+            }}
+            onMerged={(targetId) => router.push(`/pacientes/${targetId}`)}
+          />
+        </div>
+      )}
       <div className="flex justify-end px-6 pt-1">
         <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil /> Editar dados

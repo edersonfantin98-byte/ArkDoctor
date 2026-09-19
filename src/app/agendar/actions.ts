@@ -84,6 +84,8 @@ export async function createPublicBookingAction(
       contact = await crm.createContact(crmRepo, accountId, {
         name: input.name,
         phone,
+        origin: "Link de agendamento",
+        needsReview: true,
       });
     }
 

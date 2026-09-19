@@ -30,6 +30,7 @@ import {
 import { searchContactsAction } from "@/app/(app)/pipeline/actions";
 import { getFinancialEntryByAppointmentAction } from "@/app/(app)/financeiro/actions";
 import { AppointmentStatusMenu } from "./appointment-status-menu";
+import { ReviewContactBanner } from "@/components/patients/review-contact-banner";
 import { RevenueSuggestionDialog } from "./revenue-suggestion-dialog";
 import { TreatmentLinkSuggestionDialog } from "./treatment-link-suggestion-dialog";
 import type { AppointmentWithDetails, AppointmentStatus } from "@/modules/scheduling/types";
@@ -213,6 +214,21 @@ export function AppointmentDialog({
           )}
           {!checkingConflict && conflictCheckError && (
             <p className="text-sm text-red-600">{conflictCheckError}</p>
+          )}
+
+          {editingAppointment?.contact.needsReview && (
+            <ReviewContactBanner
+              contactId={editingAppointment.contactId}
+              contactName={editingAppointment.contact.name}
+              onConfirmed={() => {
+                onOpenChange(false);
+                onSaved();
+              }}
+              onMerged={() => {
+                onOpenChange(false);
+                onSaved();
+              }}
+            />
           )}
 
           {!editingAppointment && (

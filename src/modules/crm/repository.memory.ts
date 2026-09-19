@@ -111,6 +111,7 @@ export function createInMemoryCrmRepository(): CrmRepository {
         address: input.address ?? null,
         cityState: input.cityState ?? null,
         guardianRg: input.guardianRg ?? null,
+        needsReview: input.needsReview ?? false,
         createdAt: now,
         updatedAt: now,
       };
@@ -140,6 +141,7 @@ export function createInMemoryCrmRepository(): CrmRepository {
         ...(input.address !== undefined ? { address: input.address } : {}),
         ...(input.cityState !== undefined ? { cityState: input.cityState } : {}),
         ...(input.guardianRg !== undefined ? { guardianRg: input.guardianRg } : {}),
+        ...(input.needsReview !== undefined ? { needsReview: input.needsReview } : {}),
         updatedAt: new Date().toISOString(),
       };
       contacts.set(contactId, updated);
@@ -174,6 +176,30 @@ export function createInMemoryCrmRepository(): CrmRepository {
           if (history[i].dealId === dealId) history.splice(i, 1);
         }
       }
+    },
+
+    async mergeContacts(accountId, sourceId, targetId) {
+      const source = contacts.get(sourceId);
+      const target = contacts.get(targetId);
+      if (sourceId === targetId) throw new Error("Escolha um paciente diferente do contato a ser vinculado");
+      if (!source || !target) throw new Error("Contato não encontrado");
+      if (source.accountId !== accountId || target.accountId !== accountId) {
+        throw new Error("Contatos de contas diferentes");
+      }
+      const targetHasOpenDeal = [...deals.values()].some(
+        (d) => d.contactId === targetId && d.closedAt === null,
+      );
+      for (const deal of [...deals.values()].filter((d) => d.contactId === sourceId)) {
+        if (deal.closedAt === null && targetHasOpenDeal) {
+          deals.delete(deal.id);
+          for (let i = history.length - 1; i >= 0; i -= 1) {
+            if (history[i].dealId === deal.id) history.splice(i, 1);
+          }
+        } else {
+          deals.set(deal.id, { ...deal, contactId: targetId });
+        }
+      }
+      contacts.delete(sourceId);
     },
 
     async countNewContacts(accountId, sinceIso, untilIso) {

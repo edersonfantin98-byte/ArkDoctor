@@ -34,6 +34,7 @@ function toContact(row: Database["public"]["Tables"]["contacts"]["Row"]): Contac
     address: row.address,
     cityState: row.city_state,
     guardianRg: row.guardian_rg,
+    needsReview: row.needs_review,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

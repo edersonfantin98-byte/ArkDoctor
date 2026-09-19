@@ -53,6 +53,16 @@ export async function deleteContact(
   await repo.deleteContact(accountId, contactId);
 }
 
+/** Junta um contato duplicado (source) num paciente existente (target). */
+export async function mergeContacts(
+  repo: CrmRepository,
+  accountId: string,
+  sourceId: string,
+  targetId: string,
+): Promise<void> {
+  await repo.mergeContacts(accountId, sourceId, targetId);
+}
+
 export async function listPipeline(
   repo: CrmRepository,
   accountId: string,

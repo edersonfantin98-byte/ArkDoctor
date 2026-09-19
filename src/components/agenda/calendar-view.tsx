@@ -120,7 +120,7 @@ function AgendaEventContent({ event }: EventProps<AgendaEvent>) {
   if ("appointment" in event) {
     return (
       <div className="ark-event-content">
-        <span className="ark-event-title">{event.appointment.contact.name}</span>
+        <span className="ark-event-title">{event.appointment.contact.needsReview ? "⚠ " : ""}{event.appointment.contact.name}</span>
         <span className="ark-event-sub">{event.appointment.procedure.name}</span>
       </div>
     );
@@ -133,7 +133,10 @@ function AgendaEventContent({ event }: EventProps<AgendaEvent>) {
 }
 
 function MonthEventContent({ event }: EventProps<AgendaEvent>) {
-  const label = "appointment" in event ? event.appointment.contact.name : event.title;
+  const label =
+    "appointment" in event
+      ? `${event.appointment.contact.needsReview ? "⚠ " : ""}${event.appointment.contact.name}`
+      : event.title;
   return <span className="ark-event-chip">{label}</span>;
 }
 
