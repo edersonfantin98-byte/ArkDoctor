@@ -4,6 +4,7 @@ import type {
   AppointmentWithDetails,
   AvailabilityBlock,
   AvailabilityRule,
+  WorkingHours,
   Procedure,
 } from "./types";
 
@@ -98,4 +99,7 @@ export interface SchedulingRepository {
   ): Promise<AvailabilityRule>;
   deleteAvailabilityRule(accountId: string, ruleId: string): Promise<void>;
   listAvailabilityRules(accountId: string): Promise<AvailabilityRule[]>;
+
+  listWorkingHours(accountId: string): Promise<WorkingHours[]>;
+  replaceWorkingHours(accountId: string, days: WorkingHours[]): Promise<void>;
 }

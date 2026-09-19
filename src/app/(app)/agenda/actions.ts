@@ -149,6 +149,17 @@ export async function listAvailabilityRulesAction() {
   return scheduling.listAvailabilityRules(schedulingRepo, accountId);
 }
 
+export async function listWorkingHoursAction() {
+  const { schedulingRepo, accountId } = await getReposAndAccount();
+  return scheduling.listWorkingHours(schedulingRepo, accountId);
+}
+
+export async function saveWorkingHoursAction(input: unknown) {
+  const { schedulingRepo, accountId } = await getReposAndAccount();
+  await scheduling.saveWorkingHours(schedulingRepo, accountId, input);
+  revalidatePath("/agenda");
+}
+
 export async function listTreatmentsForContactAction(contactId: string) {
   const { treatmentsRepo, accountId } = await getReposAndAccount();
   return treatments.listTreatmentsForContact(treatmentsRepo, accountId, contactId);

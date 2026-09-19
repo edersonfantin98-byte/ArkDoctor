@@ -52,3 +52,16 @@ export const createAvailabilityRuleInputSchema = z
     path: ["endTime"],
   });
 export type CreateAvailabilityRuleInput = z.infer<typeof createAvailabilityRuleInputSchema>;
+
+export const workingHoursInputSchema = z.array(
+  z
+    .object({
+      dayOfWeek: z.number().int().min(0).max(6),
+      startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
+      endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora inválida"),
+    })
+    .refine((data) => data.endTime > data.startTime, {
+      message: "O fim deve ser depois do início",
+      path: ["endTime"],
+    }),
+);

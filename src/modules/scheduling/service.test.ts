@@ -676,3 +676,48 @@ describe("treatment link", () => {
     expect(unlinked.treatmentId).toBeNull();
   });
 });
+
+import { saveWorkingHours } from "./service";
+
+describe("working hours", () => {
+  // 2026-09-01 is a Tuesday, 2026-09-06 is a Sunday (local time).
+  const local = (day: number, hour: number, minute = 0) =>
+    new Date(2026, 8, day, hour, minute).toISOString();
+
+  it("does not restrict anything when no working hours are configured", async () => {
+    const repo = createInMemorySchedulingRepository();
+    const result = await checkConflict(repo, "acc-1", {
+      startsAt: local(6, 10),
+      endsAt: local(6, 11),
+    });
+    expect(result.hasConflict).toBe(false);
+  });
+
+  it("rejects a slot on a day without working hours", async () => {
+    const repo = createInMemorySchedulingRepository();
+    await saveWorkingHours(repo, "acc-1", [{ dayOfWeek: 2, startTime: "08:00", endTime: "18:00" }]);
+    const result = await checkConflict(repo, "acc-1", {
+      startsAt: local(6, 10),
+      endsAt: local(6, 11),
+    });
+    expect(result).toEqual({ hasConflict: true, reason: "Fora do horário de atendimento" });
+  });
+
+  it("rejects a slot that ends after closing time and accepts one inside", async () => {
+    const repo = createInMemorySchedulingRepository();
+    await saveWorkingHours(repo, "acc-1", [{ dayOfWeek: 2, startTime: "08:00", endTime: "18:00" }]);
+    const late = await checkConflict(repo, "acc-1", { startsAt: local(1, 17, 30), endsAt: local(1, 18, 30) });
+    const ok = await checkConflict(repo, "acc-1", { startsAt: local(1, 9), endsAt: local(1, 10) });
+    expect(late.hasConflict).toBe(true);
+    expect(ok.hasConflict).toBe(false);
+  });
+
+  it("marks a closed day as fully occupied and open days as occupied outside the window", async () => {
+    const repo = createInMemorySchedulingRepository();
+    await saveWorkingHours(repo, "acc-1", [{ dayOfWeek: 2, startTime: "08:00", endTime: "18:00" }]);
+    const sunday = await listOccupiedIntervals(repo, "acc-1", { from: local(6, 0), to: local(7, 0) });
+    const tuesday = await listOccupiedIntervals(repo, "acc-1", { from: local(1, 0), to: local(2, 0) });
+    expect(sunday).toHaveLength(1);
+    expect(tuesday).toHaveLength(2);
+  });
+});

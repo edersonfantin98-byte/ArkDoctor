@@ -4,6 +4,7 @@ import type {
   AppointmentWithDetails,
   AvailabilityBlock,
   AvailabilityRule,
+  WorkingHours,
   Procedure,
 } from "./types";
 
@@ -17,6 +18,7 @@ export function createInMemorySchedulingRepository(): SchedulingRepository {
   const appointments = new Map<string, Appointment>();
   const blocks = new Map<string, AvailabilityBlock>();
   const rules = new Map<string, AvailabilityRule>();
+  const workingHours = new Map<string, WorkingHours[]>();
 
   return {
     async insertProcedure(accountId, input) {
@@ -251,6 +253,14 @@ export function createInMemorySchedulingRepository(): SchedulingRepository {
 
     async listAvailabilityRules(accountId) {
       return [...rules.values()].filter((r) => r.accountId === accountId);
+    },
+
+    async listWorkingHours(accountId) {
+      return workingHours.get(accountId) ?? [];
+    },
+
+    async replaceWorkingHours(accountId, days) {
+      workingHours.set(accountId, days);
     },
   };
 }

@@ -52,3 +52,9 @@ export interface AvailabilityRule {
   endTime: string;
   reason: string | null;
 }
+
+export interface WorkingHours {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}

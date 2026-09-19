@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarView, type BackgroundEvent } from "./calendar-view";
 import { AppointmentDialog } from "./appointment-dialog";
 import { AvailabilityDialog } from "./availability-dialog";
+import { WorkingHoursDialog } from "./working-hours-dialog";
 import {
   listAppointmentsAction,
   listAvailabilityBlocksAction,
@@ -129,6 +130,7 @@ export function AgendaClient({
           </p>
         )}
         <div className="ml-auto flex flex-wrap justify-end gap-2">
+          <WorkingHoursDialog onChanged={refetch} />
           <AvailabilityDialog onChanged={refetch} />
           <Button
             onClick={() => {

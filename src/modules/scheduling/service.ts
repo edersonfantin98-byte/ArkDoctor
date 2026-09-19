@@ -49,6 +49,20 @@ export async function checkConflict(
   const startMinutes = start.getHours() * 60 + start.getMinutes();
   const endMinutes = end.getHours() * 60 + end.getMinutes();
 
+  const workingHours = await repo.listWorkingHours(accountId);
+  if (workingHours.length > 0) {
+    const today = workingHours.find((w) => w.dayOfWeek === dayOfWeek);
+    const sameDay = start.toDateString() === end.toDateString();
+    const inside =
+      today &&
+      sameDay &&
+      startMinutes >= timeToMinutes(today.startTime) &&
+      endMinutes <= timeToMinutes(today.endTime);
+    if (!inside) {
+      return { hasConflict: true, reason: "Fora do horário de atendimento" };
+    }
+  }
+
   const ruleConflict = rules.some((rule) => {
     if (rule.dayOfWeek !== dayOfWeek) return false;
     const ruleStart = timeToMinutes(rule.startTime);
@@ -97,6 +111,18 @@ export async function listOccupiedIntervals(
       startsAt: new Date(`${dayDate}T${rule.startTime}:00`).toISOString(),
       endsAt: new Date(`${dayDate}T${rule.endTime}:00`).toISOString(),
     });
+  }
+
+  const workingHours = await repo.listWorkingHours(accountId);
+  if (workingHours.length > 0) {
+    const today = workingHours.find((w) => w.dayOfWeek === dayOfWeek);
+    const at = (time: string) => new Date(`${dayDate}T${time}`).toISOString();
+    if (!today) {
+      intervals.push({ startsAt: at("00:00:00"), endsAt: at("23:59:59") });
+    } else {
+      intervals.push({ startsAt: at("00:00:00"), endsAt: at(`${today.startTime}:00`) });
+      intervals.push({ startsAt: at(`${today.endTime}:00`), endsAt: at("23:59:59") });
+    }
   }
 
   return intervals;
@@ -340,4 +366,23 @@ export async function listAvailabilityRules(
   accountId: string,
 ): Promise<AvailabilityRule[]> {
   return repo.listAvailabilityRules(accountId);
+}
+
+import { workingHoursInputSchema } from "./schemas";
+import type { WorkingHours } from "./types";
+
+export async function listWorkingHours(
+  repo: SchedulingRepository,
+  accountId: string,
+): Promise<WorkingHours[]> {
+  return repo.listWorkingHours(accountId);
+}
+
+export async function saveWorkingHours(
+  repo: SchedulingRepository,
+  accountId: string,
+  rawInput: unknown,
+): Promise<void> {
+  const days = parseOrThrow(workingHoursInputSchema, rawInput);
+  await repo.replaceWorkingHours(accountId, days);
 }

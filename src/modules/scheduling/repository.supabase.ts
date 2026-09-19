@@ -391,5 +391,37 @@ export function createSupabaseSchedulingRepository(
       if (error) throwDbError(error);
       return data.map(toRule);
     },
+
+    async listWorkingHours(accountId) {
+      const { data, error } = await supabase
+        .from("working_hours")
+        .select("*")
+        .eq("account_id", accountId)
+        .order("day_of_week", { ascending: true });
+      if (error) throwDbError(error);
+      return data.map((row) => ({
+        dayOfWeek: row.day_of_week,
+        startTime: row.start_time.slice(0, 5),
+        endTime: row.end_time.slice(0, 5),
+      }));
+    },
+
+    async replaceWorkingHours(accountId, days) {
+      const { error: deleteError } = await supabase
+        .from("working_hours")
+        .delete()
+        .eq("account_id", accountId);
+      if (deleteError) throwDbError(deleteError);
+      if (days.length === 0) return;
+      const { error } = await supabase.from("working_hours").insert(
+        days.map((d) => ({
+          account_id: accountId,
+          day_of_week: d.dayOfWeek,
+          start_time: d.startTime,
+          end_time: d.endTime,
+        })),
+      );
+      if (error) throwDbError(error);
+    },
   };
 }
