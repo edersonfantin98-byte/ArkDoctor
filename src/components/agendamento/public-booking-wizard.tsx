@@ -286,11 +286,11 @@ export function PublicBookingWizard({
   const showSummary = step !== "procedure";
 
   return (
-    <div className={cn("grid gap-4", showSummary && "lg:grid-cols-[1fr_360px]")}>
+    <div className={cn("grid grid-cols-[minmax(0,1fr)] gap-4", showSummary && "lg:grid-cols-[minmax(0,1fr)_360px]")}>
       <div>
-        <div className="mb-6 flex items-center gap-2">
+        <div className="mb-6 flex items-center gap-2 overflow-x-auto">
           {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
+            <div key={s} className="flex shrink-0 items-center gap-2">
               <div
                 className={cn(
                   "flex size-6 items-center justify-center rounded-full border text-xs font-bold",
@@ -303,7 +303,7 @@ export function PublicBookingWizard({
               >
                 {stepIndex(step) > i ? "✓" : i + 1}
               </div>
-              <span className={cn("text-sm font-medium", step === s ? "text-foreground" : "text-muted-foreground")}>
+              <span className={cn("text-sm font-medium", step === s ? "text-foreground" : "hidden text-muted-foreground sm:inline")}>
                 {["Procedimento", "Data e horário", "Confirmação"][i]}
               </span>
               {i < 2 && <div className="h-px w-6 bg-border" />}
@@ -336,7 +336,7 @@ export function PublicBookingWizard({
                     <p className="font-medium">{p.name}</p>
                     <p className="text-sm text-muted-foreground">{p.defaultDurationMinutes} min</p>
                   </div>
-                  <p className="font-semibold">{formatCurrency(p.defaultPrice)}</p>
+                  <p className="shrink-0 pl-3 font-semibold">{formatCurrency(p.defaultPrice)}</p>
                 </button>
               ))}
               {procedures.length === 0 && (
