@@ -61,6 +61,17 @@ Critérios de sucesso sólidos permitem trabalhar em ciclo de forma independente
 
 Essas diretrizes estão funcionando se houver: menos alterações desnecessárias nos diffs, menos reescritas por supercomplicação, e perguntas de esclarecimento vindo antes da implementação — não depois dos erros.
 
+## Sistema em produção — regras de git e deploy
+
+O ArkDoctor está no ar com pacientes reais (arkdoctor.com.br). Todo `push` na `main` vira deploy automático em produção. Todo cuidado é pouco.
+
+- **Nunca trabalhe direto na `main`.** Toda mudança, inclusive doc, é feita em branch própria (`feat/...`, `fix/...`, `docs/...`) dentro de um worktree em `.worktrees/`.
+- **Antes de mergear na `main`**, rodar no worktree e ver passar: `npm test`, `npm run lint` e `npm run build`. Se algo falhar, não mergeia.
+- **Merge e push só com certeza de que nada quebra.** Revise o diff inteiro (`git diff main...HEAD`) antes. Na dúvida, pergunte ao usuário em vez de mandar.
+- **Migrations do Supabase vão direto pro banco de produção** (não há staging). Precisam ser compatíveis com o código que está no ar e só são aplicadas com confirmação explícita do usuário.
+- Depois do push, confira se o deploy subiu e se o fluxo alterado funciona em produção.
+- Nunca `push --force`, `reset --hard` ou reescrita de histórico na `main`.
+
 ## Índice — carregue sob demanda
 
 Não necessário em toda sessão; abrir apenas quando a tarefa exigir.
