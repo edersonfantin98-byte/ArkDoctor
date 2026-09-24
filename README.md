@@ -33,6 +33,17 @@ npm test         # vitest run (159 testes)
 npm run deploy   # build + deploy no Cloudflare Pages via Wrangler
 ```
 
+## Fluxo de trabalho (sistema em produção)
+
+O sistema está no ar com pacientes reais e todo `git push origin main` faz deploy automático em produção. Por isso:
+
+- Nunca trabalhar direto na `main`: sempre branch própria em worktree (`.worktrees/`).
+- Antes de mergear: `npm test`, `npm run lint` e `npm run build` passando, e o diff inteiro revisado.
+- Merge + push na `main` só com certeza de que nada quebra. Não usar `npm run deploy` manual.
+- Migrations vão direto pro banco de produção: precisam ser compatíveis com o código no ar.
+
+Detalhes em `CLAUDE.md`, seção "Sistema em produção".
+
 ## Segurança
 
 CSP com nonce por request e guarda de autenticação de rota vivem em `src/proxy.ts` (não `middleware.ts` — o Next 16 renomeou o arquivo e ele precisa ficar dentro de `src/`, ao lado de `app/`). RLS do Postgres habilitada em todas as tabelas de domínio, com policies por `account_id`.
