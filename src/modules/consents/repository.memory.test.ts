@@ -6,8 +6,7 @@ function baseInput(overrides: Partial<Parameters<
 >[1]> = {}) {
   return {
     contactId: "contact-1",
-    kind: "tcle" as const,
-    storagePath: "acc-1/contact-1/tcle-1.pdf",
+    storagePath: "acc-1/contact-1/completo-1.pdf",
     signerName: "Maria Silva",
     signedVia: "inline" as const,
     ...overrides,
@@ -19,7 +18,6 @@ describe("createInMemoryConsentsRepository", () => {
     const repo = createInMemoryConsentsRepository();
     const c = await repo.insertConsent("acc-1", baseInput());
 
-    expect(c.kind).toBe("tcle");
     expect(c.signerName).toBe("Maria Silva");
     expect(c.signedVia).toBe("inline");
     expect(await repo.getConsent("acc-1", c.id)).not.toBeNull();
@@ -28,9 +26,9 @@ describe("createInMemoryConsentsRepository", () => {
 
   it("lists a contact's consents newest-signed first", async () => {
     const repo = createInMemoryConsentsRepository();
-    const a = await repo.insertConsent("acc-1", baseInput({ kind: "tcle" }));
+    const a = await repo.insertConsent("acc-1", baseInput());
     await new Promise((r) => setTimeout(r, 2));
-    const b = await repo.insertConsent("acc-1", baseInput({ kind: "imagem" }));
+    const b = await repo.insertConsent("acc-1", baseInput());
     await repo.insertConsent("acc-1", baseInput({ contactId: "other" }));
 
     const list = await repo.listConsentsForContact("acc-1", "contact-1");

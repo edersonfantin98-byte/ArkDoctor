@@ -15,7 +15,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RowActionsMenu } from "@/components/ui/row-actions";
 import { formatBrDate } from "@/modules/consents/templates";
 import type { Block } from "@/modules/consents/templates";
-import type { ConsentKind } from "@/modules/consents/schemas";
 import {
   createConsentLinkAction,
   deleteConsentAction,
@@ -29,50 +28,43 @@ const ConsentSignForm = dynamic(
 );
 
 type ConsentRow = Awaited<ReturnType<typeof listConsentsAction>>[number];
-type Doc = { kind: ConsentKind; title: string; blocks: Block[] };
+type Doc = { title: string; blocks: Block[] };
 
 export function ConsentCards({
   contactId,
   patientName,
   professionalMissing,
-  docs,
+  doc,
   initialConsents,
   activeTreatmentWoundTypes,
 }: {
   contactId: string;
   patientName: string;
   professionalMissing: boolean;
-  docs: Doc[];
+  doc: Doc;
   initialConsents: ConsentRow[];
   activeTreatmentWoundTypes: string | null;
 }) {
   const [consents, setConsents] = useState<ConsentRow[]>(initialConsents);
-  const [signing, setSigning] = useState<Doc | null>(null);
-  const [linkState, setLinkState] = useState<{ doc: Doc; url: string } | null>(null);
+  const [signing, setSigning] = useState(false);
+  const [linkState, setLinkState] = useState<{ url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tipoFeridaPrompt, setTipoFeridaPrompt] = useState<{ doc: Doc; value: string } | null>(null);
+  const [tipoFeridaPrompt, setTipoFeridaPrompt] = useState<{ value: string } | null>(null);
   const [tipoFeridaError, setTipoFeridaError] = useState<string | null>(null);
+
+  const latest = consents[0]; // listConsentsAction já ordena signed_at desc
 
   async function refresh() {
     setConsents(await listConsentsAction(contactId));
   }
 
-  function latestFor(kind: ConsentKind): ConsentRow | undefined {
-    return consents.find((c) => c.kind === kind); // lista já vem signed_at desc
-  }
-
-  async function handleComplete(
-    kind: ConsentKind,
-    pdfBytes: Uint8Array,
-    signerName: string,
-    docFields: Record<string, string>,
-  ) {
+  async function handleComplete(pdfBytes: Uint8Array, signerName: string, docFields: Record<string, string>) {
     const fd = new FormData();
-    fd.set("file", new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), "consent.pdf");
+    fd.set("file", new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), "documentos.pdf");
     fd.set("signerName", signerName);
     fd.set("docFields", JSON.stringify(docFields));
     try {
-      await uploadConsentAction(contactId, kind, fd);
+      await uploadConsentAction(contactId, fd);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : undefined };
@@ -91,19 +83,10 @@ export function ConsentCards({
     }
   }
 
-  async function handleLink(doc: Doc) {
+  function handleLink() {
     setError(null);
-    if (doc.kind === "tcle") {
-      setTipoFeridaError(null);
-      setTipoFeridaPrompt({ doc, value: activeTreatmentWoundTypes ?? "" });
-      return;
-    }
-    try {
-      const { url } = await createConsentLinkAction(contactId, doc.kind);
-      setLinkState({ doc, url });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar link");
-    }
+    setTipoFeridaError(null);
+    setTipoFeridaPrompt({ value: activeTreatmentWoundTypes ?? "" });
   }
 
   async function handleConfirmTipoFeridaLink() {
@@ -114,8 +97,8 @@ export function ConsentCards({
       return;
     }
     try {
-      const { url } = await createConsentLinkAction(contactId, tipoFeridaPrompt.doc.kind, value);
-      setLinkState({ doc: tipoFeridaPrompt.doc, url });
+      const { url } = await createConsentLinkAction(contactId, value);
+      setLinkState({ url });
       setTipoFeridaPrompt(null);
     } catch (err) {
       setTipoFeridaError(err instanceof Error ? err.message : "Erro ao gerar link");
@@ -139,98 +122,80 @@ export function ConsentCards({
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       <Card>
-        <CardContent className="divide-y">
-          {docs.map((doc) => {
-            const latest = latestFor(doc.kind);
-            return (
-              <div key={doc.kind} className="flex items-center justify-between gap-3 py-3">
-                <div className="text-sm">
-                  <p className="font-medium">{doc.title}</p>
-                  {latest ? (
-                    <p className="text-xs text-muted-foreground">
-                      Assinado em {formatBrDate(new Date(latest.signedAt))} por {latest.signerName}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-warn">Pendente de assinatura</p>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {latest ? (
-                    <>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                        onClick={() => window.open(latest.url, "_blank", "noopener")}
-                      >
-                        <FileText className="size-3.5" /> Ver PDF
-                      </button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => handleLink(doc)}>
-                        <Link2 /> Enviar link
-                      </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => setSigning(doc)}>
-                        Assinar de novo
-                      </Button>
-                      <RowActionsMenu
-                        triggerLabel="Ações do documento"
-                        actions={[]}
-                        destructive={{
-                          label: "Excluir documento",
-                          icon: Trash2,
-                          confirmText:
-                            "Excluir este documento assinado? Esta ação não pode ser desfeita.",
-                          confirmLabel: "Excluir",
-                          onConfirm: () => handleDelete(latest.id),
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Button type="button" size="sm" variant="outline" onClick={() => handleLink(doc)}>
-                        <Link2 /> Enviar link
-                      </Button>
-                      <Button type="button" size="sm" onClick={() => setSigning(doc)}>
-                        Assinar agora
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <CardContent className="flex items-center justify-between gap-3 py-4">
+          <div className="text-sm">
+            <p className="font-medium">Documentos do paciente</p>
+            <p className="text-xs text-muted-foreground">
+              TCLE, Autorização de Imagem e Laserterapia — assinados juntos, numa única vez.
+            </p>
+            {latest ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Assinado em {formatBrDate(new Date(latest.signedAt))} por {latest.signerName}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-warn">Pendente de assinatura</p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {latest && (
+              <>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  onClick={() => window.open(latest.url, "_blank", "noopener")}
+                >
+                  <FileText className="size-3.5" /> Ver PDF
+                </button>
+                <RowActionsMenu
+                  triggerLabel="Ações do documento"
+                  actions={[]}
+                  destructive={{
+                    label: "Excluir documento",
+                    icon: Trash2,
+                    confirmText: "Excluir este documento assinado? Esta ação não pode ser desfeita.",
+                    confirmLabel: "Excluir",
+                    onConfirm: () => handleDelete(latest.id),
+                  }}
+                />
+              </>
+            )}
+            <Button type="button" size="sm" variant="outline" onClick={handleLink}>
+              <Link2 /> Enviar link
+            </Button>
+            <Button type="button" size="sm" onClick={() => setSigning(true)}>
+              {latest ? "Assinar novamente" : "Assinar documentos"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <Dialog open={signing !== null} onOpenChange={(open) => !open && setSigning(null)}>
+      <Dialog open={signing} onOpenChange={setSigning}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{signing?.title}</DialogTitle>
+            <DialogTitle>{doc.title}</DialogTitle>
           </DialogHeader>
-          {signing && (
-            <ConsentSignForm
-              key={signing.kind}
-              kind={signing.kind}
-              documentTitle={signing.title}
-              blocks={signing.blocks}
-              defaultSignerName={patientName}
-              submitLabel="Confirmar assinatura"
-              onComplete={({ pdfBytes, signerName, docFields }) =>
-                handleComplete(signing.kind, pdfBytes, signerName, docFields)
-              }
-              onDone={async () => {
-                setSigning(null);
-                await refresh();
-              }}
-            />
-          )}
+          <ConsentSignForm
+            key={signing ? "open" : "closed"}
+            kind="tcle"
+            documentTitle={doc.title}
+            blocks={doc.blocks}
+            defaultSignerName={patientName}
+            submitLabel="Confirmar assinatura"
+            onComplete={({ pdfBytes, signerName, docFields }) =>
+              handleComplete(pdfBytes, signerName, docFields)
+            }
+            onDone={async () => {
+              setSigning(false);
+              await refresh();
+            }}
+          />
         </DialogContent>
       </Dialog>
 
       <Dialog open={linkState !== null} onOpenChange={(open) => !open && setLinkState(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {linkState ? `Link para ${linkState.doc.title}` : ""}
-            </DialogTitle>
+            <DialogTitle>Link para assinatura</DialogTitle>
           </DialogHeader>
           {linkState && (
             <div className="space-y-3">

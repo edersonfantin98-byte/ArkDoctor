@@ -68,17 +68,23 @@ export function ConsentSignForm(props: ConsentSignFormProps) {
   const padRef = useRef<SignaturePadHandle>(null);
 
   // Campos de documento do paciente que este termo usa (RG, CPF, endereço,
-  // município/UF). Prefill vem do valor já montado no bloco.
-  const docFieldDefs = useMemo(
-    () =>
-      props.blocks.filter(
-        (b): b is Extract<Block, { type: "field" }> =>
-          b.type === "field" &&
-          !!b.key &&
-          (PATIENT_DOC_KEYS as readonly string[]).includes(b.key),
-      ),
-    [props.blocks],
-  );
+  // município/UF). Prefill vem do valor já montado no bloco. Dedupe por key:
+  // no documento combinado, a mesma key aparece em mais de um termo (ex.:
+  // CPF em Imagem e Laser) — só a primeira ocorrência vira input.
+  const docFieldDefs = useMemo(() => {
+    const all = props.blocks.filter(
+      (b): b is Extract<Block, { type: "field" }> =>
+        b.type === "field" &&
+        !!b.key &&
+        (PATIENT_DOC_KEYS as readonly string[]).includes(b.key),
+    );
+    const seen = new Set<string>();
+    return all.filter((b) => {
+      if (seen.has(b.key as string)) return false;
+      seen.add(b.key as string);
+      return true;
+    });
+  }, [props.blocks]);
   const [docValues, setDocValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(docFieldDefs.map((b) => [b.key as string, b.value ?? ""])),
   );

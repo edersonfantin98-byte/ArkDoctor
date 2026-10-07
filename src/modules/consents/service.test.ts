@@ -4,7 +4,6 @@ import { recordConsent, listConsentsForContact, getConsent, deleteConsent } from
 
 const validConsent = {
   contactId: "11111111-1111-4111-8111-111111111111",
-  kind: "tcle",
   storagePath: "/path/to/consent.pdf",
   signerName: "Maria Silva",
   signedVia: "link" as const,
@@ -15,7 +14,6 @@ describe("recordConsent", () => {
     const repo = createInMemoryConsentsRepository();
     const consent = await recordConsent(repo, "acc-1", validConsent);
     expect(consent.contactId).toBe(validConsent.contactId);
-    expect(consent.kind).toBe("tcle");
     expect(consent.signerName).toBe("Maria Silva");
     expect(consent.signedVia).toBe("link");
     expect(consent.storagePath).toBe("/path/to/consent.pdf");
@@ -38,13 +36,6 @@ describe("recordConsent", () => {
     ).rejects.toThrow(/Informe o nome de quem assina/);
   });
 
-  it("rejects an unknown kind", async () => {
-    const repo = createInMemoryConsentsRepository();
-    await expect(
-      recordConsent(repo, "acc-1", { ...validConsent, kind: "unknown" } as Record<string, unknown>),
-    ).rejects.toThrow();
-  });
-
   it("rejects an invalid signedVia", async () => {
     const repo = createInMemoryConsentsRepository();
     await expect(
@@ -56,15 +47,9 @@ describe("recordConsent", () => {
 describe("listConsentsForContact", () => {
   it("lists all consents for a contact sorted by signedAt descending", async () => {
     const repo = createInMemoryConsentsRepository();
-    const c1 = await recordConsent(repo, "acc-1", {
-      ...validConsent,
-      kind: "tcle",
-    });
+    const c1 = await recordConsent(repo, "acc-1", validConsent);
     await new Promise((r) => setTimeout(r, 2));
-    const c2 = await recordConsent(repo, "acc-1", {
-      ...validConsent,
-      kind: "imagem",
-    });
+    const c2 = await recordConsent(repo, "acc-1", validConsent);
     const consents = await listConsentsForContact(repo, "acc-1", validConsent.contactId);
     expect(consents).toHaveLength(2);
     expect(consents[0].id).toBe(c2.id);

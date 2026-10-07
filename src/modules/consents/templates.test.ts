@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   renderTemplate,
+  renderCombinedTemplate,
   applyTcleFields,
   applyDocFields,
   ageFromIsoDate,
@@ -163,6 +164,40 @@ describe("renderTemplate", () => {
     const { blocks } = renderTemplate("tcle", ctx);
     const nasc = blocks.find((b) => b.type === "field" && b.label === "Data de nascimento");
     expect(nasc).toMatchObject({ value: "09/05/1980" });
+  });
+});
+
+describe("renderCombinedTemplate", () => {
+  it("junta os 3 termos, na ordem, cada um com heading (sintético quando falta)", () => {
+    const { title, blocks } = renderCombinedTemplate(ctx);
+    expect(title).toBe("Documentos do paciente");
+    const headings = blocks
+      .filter((b): b is Extract<Block, { type: "heading" }> => b.type === "heading")
+      .map((b) => b.text);
+    // tcle já começa com heading próprio; imagem não tem, ganha um sintético
+    // com o título; laser já começa com heading próprio.
+    expect(headings[0]).toBe("TCLE - TRATAMENTO DE FERIDAS");
+    expect(headings).toContain("TERMO DE AUTORIZAÇÃO DE USO DE IMAGEM E VOZ");
+    expect(headings).toContain("TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO");
+  });
+
+  it("mantém as 3 assinaturas eletrônicas (uma por termo) para o mesmo traço valer nas 3", () => {
+    const { blocks } = renderCombinedTemplate(ctx);
+    const eletronicas = blocks.filter(
+      (b): b is Extract<Block, { type: "signature" }> => b.type === "signature" && b.who === "electronic",
+    );
+    expect(eletronicas).toHaveLength(3);
+  });
+
+  it("preserva o texto literal de cada termo dentro do combinado", () => {
+    const { blocks } = renderCombinedTemplate(ctx);
+    const corpo = blocks
+      .filter((b): b is Extract<Block, { type: "paragraph" }> => b.type === "paragraph")
+      .map((b) => b.text)
+      .join("\n");
+    expect(corpo).toContain("Ser de responsabilidade do Serviço de Saúde:");
+    expect(corpo).toContain("inscrita sob o CNPJ 31693471/0001-56, conforme Lei 13.709/2018");
+    expect(corpo).toMatch(/laserterapia/i);
   });
 });
 

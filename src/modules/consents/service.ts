@@ -11,7 +11,6 @@ export async function recordConsent(
   const input = parseOrThrow(recordConsentInputSchema, rawInput);
   return repo.insertConsent(accountId, {
     contactId: input.contactId,
-    kind: input.kind,
     storagePath: input.storagePath,
     signerName: input.signerName,
     signedVia: input.signedVia,

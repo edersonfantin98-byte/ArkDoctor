@@ -16,7 +16,6 @@ export function createInMemoryConsentsRepository(): ConsentsRepository {
         id,
         accountId,
         contactId: input.contactId,
-        kind: input.kind,
         storagePath: input.storagePath,
         signerName: input.signerName,
         signedVia: input.signedVia,

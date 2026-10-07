@@ -1,5 +1,3 @@
-import { CONSENT_KINDS, type ConsentKind } from "./schemas";
-
 const DEV_FALLBACK_SECRET = "arkdoctor-dev-consent-secret-not-for-production";
 
 function getSecret(): string {
@@ -14,16 +12,14 @@ function getSecret(): string {
 export interface ConsentClaims {
   accountId: string;
   contactId: string;
-  kind: ConsentKind;
-  tipoFerida?: string;
+  tipoFerida: string;
 }
 
 interface TokenPayload {
   a: string;
   c: string;
-  k: string;
   e: number; // expiry, epoch seconds
-  t?: string; // tipoFerida, só quando kind === 'tcle' e informado no link
+  t: string; // tipoFerida
 }
 
 async function hmac(data: string, secret: string): Promise<Uint8Array> {
@@ -58,9 +54,8 @@ export async function signConsentToken(
   const payload: TokenPayload = {
     a: claims.accountId,
     c: claims.contactId,
-    k: claims.kind,
     e: Math.floor(now / 1000) + ttlSeconds,
-    ...(claims.tipoFerida !== undefined ? { t: claims.tipoFerida } : {}),
+    t: claims.tipoFerida,
   };
   const body = b64url(JSON.stringify(payload));
   const sig = b64url(await hmac(body, getSecret()));
@@ -85,13 +80,12 @@ export async function verifyConsentToken(
     return null;
   }
   if (typeof payload.e !== "number" || payload.e * 1000 < now) return null;
-  if (!CONSENT_KINDS.includes(payload.k as ConsentKind)) return null;
   if (typeof payload.a !== "string" || typeof payload.c !== "string") return null;
+  if (typeof payload.t !== "string") return null;
 
   return {
     accountId: payload.a,
     contactId: payload.c,
-    kind: payload.k as ConsentKind,
-    ...(typeof payload.t === "string" ? { tipoFerida: payload.t } : {}),
+    tipoFerida: payload.t,
   };
 }
