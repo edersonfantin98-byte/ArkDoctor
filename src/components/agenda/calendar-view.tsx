@@ -116,11 +116,15 @@ function MonthDateHeader({ date, label, drilldownView, onDrillDown }: DateHeader
   );
 }
 
+function appointmentDisplayName(appointment: AppointmentWithDetails): string {
+  return appointment.contact?.name ?? appointment.guestName ?? "—";
+}
+
 function AgendaEventContent({ event }: EventProps<AgendaEvent>) {
   if ("appointment" in event) {
     return (
       <div className="ark-event-content">
-        <span className="ark-event-title">{event.appointment.contact.needsReview ? "⚠ " : ""}{event.appointment.contact.name}</span>
+        <span className="ark-event-title">{event.appointment.contact?.needsReview ? "⚠ " : ""}{appointmentDisplayName(event.appointment)}</span>
         <span className="ark-event-sub">{event.appointment.procedure.name}</span>
       </div>
     );
@@ -135,7 +139,7 @@ function AgendaEventContent({ event }: EventProps<AgendaEvent>) {
 function MonthEventContent({ event }: EventProps<AgendaEvent>) {
   const label =
     "appointment" in event
-      ? `${event.appointment.contact.needsReview ? "⚠ " : ""}${event.appointment.contact.name}`
+      ? `${event.appointment.contact?.needsReview ? "⚠ " : ""}${appointmentDisplayName(event.appointment)}`
       : event.title;
   return <span className="ark-event-chip">{label}</span>;
 }
@@ -162,7 +166,7 @@ export function CalendarView({
   const events: AgendaEvent[] = [
     ...appointments.map((appointment) => ({
       id: appointment.id,
-      title: `${appointment.contact.name} — ${appointment.procedure.name}`,
+      title: `${appointmentDisplayName(appointment)} — ${appointment.procedure.name}`,
       start: new Date(appointment.startsAt),
       end: new Date(appointment.endsAt),
       appointment,

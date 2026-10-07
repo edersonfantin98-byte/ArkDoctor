@@ -311,6 +311,48 @@ describe("createAppointment", () => {
     const openDeal = await crmRepo.getOpenDealForContact("acc-1", contact.id);
     expect(openDeal?.stageId).not.toBe(agendadoStage.id);
   });
+
+  it("creates an appointment with a guest name and no contact", async () => {
+    const { schedulingRepo, crmRepo, procedure } = await setup();
+
+    const appointment = await createAppointment(
+      { scheduling: schedulingRepo, crm: crmRepo },
+      "acc-1",
+      {
+        guestName: "Maria (sem cadastro)",
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:00:00.000Z",
+      },
+    );
+
+    expect(appointment.contactId).toBeNull();
+    expect(appointment.guestName).toBe("Maria (sem cadastro)");
+    expect(appointment.dealId).toBeNull();
+  });
+
+  it("rejects when both contactId and guestName are given", async () => {
+    const { schedulingRepo, crmRepo, procedure, contact } = await setup();
+
+    await expect(
+      createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+        contactId: contact.id,
+        guestName: "Maria",
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:00:00.000Z",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects when neither contactId nor guestName is given", async () => {
+    const { schedulingRepo, crmRepo, procedure } = await setup();
+
+    await expect(
+      createAppointment({ scheduling: schedulingRepo, crm: crmRepo }, "acc-1", {
+        procedureId: procedure.id,
+        startsAt: "2026-09-01T10:00:00.000Z",
+      }),
+    ).rejects.toThrow();
+  });
 });
 
 import {
@@ -674,6 +716,17 @@ describe("treatment link", () => {
     // unlink (null) always allowed
     const unlinked = await linkAppointmentToTreatment(scheduling, treatments, "acc-1", appt.id, null);
     expect(unlinked.treatmentId).toBeNull();
+  });
+
+  it("linkAppointmentToTreatment rejects a guest appointment (no contact)", async () => {
+    const { scheduling, treatments, procedure, treatment } = await seed();
+    const appt = await scheduling.insertAppointment("acc-1", {
+      contactId: null, guestName: "Maria (sem cadastro)", procedureId: procedure.id, dealId: null,
+      startsAt: "2026-08-03T14:00:00.000Z", endsAt: "2026-08-03T14:30:00.000Z", notes: null,
+    });
+    await expect(
+      linkAppointmentToTreatment(scheduling, treatments, "acc-1", appt.id, treatment.id),
+    ).rejects.toThrow(/sem paciente cadastrado/);
   });
 });
 

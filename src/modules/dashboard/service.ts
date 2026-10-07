@@ -19,7 +19,8 @@ interface DashboardDeps {
         id: string;
         startsAt: string;
         status: string;
-        contact: { name: string };
+        contact: { name: string } | null;
+        guestName: string | null;
         procedure: { name: string };
       }[]
     >;
@@ -211,7 +212,7 @@ export async function getDashboardOverview(
     revenueHistory: history,
     todaysAppointments: todaysAppointments.map((a) => ({
       id: a.id,
-      contactName: a.contact.name,
+      contactName: a.contact?.name ?? a.guestName ?? "—",
       procedureName: a.procedure.name,
       startsAt: a.startsAt,
       status: a.status,

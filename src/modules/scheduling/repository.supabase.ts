@@ -56,6 +56,7 @@ function toAppointment(row: Database["public"]["Tables"]["appointments"]["Row"])
     id: row.id,
     accountId: row.account_id,
     contactId: row.contact_id,
+    guestName: row.guest_name,
     procedureId: row.procedure_id,
     dealId: row.deal_id,
     treatmentId: row.treatment_id,
@@ -172,6 +173,7 @@ export function createSupabaseSchedulingRepository(
         .insert({
           account_id: accountId,
           contact_id: input.contactId,
+          guest_name: input.guestName ?? null,
           procedure_id: input.procedureId,
           deal_id: input.dealId,
           treatment_id: input.treatmentId ?? null,
@@ -277,7 +279,7 @@ export function createSupabaseSchedulingRepository(
       if (error) throwDbError(error);
       return data.map((row) => ({
         ...toAppointment(row),
-        contact: toContact(row.contact),
+        contact: row.contact ? toContact(row.contact) : null,
         procedure: toProcedure(row.procedure),
       })) as AppointmentWithDetails[];
     },
@@ -307,7 +309,7 @@ export function createSupabaseSchedulingRepository(
       if (error) throwDbError(error);
       return data.map((row) => ({
         ...toAppointment(row),
-        contact: toContact(row.contact),
+        contact: row.contact ? toContact(row.contact) : null,
         procedure: toProcedure(row.procedure),
       })) as AppointmentWithDetails[];
     },

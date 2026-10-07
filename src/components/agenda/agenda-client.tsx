@@ -101,7 +101,7 @@ export function AgendaClient({
     refetch();
   }, [refetch]);
 
-  const reviewCount = appointments.filter((a) => a.contact.needsReview).length;
+  const reviewCount = appointments.filter((a) => a.contact?.needsReview).length;
   const backgroundEvents = materializeBackgroundEvents(blocks, rules, visibleRange(date, view));
 
   function handleSelectSlot(newSlot: { start: Date; end: Date }) {
