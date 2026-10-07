@@ -192,7 +192,8 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
   async function handleConfirm() {
     setSubmitError(null);
     const start = startsAtIso();
-    if (!selectedContactId || !procedureId || !start) {
+    const guestName = contactQuery.trim();
+    if ((!selectedContactId && !guestName) || !procedureId || !start) {
       setSubmitError("Preencha todos os campos antes de confirmar");
       return;
     }
@@ -200,7 +201,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
     setSubmitting(true);
     try {
       await createAppointmentAction({
-        contactId: selectedContactId,
+        ...(selectedContactId ? { contactId: selectedContactId } : { guestName }),
         procedureId,
         startsAt: start,
       });
@@ -318,6 +319,11 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
                     ))}
                   </ul>
                 )}
+                {contactQuery.trim() && !selectedContactId && contactResults.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Ninguém encontrado — ao confirmar, o agendamento fica em nome de &quot;{contactQuery.trim()}&quot;, sem cadastro.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -368,7 +374,7 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
                 </Button>
                 <Button
                   type="button"
-                  disabled={!selectedContactId || !slot}
+                  disabled={(!selectedContactId && !contactQuery.trim()) || !slot}
                   onClick={() => setStep("confirm")}
                 >
                   Próximo
@@ -405,8 +411,8 @@ export function BookingWizard({ procedures }: { procedures: Procedure[] }) {
             <CardTitle>Resumo</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            {selectedContactName && (
-              <p className="font-medium">{selectedContactName}</p>
+            {(selectedContactName || contactQuery.trim()) && (
+              <p className="font-medium">{selectedContactName || contactQuery.trim()}</p>
             )}
             <div className="flex justify-between border-b border-border pb-2">
               <span className="text-muted-foreground">Procedimento</span>

@@ -210,10 +210,13 @@ export async function createAppointment(
   const conflict = await checkConflict(repos.scheduling, accountId, { startsAt, endsAt });
   if (conflict.hasConflict) throw new Error(conflict.reason ?? "Conflito de horário");
 
-  const dealId = await resolveDealForAppointment(repos.crm, accountId, input.contactId);
+  const dealId = input.contactId
+    ? await resolveDealForAppointment(repos.crm, accountId, input.contactId)
+    : null;
 
   return repos.scheduling.insertAppointment(accountId, {
-    contactId: input.contactId,
+    contactId: input.contactId ?? null,
+    guestName: input.guestName ?? null,
     procedureId: input.procedureId,
     dealId,
     startsAt,
@@ -270,6 +273,9 @@ export async function linkAppointmentToTreatment(
   if (!appointment) throw new Error("Agendamento não encontrado");
 
   if (treatmentId !== null) {
+    if (!appointment.contactId) {
+      throw new Error("Agendamento sem paciente cadastrado não pode ser vinculado a um tratamento");
+    }
     const treatment = await treatmentsRepo.getTreatment(accountId, treatmentId);
     if (!treatment) throw new Error("Tratamento não encontrado");
     if (treatment.contactId !== appointment.contactId) {

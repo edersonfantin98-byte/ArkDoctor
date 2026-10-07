@@ -26,7 +26,8 @@ export interface SchedulingRepository {
   insertAppointment(
     accountId: string,
     input: {
-      contactId: string;
+      contactId: string | null;
+      guestName?: string | null;
       procedureId: string;
       dealId: string | null;
       treatmentId?: string | null;

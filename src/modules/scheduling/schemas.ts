@@ -16,7 +16,8 @@ export type UpdateProcedureInput = z.infer<typeof updateProcedureInputSchema>;
 
 export const createAppointmentInputSchema = z
   .object({
-    contactId: z.string().uuid(),
+    contactId: z.string().uuid().optional(),
+    guestName: z.string().trim().min(1).max(200).optional(),
     procedureId: z.string().uuid(),
     startsAt: z.string().datetime(),
     endsAt: z.string().datetime().optional(),
@@ -25,6 +26,10 @@ export const createAppointmentInputSchema = z
   .refine((data) => !data.endsAt || new Date(data.endsAt) > new Date(data.startsAt), {
     message: "O fim deve ser depois do início",
     path: ["endsAt"],
+  })
+  .refine((data) => !!data.contactId !== !!data.guestName, {
+    message: "Informe um contato cadastrado ou um nome, não os dois nem nenhum",
+    path: ["contactId"],
   });
 export type CreateAppointmentInput = z.infer<typeof createAppointmentInputSchema>;
 

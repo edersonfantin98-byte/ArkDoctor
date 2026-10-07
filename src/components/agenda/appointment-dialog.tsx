@@ -95,12 +95,14 @@ export function AppointmentDialog({
     if (editingAppointment) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs the form when a different appointment is opened in this persistent dialog
       setSelectedContactId(editingAppointment.contactId);
-      setContactQuery(editingAppointment.contact.name);
+      setContactQuery(editingAppointment.contact?.name ?? editingAppointment.guestName ?? "");
       setProcedureId(editingAppointment.procedureId);
       setStartsAt(toLocalInputValue(new Date(editingAppointment.startsAt)));
       setNotes(editingAppointment.notes ?? "");
       setTreatments([]);
-      listTreatmentsForContactAction(editingAppointment.contactId).then(setTreatments);
+      if (editingAppointment.contactId) {
+        listTreatmentsForContactAction(editingAppointment.contactId).then(setTreatments);
+      }
       setTreatmentId(editingAppointment.treatmentId ?? "__none__");
     } else if (slot) {
       setSelectedContactId(null);
@@ -182,12 +184,13 @@ export function AppointmentDialog({
         const endsAtIso = new Date(new Date(startsAtIso).getTime() + durationMs).toISOString();
         await updateAppointmentTimeAction(editingAppointment.id, startsAtIso, endsAtIso);
       } else {
-        if (!selectedContactId) {
-          setError("Selecione um contato");
+        const guestName = contactQuery.trim();
+        if (!selectedContactId && !guestName) {
+          setError("Selecione um contato ou digite um nome");
           return;
         }
         await createAppointmentAction({
-          contactId: selectedContactId,
+          ...(selectedContactId ? { contactId: selectedContactId } : { guestName }),
           procedureId,
           startsAt: startsAtIso,
         });
@@ -216,9 +219,9 @@ export function AppointmentDialog({
             <p className="text-sm text-red-600">{conflictCheckError}</p>
           )}
 
-          {editingAppointment?.contact.needsReview && (
+          {editingAppointment?.contact?.needsReview && (
             <ReviewContactBanner
-              contactId={editingAppointment.contactId}
+              contactId={editingAppointment.contactId!}
               contactName={editingAppointment.contact.name}
               onConfirmed={() => {
                 onOpenChange(false);
@@ -258,6 +261,11 @@ export function AppointmentDialog({
                     </li>
                   ))}
                 </ul>
+              )}
+              {contactQuery.trim() && !selectedContactId && contactResults.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Ninguém encontrado — ao salvar, o agendamento fica em nome de &quot;{contactQuery.trim()}&quot;, sem cadastro.
+                </p>
               )}
             </div>
           )}
@@ -309,6 +317,7 @@ export function AppointmentDialog({
                 />
               </div>
 
+              {editingAppointment.contactId && (
               <div className="space-y-1">
                 <Label htmlFor="treatment">Tratamento</Label>
                 <Select
@@ -352,6 +361,7 @@ export function AppointmentDialog({
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               <div className="space-y-1">
                 <Label htmlFor="notes">Notas</Label>
@@ -376,7 +386,8 @@ export function AppointmentDialog({
             className="w-full"
             onClick={handleSubmit}
             disabled={
-              (!editingAppointment && (!selectedContactId || !procedureId)) ||
+              (!editingAppointment &&
+                ((!selectedContactId && !contactQuery.trim()) || !procedureId)) ||
               checkingConflict ||
               !!conflictReason
             }

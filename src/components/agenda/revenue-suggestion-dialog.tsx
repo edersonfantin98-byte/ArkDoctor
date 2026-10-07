@@ -48,7 +48,7 @@ export function RevenueSuggestionDialog({
         <div className="space-y-3">
           {error && <p className="text-sm text-red-600">{error}</p>}
           <p className="text-sm text-muted-foreground">
-            {appointment.procedure.name} — {appointment.contact.name}
+            {appointment.procedure.name} — {appointment.contact?.name ?? appointment.guestName}
           </p>
           <div className="space-y-1">
             <Label htmlFor="revenue-amount">Valor</Label>

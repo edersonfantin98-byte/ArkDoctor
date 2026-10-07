@@ -19,7 +19,8 @@ export interface Procedure {
 export interface Appointment {
   id: string;
   accountId: string;
-  contactId: string;
+  contactId: string | null;
+  guestName: string | null;
   procedureId: string;
   dealId: string | null;
   treatmentId: string | null;
@@ -32,7 +33,7 @@ export interface Appointment {
 }
 
 export interface AppointmentWithDetails extends Appointment {
-  contact: Contact;
+  contact: Contact | null;
   procedure: Procedure;
 }
 

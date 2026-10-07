@@ -78,6 +78,7 @@ export function createInMemorySchedulingRepository(): SchedulingRepository {
         id,
         accountId,
         contactId: input.contactId,
+        guestName: input.guestName ?? null,
         procedureId: input.procedureId,
         dealId: input.dealId,
         treatmentId: input.treatmentId ?? null,
