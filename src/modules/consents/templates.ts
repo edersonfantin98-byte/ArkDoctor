@@ -1,4 +1,4 @@
-import type { ConsentKind } from "./schemas";
+import { CONSENT_KINDS, type ConsentKind } from "./schemas";
 
 // Clínica em Cuiabá (UTC-4, sem horário de verão). O Worker roda em UTC, então
 // carimbamos a data/hora do consentimento no fuso local.
@@ -200,6 +200,19 @@ export function renderTemplate(
   ctx: TemplateContext,
 ): { title: string; blocks: Block[] } {
   return { title: TITLES[kind], blocks: BUILDERS[kind](ctx) };
+}
+
+// Junta os 3 termos (TCLE, Imagem, Laser) num documento só: uma assinatura do
+// paciente vale para os 3. Cada termo mantém seu texto/estrutura originais;
+// só ganha um heading com o título quando ainda não começa com um (caso do
+// Imagem, cujo primeiro bloco é um field).
+export function renderCombinedTemplate(ctx: TemplateContext): { title: string; blocks: Block[] } {
+  const blocks = CONSENT_KINDS.flatMap((kind): Block[] => {
+    const { title, blocks } = renderTemplate(kind, ctx);
+    const hasHeading = blocks[0]?.type === "heading";
+    return hasHeading ? blocks : [{ type: "heading", text: title }, ...blocks];
+  });
+  return { title: "Documentos do paciente", blocks };
 }
 
 // Campos de documento do paciente que a tela de assinatura coleta/edita e

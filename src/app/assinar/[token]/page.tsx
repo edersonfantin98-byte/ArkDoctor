@@ -1,8 +1,7 @@
 import { createServiceRoleSupabaseClient } from "@/lib/supabase/service-role";
 import { getAccountProfessionalIdentity } from "@/lib/supabase/account";
 import { verifyConsentToken } from "@/modules/consents/token";
-import type { ConsentKind } from "@/modules/consents/schemas";
-import { renderTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents/templates";
+import { renderCombinedTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents/templates";
 import { PublicConsentForm } from "@/components/consents/public-consent-form";
 
 function Invalid() {
@@ -31,7 +30,7 @@ type PatientData = {
 // never leaks whether the token existed.
 async function loadPage(
   token: string,
-): Promise<{ kind: ConsentKind; tipoFerida: string | null; patient: PatientData; identity: Identity } | null> {
+): Promise<{ tipoFerida: string; patient: PatientData; identity: Identity } | null> {
   const claims = await verifyConsentToken(token);
   if (!claims) return null;
 
@@ -46,8 +45,7 @@ async function loadPage(
     if (error || !data) return null;
     const identity = await getAccountProfessionalIdentity(supabase, claims.accountId);
     return {
-      kind: claims.kind,
-      tipoFerida: claims.tipoFerida ?? null,
+      tipoFerida: claims.tipoFerida,
       patient: {
         name: data.name,
         cpf: data.cpf,
@@ -73,9 +71,9 @@ export default async function PublicConsentPage({
   const loaded = await loadPage(token);
   if (!loaded) return <Invalid />;
 
-  const { kind, tipoFerida, patient, identity } = loaded;
+  const { tipoFerida, patient, identity } = loaded;
 
-  const t = renderTemplate(kind, {
+  const t = renderCombinedTemplate({
     pacienteNome: patient.name,
     pacienteCpf: patient.cpf,
     pacienteNascimento: patient.birthDate,
@@ -96,7 +94,6 @@ export default async function PublicConsentPage({
       <h1 className="mb-4 text-xl font-bold">{t.title}</h1>
       <PublicConsentForm
         token={token}
-        kind={kind}
         documentTitle={t.title}
         blocks={t.blocks}
         defaultSignerName={patient.name}

@@ -214,6 +214,24 @@ describe("ConsentSignForm — imagem/laser", () => {
     expect(button).toBeEnabled();
   });
 
+  it("documento combinado: a mesma key repetida em termos diferentes vira um único input", () => {
+    const combinedBlocks: Block[] = [
+      ...imagemBlocks,
+      { type: "field", label: "CPF", value: "123.456.789-00", key: "pacienteCpf" },
+    ];
+    render(
+      <ConsentSignForm
+        kind="imagem"
+        documentTitle="Documentos"
+        blocks={combinedBlocks}
+        defaultSignerName="Maria"
+        submitLabel="Confirmar"
+        onComplete={async () => ({ ok: true })}
+      />,
+    );
+    expect(screen.getAllByLabelText("CPF")).toHaveLength(1);
+  });
+
   it("assinatura: botão só habilita após desenhar; 'Limpar' volta a desabilitar", async () => {
     render(
       <ConsentSignForm

@@ -1,4 +1,4 @@
-import type { ConsentKind, SignedVia } from "./schemas";
+import type { SignedVia } from "./schemas";
 import type { SignedConsent } from "./types";
 
 export interface ConsentsRepository {
@@ -6,7 +6,6 @@ export interface ConsentsRepository {
     accountId: string,
     input: {
       contactId: string;
-      kind: ConsentKind;
       storagePath: string;
       signerName: string;
       signedVia: SignedVia;

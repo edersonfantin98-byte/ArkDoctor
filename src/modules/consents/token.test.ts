@@ -4,7 +4,7 @@ import { signConsentToken, verifyConsentToken, type ConsentClaims } from "./toke
 const claims: ConsentClaims = {
   accountId: "acc-1",
   contactId: "contact-1",
-  kind: "tcle",
+  tipoFerida: "Lesão por pressão",
 };
 
 afterEach(() => {
@@ -27,7 +27,7 @@ describe("consent token", () => {
     const token = await signConsentToken(claims, 3600);
     const [body, sig] = token.split(".");
     const forged = Buffer.from(
-      JSON.stringify({ a: "acc-2", c: "contact-1", k: "tcle", e: 9999999999 }),
+      JSON.stringify({ a: "acc-2", c: "contact-1", t: "x", e: 9999999999 }),
     ).toString("base64url");
     expect(await verifyConsentToken(`${forged}.${sig}`)).toBeNull();
     expect(await verifyConsentToken(`${body}.AAAA`)).toBeNull();
@@ -43,18 +43,5 @@ describe("consent token", () => {
   it("rejects garbage", async () => {
     expect(await verifyConsentToken("not-a-token")).toBeNull();
     expect(await verifyConsentToken("")).toBeNull();
-  });
-
-  it("round-trips claims com tipoFerida", async () => {
-    const claimsComFerida: ConsentClaims = { ...claims, tipoFerida: "Lesão por pressão" };
-    const token = await signConsentToken(claimsComFerida, 3600);
-    expect(await verifyConsentToken(token)).toEqual(claimsComFerida);
-  });
-
-  it("round-trip sem tipoFerida não inclui a chave no resultado", async () => {
-    const token = await signConsentToken(claims, 3600);
-    const result = await verifyConsentToken(token);
-    expect(result).toEqual(claims);
-    expect(result?.tipoFerida).toBeUndefined();
   });
 });

@@ -15,8 +15,7 @@ import { assembleReport } from "@/modules/treatments/service";
 import type { TreatmentSession } from "@/modules/treatments/types";
 import { createSupabaseConsentsRepository } from "@/modules/consents/repository.supabase";
 import * as consents from "@/modules/consents/service";
-import { CONSENT_KINDS, type ConsentKind } from "@/modules/consents/schemas";
-import { renderTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents/templates";
+import { renderCombinedTemplate, formatBrDate, ageFromIsoDate } from "@/modules/consents/templates";
 import { docFieldsToContactUpdate } from "@/modules/consents/patient-doc-sync";
 import { signConsentToken } from "@/modules/consents/token";
 
@@ -133,10 +132,6 @@ export async function getTreatmentReportDataAction(treatmentId: string) {
   });
 }
 
-function assertConsentKind(kind: string): asserts kind is ConsentKind {
-  if (!CONSENT_KINDS.includes(kind as ConsentKind)) throw new Error("Documento inválido.");
-}
-
 export async function listConsentsAction(contactId: string) {
   const c = await ctx();
   const repo = createSupabaseConsentsRepository(c.supabase);
@@ -148,15 +143,13 @@ export async function listConsentsAction(contactId: string) {
   if (error) throw new Error("Não foi possível carregar os documentos.");
   return rows.map((r, i) => ({
     id: r.id,
-    kind: r.kind,
     signerName: r.signerName,
     signedAt: r.signedAt,
     url: data[i]?.signedUrl ?? "",
   }));
 }
 
-export async function uploadConsentAction(contactId: string, kind: string, formData: FormData) {
-  assertConsentKind(kind);
+export async function uploadConsentAction(contactId: string, formData: FormData) {
   const c = await ctx();
   const contact = await c.crmRepo.getContact(c.accountId, contactId);
   if (!contact) throw new Error("Paciente não encontrado");
@@ -177,7 +170,7 @@ export async function uploadConsentAction(contactId: string, kind: string, formD
   }
 
   const repo = createSupabaseConsentsRepository(c.supabase);
-  const path = `${c.accountId}/${contactId}/${kind}-${Date.now()}.pdf`;
+  const path = `${c.accountId}/${contactId}/completo-${Date.now()}.pdf`;
   const { error: uploadError } = await c.supabase.storage
     .from(CONSENT_BUCKET)
     .upload(path, file, { contentType: "application/pdf", upsert: false });
@@ -188,7 +181,6 @@ export async function uploadConsentAction(contactId: string, kind: string, formD
   try {
     await consents.recordConsent(repo, c.accountId, {
       contactId,
-      kind,
       storagePath: path,
       signerName,
       signedVia: "inline",
@@ -210,24 +202,16 @@ export async function deleteConsentAction(consentId: string) {
   revalidatePath(`/pacientes/${row.contactId}/documentos`);
 }
 
-export async function createConsentLinkAction(contactId: string, kind: string, tipoFerida?: string) {
-  assertConsentKind(kind);
+export async function createConsentLinkAction(contactId: string, tipoFerida: string) {
   const c = await ctx();
   const contact = await c.crmRepo.getContact(c.accountId, contactId);
   if (!contact) throw new Error("Paciente não encontrado");
 
-  const tipoFeridaTrimmed = tipoFerida?.trim();
-  if (kind === "tcle" && !tipoFeridaTrimmed) {
-    throw new Error("Informe o tipo de ferida.");
-  }
+  const tipoFeridaTrimmed = tipoFerida.trim();
+  if (!tipoFeridaTrimmed) throw new Error("Informe o tipo de ferida.");
 
   const token = await signConsentToken(
-    {
-      accountId: c.accountId,
-      contactId,
-      kind,
-      ...(kind === "tcle" ? { tipoFerida: tipoFeridaTrimmed } : {}),
-    },
+    { accountId: c.accountId, contactId, tipoFerida: tipoFeridaTrimmed },
     CONSENT_LINK_TTL_SECONDS,
   );
   const h = await headers();
@@ -268,15 +252,12 @@ export async function getConsentPageDataAction(contactId: string) {
     data: formatBrDate(new Date()),
   };
 
-  const docs = CONSENT_KINDS.map((kind) => {
-    const t = renderTemplate(kind, templateCtx);
-    return { kind, title: t.title, blocks: t.blocks };
-  });
+  const doc = renderCombinedTemplate(templateCtx);
 
   return {
     patientName: contact.name,
     professionalMissing: !identity.professionalName,
-    docs,
+    doc,
     consents: consentRows,
     activeTreatmentWoundTypes,
   };

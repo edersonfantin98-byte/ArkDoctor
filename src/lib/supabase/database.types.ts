@@ -600,7 +600,6 @@ export type Database = {
           contact_id: string
           created_at: string
           id: string
-          kind: string
           signed_at: string
           signed_via: string
           signer_name: string
@@ -611,7 +610,6 @@ export type Database = {
           contact_id: string
           created_at?: string
           id?: string
-          kind: string
           signed_at?: string
           signed_via: string
           signer_name: string
@@ -622,7 +620,6 @@ export type Database = {
           contact_id?: string
           created_at?: string
           id?: string
-          kind?: string
           signed_at?: string
           signed_via?: string
           signer_name?: string

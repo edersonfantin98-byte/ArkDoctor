@@ -4,7 +4,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { submitPublicConsentAction } from "@/app/assinar/actions";
 import type { Block } from "@/modules/consents/templates";
-import type { ConsentKind } from "@/modules/consents/schemas";
 
 const ConsentSignForm = dynamic(
   () => import("./consent-sign-form").then((m) => m.ConsentSignForm),
@@ -13,11 +12,10 @@ const ConsentSignForm = dynamic(
 
 export function PublicConsentForm(props: {
   token: string;
-  kind: ConsentKind;
   documentTitle: string;
   blocks: Block[];
   defaultSignerName: string;
-  tipoFerida: string | null;
+  tipoFerida: string;
 }) {
   const [done, setDone] = useState(false);
 
@@ -31,12 +29,12 @@ export function PublicConsentForm(props: {
 
   return (
     <ConsentSignForm
-      kind={props.kind}
+      kind="tcle"
       documentTitle={props.documentTitle}
       blocks={props.blocks}
       defaultSignerName={props.defaultSignerName}
       submitLabel="Confirmar assinatura"
-      {...(props.kind === "tcle" ? { lockedTipoFerida: props.tipoFerida ?? "" } : {})}
+      lockedTipoFerida={props.tipoFerida}
       onComplete={async ({ pdfBytes, signerName, docFields }) => {
         const fd = new FormData();
         fd.set("file", new Blob([pdfBytes as BlobPart], { type: "application/pdf" }), "consent.pdf");

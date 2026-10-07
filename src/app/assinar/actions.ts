@@ -32,7 +32,7 @@ export async function submitPublicConsentAction(
   if (!signerName) return { ok: false, error: "Informe o nome de quem assina." };
 
   const supabase = createServiceRoleSupabaseClient();
-  const path = `${claims.accountId}/${claims.contactId}/${claims.kind}-${Date.now()}.pdf`;
+  const path = `${claims.accountId}/${claims.contactId}/completo-${Date.now()}.pdf`;
   const { error: uploadError } = await supabase.storage
     .from(CONSENT_BUCKET)
     .upload(path, file, { contentType: "application/pdf", upsert: false });
@@ -44,7 +44,6 @@ export async function submitPublicConsentAction(
   try {
     await consents.recordConsent(createSupabaseConsentsRepository(supabase), claims.accountId, {
       contactId: claims.contactId,
-      kind: claims.kind,
       storagePath: path,
       signerName,
       signedVia: "link",

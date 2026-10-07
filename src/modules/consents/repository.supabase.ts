@@ -1,7 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { ConsentsRepository } from "./repository";
-import type { ConsentKind, SignedVia } from "./schemas";
+import type { SignedVia } from "./schemas";
 import type { SignedConsent } from "./types";
 
 function throwDbError(error: PostgrestError): never {
@@ -14,7 +14,6 @@ function toConsent(row: Database["public"]["Tables"]["signed_consents"]["Row"]):
     id: row.id,
     accountId: row.account_id,
     contactId: row.contact_id,
-    kind: row.kind as ConsentKind,
     storagePath: row.storage_path,
     signerName: row.signer_name,
     signedVia: row.signed_via as SignedVia,
@@ -33,7 +32,6 @@ export function createSupabaseConsentsRepository(
         .insert({
           account_id: accountId,
           contact_id: input.contactId,
-          kind: input.kind,
           storage_path: input.storagePath,
           signer_name: input.signerName,
           signed_via: input.signedVia,
